@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bcube Timer</title>
+    <meta
+      name="description"
+      content="A polished Rubik's cube timer with inspection, scramble generation, and solve stats."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="brand-mark">◼</div>
+          <div>
+            <p class="eyebrow">Cube timing</p>
+            <h1>Bcube Timer</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="menu">
+            <button
+              id="menuToggle"
+              class="ghost-button menu-button"
+              type="button"
+              aria-label="Open settings menu"
+              aria-expanded="false"
+              aria-controls="settingsMenu"
+            >
+              <span class="menu-icon" aria-hidden="true">☰</span>
+              <span>Menu</span>
+            </button>
+            <div id="settingsMenu" class="settings-menu" hidden>
+              <p class="menu-title">Timer settings</p>
+              <label class="setting-row">
+                <span>15s inspection</span>
+                <input type="checkbox" id="inspectionToggle" />
+              </label>
+              <label class="setting-row">
+                <span>Light mode</span>
+                <input type="checkbox" id="themeToggle" />
+              </label>
+              <label class="setting-row">
+                <span>Hold and release to start</span>
+                <input type="checkbox" id="holdToStartToggle" />
+              </label>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="app-layout">
+        <div class="timer-workspace">
+        <section class="panel scramble-panel">
+          <div class="panel-header">
+            <span class="panel-label">Scramble</span>
+            <button
+              id="newScramble"
+              class="scramble-refresh"
+              type="button"
+              aria-label="Generate a new scramble"
+              title="New scramble"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 7v5h-5M4 17v-5h5" />
+                <path d="M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2" />
+              </svg>
+            </button>
+          </div>
+          <p id="scrambleText" class="scramble-text"></p>
+        </section>
+
+        <section class="panel timer-panel" id="timerPanel" aria-label="Cube timer panel" tabindex="0">
+          <div id="timerState" class="timer-state">Ready</div>
+          <div id="timerDisplay" class="timer-display" aria-live="polite">0.00</div>
+          <div id="solveActions" class="solve-actions" aria-label="Last solve actions">
+            <button class="result-action secondary-button" data-action="dnf" type="button" disabled>DNF</button>
+            <button class="result-action secondary-button" data-action="plus2" type="button" disabled>+2</button>
+            <button class="result-action secondary-button" data-action="reset" type="button" disabled>Revert</button>
+            <button class="result-action danger-button" data-action="delete" type="button" disabled>Delete</button>
+          </div>
+        </section>
+
+        <aside class="panel stats-panel">
+          <div class="stat-row">
+            <span>Best</span>
+            <strong id="bestTime">--</strong>
+          </div>
+          <div class="stat-row">
+            <span>Average 5</span>
+            <strong id="avg5">--</strong>
+          </div>
+          <div class="stat-row">
+            <span>Average 12</span>
+            <strong id="avg12">--</strong>
+          </div>
+          <div class="stat-row">
+            <span>Recent</span>
+            <strong id="recentTime">--</strong>
+          </div>
+        </aside>
+        </div>
+
+        <aside class="panel history-panel">
+          <div class="history-header">
+            <h2>Solve records</h2>
+            <div class="history-controls">
+              <label class="visually-hidden" for="eventSelect">Solve event</label>
+              <select id="eventSelect" class="event-select" aria-label="Solve event">
+                <option value="333">3x3</option>
+                <option value="222">2x2</option>
+                <option value="444">4x4</option>
+                <option value="555">5x5</option>
+                <option value="666">6x6</option>
+                <option value="777">7x7</option>
+              </select>
+              <button id="clearHistory" class="ghost-button small" type="button">Clear</button>
+            </div>
+          </div>
+          <ol id="solveList" class="solve-list"></ol>
+        </aside>
+      </main>
+
+    </div>
+
+    <dialog id="solveDetails" class="solve-dialog" aria-labelledby="solveDetailsTitle">
+      <div class="dialog-header">
+        <h2 id="solveDetailsTitle">Solve details</h2>
+        <button id="closeSolveDetails" class="dialog-close" type="button" aria-label="Close solve details">×</button>
+      </div>
+      <div class="solve-detail-row">
+        <span>Time</span>
+        <strong id="solveDetailTime">--</strong>
+      </div>
+      <div class="solve-detail-actions" aria-label="Solve record actions">
+        <button class="result-action secondary-button" data-action="dnf" type="button">DNF</button>
+        <button class="result-action secondary-button" data-action="plus2" type="button">+2</button>
+        <button class="result-action secondary-button" data-action="reset" type="button">Revert</button>
+        <button class="result-action danger-button" data-action="delete" type="button">Delete</button>
+      </div>
+      <div class="scramble-detail">
+        <h3>Scramble</h3>
+        <p id="solveDetailScramble"></p>
+      </div>
+    </dialog>
+
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>
