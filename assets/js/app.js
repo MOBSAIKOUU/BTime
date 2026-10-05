@@ -27,6 +27,7 @@ const bestTimeEl = document.getElementById('bestTime');
 const avg5El = document.getElementById('avg5');
 const bestAvg5El = document.getElementById('bestAvg5');
 const avg12El = document.getElementById('avg12');
+const meanTimeEl = document.getElementById('meanTime');
 
 const STORAGE_KEY = 'bcube-timer-history';
 const EVENT_STORAGE_KEY = 'bcube-timer-event';
@@ -43,6 +44,11 @@ const EVENTS = [
   { code: '555', label: '5x5' },
   { code: '666', label: '6x6' },
   { code: '777', label: '7x7' },
+  { code: 'clock', label: 'Clock' },
+  { code: 'minx', label: 'Megaminx' },
+  { code: 'pyram', label: 'Pyraminx' },
+  { code: 'skewb', label: 'Skewb' },
+  { code: 'sq1', label: 'Square-1' },
 ];
 
 let state = 'ready';
@@ -196,7 +202,9 @@ function loadThemePreference() {
       return parsed ? 'night' : 'light';
     }
 
-    return ['light', 'night', 'shell-pink', 'purple'].includes(parsed) ? parsed : 'light';
+    return ['light', 'night', 'shell-pink', 'purple', 'chessboard'].includes(parsed)
+      ? parsed
+      : 'light';
   } catch (error) {
     return 'light';
   }
@@ -305,8 +313,15 @@ function renderStats() {
     .filter((solve) => solve.result !== 'dnf')
     .map((solve) => getSolveValue(solve))
     .filter((value) => value !== null && !Number.isNaN(value));
+  const timedSolveValues = recentSolves
+    .filter((solve) => String(solve.result).toLowerCase() !== 'dnf')
+    .map((solve) => getSolveValue(solve))
+    .filter((value) => value !== null && Number.isFinite(value));
 
   const best = values.length ? Math.min(...values) : null;
+  const mean = timedSolveValues.length
+    ? timedSolveValues.reduce((sum, value) => sum + value, 0) / timedSolveValues.length
+    : null;
   const avg5 = getTrimmedAverage(recentSolves, 5);
   const avg12 = getTrimmedAverage(recentSolves, 12);
   let bestAvg5 = null;
@@ -322,6 +337,9 @@ function renderStats() {
   avg5El.textContent = avg5.isDnf ? 'DNF' : formatMetric(avg5.value);
   bestAvg5El.textContent = formatMetric(bestAvg5);
   avg12El.textContent = avg12.isDnf ? 'DNF' : formatMetric(avg12.value);
+  if (meanTimeEl) {
+    meanTimeEl.textContent = formatMetric(mean);
+  }
 }
 
 function formatHistoryValue(entry) {
@@ -353,7 +371,7 @@ function renderHistory() {
   if (!recentSolves.length) {
     const empty = document.createElement('li');
     empty.className = 'solve-empty';
-    empty.textContent = 'No solves yet';
+    empty.textContent = 'Nun here bro 😭 Start a solve or smth.';
     solveList.appendChild(empty);
     return;
   }
@@ -504,6 +522,7 @@ function flashDisplay() {
 async function getNewScramble(eventCode) {
   const { randomScrambleForEvent } = await import('https://cdn.cubing.net/v0/js/cubing/scramble');
   const validMove = /^(?:[URFDLB]w?|[2-6][URFDLB]w?|[urfdlb])(?:2|')?$/;
+  const cubeEvent = ['222', '333', '444', '555', '666', '777'].includes(eventCode);
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const generatedScramble = await randomScrambleForEvent(eventCode);
@@ -511,7 +530,7 @@ async function getNewScramble(eventCode) {
     const isValid =
       moves.length > 0 &&
       (eventCode !== '333' || (moves.length >= 19 && moves.length <= 22)) &&
-      moves.every((move) => validMove.test(move));
+      (!cubeEvent || moves.every((move) => validMove.test(move)));
 
     if (isValid) {
       return moves.join(' ');
@@ -671,7 +690,7 @@ async function beginInspection() {
   const tick = () => {
     const elapsed = performance.now() - inspectionStartTimestamp;
     const remaining = Math.max(0, startValue - elapsed);
-    const display = `${(remaining / 1000).toFixed(1)}`;
+    const display = String(Math.ceil(remaining / 1000));
     updateDisplay(display);
 
     if (remaining > 0) {
@@ -683,7 +702,7 @@ async function beginInspection() {
     setTimerState('readyToSolve');
     timerState.textContent = 'Start now';
     const graceStartTimestamp = performance.now();
-    updateDisplay(`${INSPECTION_GRACE_SECONDS.toFixed(1)}`);
+    updateDisplay(String(INSPECTION_GRACE_SECONDS));
     flashDisplay();
 
     const updateGraceDisplay = () => {
@@ -695,7 +714,7 @@ async function beginInspection() {
         0,
         INSPECTION_GRACE_SECONDS * 1000 - (performance.now() - graceStartTimestamp),
       );
-      updateDisplay((remaining / 1000).toFixed(1));
+      updateDisplay(String(Math.ceil(remaining / 1000)));
       if (remaining > 0) {
         rafId = requestAnimationFrame(updateGraceDisplay);
       }
@@ -908,6 +927,13 @@ window.addEventListener('keydown', (event) => {
 
   if (state === 'ready' && inspectionEnabled) {
     spaceStartedInspection = true;
+    if (holdToStartEnabled) {
+      cancelAnimation();
+      setTimerState('holding');
+      updateDisplay('0.00');
+      return;
+    }
+
     beginInspection();
     return;
   }
@@ -951,7 +977,11 @@ window.addEventListener('keyup', (event) => {
   }
 
   if (state === 'holding') {
-    beginSolve();
+    if (startedInspection && inspectionEnabled) {
+      beginInspection();
+    } else {
+      beginSolve();
+    }
   }
 });
 

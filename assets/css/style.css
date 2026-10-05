@@ -66,6 +66,23 @@ body[data-palette="purple"] {
   --shadow: 0 24px 60px rgba(76, 29, 149, 0.12);
 }
 
+body[data-palette="chessboard"] {
+  --bg: #000000;
+  --bg-2: #111111;
+  --panel: #080808;
+  --panel-strong: #080808;
+  --panel-soft: #161616;
+  --border: rgba(255, 255, 255, 0.36);
+  --text: #ffffff;
+  --muted: #ffffff;
+  --accent: #000000;
+  --accent-2: #333333;
+  --warning: #ffffff;
+  --danger: #ffffff;
+  --success: #ffffff;
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -142,7 +159,7 @@ button {
   width: min(320px, calc(100vw - 32px));
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 10px;
   background: var(--panel-strong);
   box-shadow: var(--shadow);
 }
@@ -157,6 +174,21 @@ button {
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.settings-category + .settings-category {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-category-title {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -189,7 +221,7 @@ button {
   min-width: 0;
   padding: 7px 28px 7px 10px;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 7px;
   background: var(--panel-soft);
   color: var(--text);
   font: inherit;
@@ -215,7 +247,7 @@ button {
   background: var(--panel-soft);
   border: 1px solid var(--border);
   padding: 10px 16px;
-  border-radius: 12px;
+  border-radius: 7px;
   min-height: 46px;
   transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
@@ -240,15 +272,11 @@ button {
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  font-size: 2rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #ffffff;
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
+  display: block;
+  width: 80px;
+  height: 96px;
+  object-fit: contain;
+  object-position: center;
 }
 
 .eyebrow {
@@ -273,6 +301,7 @@ h1 {
 }
 
 .timer-workspace {
+  position: relative;
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -283,7 +312,7 @@ h1 {
 .panel {
   border: 1px solid var(--border);
   background: var(--panel);
-  border-radius: 20px;
+  border-radius: 10px;
   padding: 18px 20px;
 }
 
@@ -311,7 +340,7 @@ h1 {
   height: 42px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 7px;
   background: var(--panel-soft);
   color: var(--text);
   cursor: pointer;
@@ -379,11 +408,11 @@ h1 {
 }
 
 .timer-display {
-  font-family: "JetBrains Mono", monospace;
+  font-family: "Inter", sans-serif;
   font-size: clamp(3.5rem, 8vw, 7rem);
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.04em;
   margin-bottom: 18px;
   color: var(--text);
   transition: color 0.15s ease, text-shadow 0.15s ease;
@@ -423,7 +452,7 @@ h1 {
   width: 100%;
   min-height: 46px;
   height: 46px;
-  border-radius: 12px;
+  border-radius: 7px;
   border: 1px solid transparent;
   cursor: pointer;
   padding: 0 16px;
@@ -479,7 +508,7 @@ h1 {
   align-items: flex-start;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 7px;
   background: var(--panel-soft);
   border: 1px solid var(--border);
 }
@@ -516,24 +545,32 @@ h1 {
 
 .history-controls {
   display: flex;
-  flex: 0 0 200px;
+  flex: 0 0 234px;
   align-items: center;
   gap: 8px;
-  width: 200px;
+  width: 234px;
 }
 
-.history-controls #eventSelect,
-.history-controls #clearHistory {
-  flex: 1 1 0;
-  width: 0;
+.history-controls #eventSelect {
+  flex: 1 1 auto;
+  width: auto;
   min-width: 0;
   min-height: 46px;
   height: 46px;
-  border-radius: 12px;
+  border-radius: 7px;
+}
+
+.history-controls #clearHistory {
+  flex: 0 0 76px;
+  width: 76px;
+  min-width: 0;
+  min-height: 46px;
+  height: 46px;
+  border-radius: 7px;
 }
 
 .event-select {
-  padding: 0 24px;
+  padding: 0 10px;
   border: 1px solid var(--border);
   background: var(--panel-soft);
   color: var(--text);
@@ -587,7 +624,7 @@ scramble-display {
   height: 190px;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 7px;
   background: var(--panel-soft);
 }
 
@@ -619,7 +656,7 @@ scramble-display {
 .solve-empty {
   padding: 14px;
   border: 1px dashed var(--border);
-  border-radius: 12px;
+  border-radius: 7px;
   color: var(--muted);
   text-align: center;
 }
@@ -632,7 +669,7 @@ scramble-display {
   width: 100%;
   min-width: 0;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: 7px;
   background: var(--panel-soft);
   border: 1px solid var(--border);
   color: var(--text);
@@ -675,7 +712,7 @@ scramble-display {
   max-height: min(80vh, 680px);
   padding: 24px;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 10px;
   background: var(--panel-strong);
   color: var(--text);
   box-shadow: var(--shadow);
@@ -722,7 +759,7 @@ scramble-display {
   height: 40px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 7px;
   background: var(--panel-soft);
   color: var(--text);
   font-size: 1.5rem;
@@ -782,7 +819,7 @@ scramble-display {
   margin: 0;
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 7px;
   background: var(--panel-soft);
   font-family: "JetBrains Mono", monospace;
   line-height: 1.8;
@@ -819,6 +856,13 @@ scramble-display {
 .timer-display.inspecting.space-held {
   color: var(--accent);
   text-shadow: 0 0 24px rgba(37, 99, 235, 0.2);
+}
+
+body[data-palette="chessboard"] .timer-display.holding,
+body[data-palette="chessboard"] .timer-display.inspecting.space-held,
+body[data-palette="chessboard"] .timer-state.holding {
+  color: #22c55e;
+  text-shadow: none;
 }
 
 .timer-display.flash {
@@ -923,10 +967,8 @@ scramble-display {
   }
 
   .brand-mark {
-    width: 44px;
-    height: 44px;
-    border-radius: 13px;
-    font-size: 1.6rem;
+    width: 64px;
+    height: 76px;
   }
 
   .topbar-actions .menu {
@@ -942,5 +984,15 @@ scramble-display {
   .stats-panel,
   .history-panel {
     padding: 16px;
+  }
+
+  .history-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .history-controls {
+    flex: 1 1 100%;
+    width: 100%;
   }
 }

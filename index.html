@@ -14,13 +14,13 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/css/style.css?v=2" />
+    <link rel="stylesheet" href="assets/css/style.css?v=20" />
   </head>
   <body>
     <div class="page-shell">
       <header class="topbar">
         <div class="brand-block">
-          <div class="brand-mark">◼</div>
+          <img class="brand-mark" src="assets/Images/Logo/BtimeLogo-transparent.png" alt="BTime logo" />
           <div>
             <p class="eyebrow">Your Cube Buddy,</p>
             <h1>BTime</h1>
@@ -41,23 +41,30 @@
             </button>
             <div id="settingsMenu" class="settings-menu" hidden>
               <p class="menu-title">Timer settings</p>
-              <label class="setting-row">
-                <span>15s inspection</span>
-                <input type="checkbox" id="inspectionToggle" />
-              </label>
-              <label class="setting-row" for="colorPaletteSelect">
-                <span>Color palette</span>
-                <select id="colorPaletteSelect" class="palette-select">
-                  <option value="light">Default</option>
-                  <option value="night">Night</option>
-                  <option value="shell-pink">Bella pink</option>
-                  <option value="purple">Lavender</option>
-                </select>
-              </label>
-              <label class="setting-row">
-                <span>Hold and release to start</span>
-                <input type="checkbox" id="holdToStartToggle" />
-              </label>
+              <section class="settings-category" aria-labelledby="timerSettingsTitle">
+                <h3 id="timerSettingsTitle" class="settings-category-title">Timer</h3>
+                <label class="setting-row">
+                  <span>15s inspection</span>
+                  <input type="checkbox" id="inspectionToggle" />
+                </label>
+                <label class="setting-row">
+                  <span>Hold and release to start</span>
+                  <input type="checkbox" id="holdToStartToggle" />
+                </label>
+              </section>
+              <section class="settings-category" aria-labelledby="looksSettingsTitle">
+                <h3 id="looksSettingsTitle" class="settings-category-title">Looks</h3>
+                <label class="setting-row" for="colorPaletteSelect">
+                  <span>Color palette</span>
+                  <select id="colorPaletteSelect" class="palette-select">
+                    <option value="light">Default</option>
+                    <option value="night">Night</option>
+                    <option value="shell-pink">Bella pink</option>
+                    <option value="purple">Lavender</option>
+                    <option value="chessboard">Chessboard</option>
+                  </select>
+                </label>
+              </section>
             </div>
           </div>
         </div>
@@ -112,12 +119,16 @@
             <span>Average of 12 (Ao12)</span>
             <strong id="avg12">--</strong>
           </div>
+          <div class="stat-row" title="Mean of timed solves in this session; +2 penalties are included and DNFs are excluded.">
+            <span>Mean</span>
+            <strong id="meanTime">--</strong>
+          </div>
         </aside>
         </div>
 
         <aside class="panel history-panel">
           <div class="history-header">
-            <h2>Solve records</h2>
+            <h2>Solves</h2>
             <div class="history-controls">
               <label class="visually-hidden" for="eventSelect">Solve event</label>
               <select id="eventSelect" class="event-select" aria-label="Solve event">
@@ -127,13 +138,17 @@
                 <option value="555">5x5</option>
                 <option value="666">6x6</option>
                 <option value="777">7x7</option>
+                <option value="clock">Clock</option>
+                <option value="minx">Megaminx</option>
+                <option value="pyram">Pyraminx</option>
+                <option value="skewb">Skewb</option>
+                <option value="sq1">Square-1</option>
               </select>
               <button id="clearHistory" class="ghost-button small" type="button">Clear</button>
             </div>
           </div>
           <ol id="solveList" class="solve-list"></ol>
           <section class="scramble-visual-panel" aria-labelledby="scrambleVisualTitle">
-            <h3 id="scrambleVisualTitle">Scramble drawing</h3>
             <scramble-display
               id="scrambleVisualization"
               event="333"
@@ -142,7 +157,7 @@
             ></scramble-display>
             <p id="scrambleVisualStatus" class="scramble-visual-status" role="status">Loading scramble drawing…</p>
             <small class="scramble-visual-credit">
-              Drawing by <a href="https://github.com/cubing/scramble-display" target="_blank" rel="noopener noreferrer">Scramble-Display</a>
+              Generated by <a href="https://github.com/cubing/scramble-display" target="_blank" rel="noopener noreferrer">Scramble-Display</a>
             </small>
           </section>
         </aside>
@@ -182,6 +197,6 @@
       </div>
     </dialog>
 
-    <script src="assets/js/app.js?v=6"></script>
+    <script src="assets/js/app.js?v=12"></script>
   </body>
 </html>
