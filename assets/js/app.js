@@ -4,6 +4,10 @@ const timerState = document.getElementById('timerState');
 const timerPanel = document.getElementById('timerPanel');
 const newScrambleButton = document.getElementById('newScramble');
 const clearHistoryButton = document.getElementById('clearHistory');
+const clearHistoryDialog = document.getElementById('clearHistoryDialog');
+const clearHistoryMessage = document.getElementById('clearHistoryMessage');
+const cancelClearHistoryButton = document.getElementById('cancelClearHistory');
+const confirmClearHistoryButton = document.getElementById('confirmClearHistory');
 const eventSelect = document.getElementById('eventSelect');
 const inspectionToggle = document.getElementById('inspectionToggle');
 const themeToggle = document.getElementById('themeToggle');
@@ -19,8 +23,8 @@ const closeSolveDetailsButton = document.getElementById('closeSolveDetails');
 
 const bestTimeEl = document.getElementById('bestTime');
 const avg5El = document.getElementById('avg5');
+const bestAvg5El = document.getElementById('bestAvg5');
 const avg12El = document.getElementById('avg12');
-const recentTimeEl = document.getElementById('recentTime');
 
 const STORAGE_KEY = 'bcube-timer-history';
 const EVENT_STORAGE_KEY = 'bcube-timer-event';
@@ -29,6 +33,7 @@ const THEME_STORAGE_KEY = 'bcube-timer-theme';
 const HOLD_TO_START_STORAGE_KEY = 'bcube-timer-hold-to-start';
 const INSPECTION_SECONDS = 15;
 const INSPECTION_GRACE_SECONDS = 1;
+const SCRAMBLE_PREFETCH_COUNT = 5;
 const EVENTS = [
   { code: '333', label: '3x3' },
   { code: '222', label: '2x2' },
@@ -54,6 +59,7 @@ let scramble = [];
 let scrambleReady = false;
 let scrambleRequestPromise = null;
 let scrambleRequestId = 0;
+const scrambleQueues = new Map();
 let recentSolves = loadHistory(currentEvent);
 let lastSolveId = null;
 let selectedSolveId = null;
@@ -221,18 +227,32 @@ function getSolveValue(entry) {
   return value;
 }
 
-function getAverage(values) {
-  if (!values || !values.length) return null;
-  if (values.length >= 5) {
-    const sorted = [...values].sort((a, b) => a - b);
-    const trimmed = sorted.slice(1, -1);
-    return trimmed.reduce((sum, value) => sum + value, 0) / trimmed.length;
+function getTrimmedAverage(solves, solveCount) {
+  if (solves.length < solveCount) {
+    return { value: null, isDnf: false };
   }
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
+
+  const window = solves.slice(-solveCount);
+  const dnfCount = window.filter((solve) => solve.result === 'dnf').length;
+  if (dnfCount > 1) {
+    return { value: null, isDnf: true };
+  }
+
+  const times = window
+    .filter((solve) => solve.result !== 'dnf')
+    .map((solve) => getSolveValue(solve))
+    .filter((value) => value !== null && !Number.isNaN(value))
+    .sort((a, b) => a - b);
+  const countedTimes = dnfCount === 1 ? times.slice(1) : times.slice(1, -1);
+
+  return {
+    value: countedTimes.reduce((sum, value) => sum + value, 0) / countedTimes.length,
+    isDnf: false,
+  };
 }
 
 function renderStats() {
-  if (!bestTimeEl || !avg5El || !avg12El || !recentTimeEl) {
+  if (!bestTimeEl || !avg5El || !bestAvg5El || !avg12El) {
     return;
   }
 
@@ -242,14 +262,21 @@ function renderStats() {
     .filter((value) => value !== null && !Number.isNaN(value));
 
   const best = values.length ? Math.min(...values) : null;
-  const avg5 = values.length >= 5 ? getAverage(values.slice(-5)) : null;
-  const avg12 = values.length >= 12 ? getAverage(values.slice(-12)) : null;
-  const recent = values.length ? values[values.length - 1] : null;
+  const avg5 = getTrimmedAverage(recentSolves, 5);
+  const avg12 = getTrimmedAverage(recentSolves, 12);
+  let bestAvg5 = null;
+
+  for (let end = 5; end <= recentSolves.length; end += 1) {
+    const windowAvg5 = getTrimmedAverage(recentSolves.slice(0, end), 5);
+    if (!windowAvg5.isDnf && windowAvg5.value !== null) {
+      bestAvg5 = bestAvg5 === null ? windowAvg5.value : Math.min(bestAvg5, windowAvg5.value);
+    }
+  }
 
   bestTimeEl.textContent = formatMetric(best);
-  avg5El.textContent = formatMetric(avg5);
-  avg12El.textContent = formatMetric(avg12);
-  recentTimeEl.textContent = formatMetric(recent);
+  avg5El.textContent = avg5.isDnf ? 'DNF' : formatMetric(avg5.value);
+  bestAvg5El.textContent = formatMetric(bestAvg5);
+  avg12El.textContent = avg12.isDnf ? 'DNF' : formatMetric(avg12.value);
 }
 
 function formatHistoryValue(entry) {
@@ -431,19 +458,73 @@ function flashDisplay() {
 
 async function getNewScramble(eventCode) {
   const { randomScrambleForEvent } = await import('https://cdn.cubing.net/v0/js/cubing/scramble');
-  const generatedScramble = await randomScrambleForEvent(eventCode);
-  const moves = generatedScramble.toString().trim().split(/\s+/);
   const validMove = /^(?:[URFDLB]w?|[2-6][URFDLB]w?|[urfdlb])(?:2|')?$/;
 
-  if (
-    !moves.length ||
-    (eventCode === '333' && (moves.length < 19 || moves.length > 22)) ||
-    moves.some((move) => !validMove.test(move))
-  ) {
-    throw new Error(`The ${eventCode} scrambler returned an invalid sequence: ${generatedScramble.toString()}`);
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const generatedScramble = await randomScrambleForEvent(eventCode);
+    const moves = generatedScramble.toString().trim().split(/\s+/);
+    const isValid =
+      moves.length > 0 &&
+      (eventCode !== '333' || (moves.length >= 19 && moves.length <= 22)) &&
+      moves.every((move) => validMove.test(move));
+
+    if (isValid) {
+      return moves.join(' ');
+    }
   }
 
-  return moves.join(' ');
+  throw new Error(`The ${eventCode} scrambler did not return a valid sequence after 10 attempts.`);
+}
+
+function getScrambleQueue(eventCode) {
+  if (!scrambleQueues.has(eventCode)) {
+    scrambleQueues.set(eventCode, { items: [], pending: null, error: null });
+  }
+
+  return scrambleQueues.get(eventCode);
+}
+
+function prefetchScrambles(eventCode = currentEvent) {
+  const queue = getScrambleQueue(eventCode);
+  if (queue.pending || queue.error || queue.items.length >= SCRAMBLE_PREFETCH_COUNT) {
+    return;
+  }
+
+  queue.pending = getNewScramble(eventCode)
+    .then((nextScramble) => {
+      queue.items.push(nextScramble);
+    })
+    .catch((error) => {
+      queue.error = error;
+      console.error(`Unable to prefetch a ${eventCode} scramble.`, error);
+    })
+    .finally(() => {
+      queue.pending = null;
+      if (!queue.error && queue.items.length < SCRAMBLE_PREFETCH_COUNT) {
+        prefetchScrambles(eventCode);
+      }
+    });
+}
+
+async function getQueuedScramble(eventCode) {
+  const queue = getScrambleQueue(eventCode);
+  while (!queue.items.length) {
+    if (!queue.pending) {
+      prefetchScrambles(eventCode);
+    }
+    if (queue.pending) {
+      await queue.pending;
+    }
+    if (!queue.items.length && queue.error) {
+      const error = queue.error;
+      queue.error = null;
+      throw error;
+    }
+  }
+
+  const nextScramble = queue.items.shift();
+  prefetchScrambles(eventCode);
+  return nextScramble;
 }
 
 function generateScramble(eventCode = currentEvent) {
@@ -454,7 +535,7 @@ function generateScramble(eventCode = currentEvent) {
     scrambleText.textContent = `Generating ${eventLabel} scramble…`;
   }
 
-  scrambleRequestPromise = getNewScramble(eventCode)
+  scrambleRequestPromise = getQueuedScramble(eventCode)
     .then((nextScramble) => {
       if (requestId !== scrambleRequestId) {
         return false;
@@ -483,6 +564,7 @@ function generateScramble(eventCode = currentEvent) {
 }
 
 function restoreScramble(eventCode = currentEvent) {
+  prefetchScrambles(eventCode);
   const requestId = ++scrambleRequestId;
   const savedScramble = loadSavedScramble(eventCode);
   if (!savedScramble) {
@@ -867,13 +949,36 @@ if (eventSelect) {
 if (clearHistoryButton) {
   clearHistoryButton.addEventListener('click', (event) => {
     event.stopPropagation();
-    clearHistoryButton.blur();
+    const eventLabel = EVENTS.find((event) => event.code === currentEvent).label;
+    if (clearHistoryMessage) {
+      clearHistoryMessage.textContent = `Are you sure you want to delete all ${eventLabel} session records? This cannot be undone.`;
+    }
+    clearHistoryDialog?.showModal();
+  });
+}
+
+if (cancelClearHistoryButton && clearHistoryDialog) {
+  cancelClearHistoryButton.addEventListener('click', () => {
+    clearHistoryDialog.close();
+  });
+
+  clearHistoryDialog.addEventListener('click', (event) => {
+    if (event.target === clearHistoryDialog) {
+      clearHistoryDialog.close();
+    }
+  });
+}
+
+if (confirmClearHistoryButton && clearHistoryDialog) {
+  confirmClearHistoryButton.addEventListener('click', () => {
     recentSolves = [];
     lastSolveId = null;
     hideSolveActions();
     saveHistory();
     renderStats();
     renderHistory();
+    clearHistoryDialog.close();
+    clearHistoryButton?.blur();
   });
 }
 

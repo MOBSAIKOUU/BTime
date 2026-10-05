@@ -319,6 +319,10 @@ h1 {
   cursor: pointer;
 }
 
+.timer-panel:focus {
+  outline: none;
+}
+
 .timer-state {
   margin-bottom: 10px;
   font-size: 0.8rem;
@@ -603,6 +607,21 @@ h1 {
 .dialog-header h2 {
   margin: 0;
   font-size: 1.2rem;
+}
+
+.confirm-message {
+  margin: 0 0 20px;
+  color: var(--muted);
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.confirm-actions button {
+  min-width: 0;
 }
 
 .dialog-close {

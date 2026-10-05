@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bcube Timer</title>
+    <title>BTime</title>
     <meta
       name="description"
       content="A polished Rubik's cube timer with inspection, scramble generation, and solve stats."
@@ -22,8 +22,8 @@
         <div class="brand-block">
           <div class="brand-mark">◼</div>
           <div>
-            <p class="eyebrow">Cube timing</p>
-            <h1>Bcube Timer</h1>
+            <p class="eyebrow">Your Cube Buddy,</p>
+            <h1>BTime</h1>
           </div>
         </div>
         <div class="topbar-actions">
@@ -92,20 +92,20 @@
 
         <aside class="panel stats-panel">
           <div class="stat-row">
-            <span>Best</span>
+            <span>Best single</span>
             <strong id="bestTime">--</strong>
           </div>
           <div class="stat-row">
-            <span>Average 5</span>
+            <span>Best Ao5</span>
+            <strong id="bestAvg5">--</strong>
+          </div>
+          <div class="stat-row">
+            <span>Average of 5 (Ao5)</span>
             <strong id="avg5">--</strong>
           </div>
           <div class="stat-row">
-            <span>Average 12</span>
+            <span>Average of 12 (Ao12)</span>
             <strong id="avg12">--</strong>
-          </div>
-          <div class="stat-row">
-            <span>Recent</span>
-            <strong id="recentTime">--</strong>
           </div>
         </aside>
         </div>
@@ -153,6 +153,17 @@
       </div>
     </dialog>
 
-    <script src="assets/js/app.js"></script>
+    <dialog id="clearHistoryDialog" class="solve-dialog confirm-dialog" aria-labelledby="clearHistoryTitle">
+      <div class="dialog-header">
+        <h2 id="clearHistoryTitle">Clear session records?</h2>
+      </div>
+      <p id="clearHistoryMessage" class="confirm-message"></p>
+      <div class="confirm-actions">
+        <button id="cancelClearHistory" class="secondary-button" type="button">Cancel</button>
+        <button id="confirmClearHistory" class="danger-button" type="button">Clear records</button>
+      </div>
+    </dialog>
+
+    <script src="assets/js/app.js?v=2"></script>
   </body>
 </html>
