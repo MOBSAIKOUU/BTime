@@ -9,8 +9,10 @@ const clearHistoryMessage = document.getElementById('clearHistoryMessage');
 const cancelClearHistoryButton = document.getElementById('cancelClearHistory');
 const confirmClearHistoryButton = document.getElementById('confirmClearHistory');
 const eventSelect = document.getElementById('eventSelect');
+let scrambleVisualization = document.getElementById('scrambleVisualization');
+const scrambleVisualStatus = document.getElementById('scrambleVisualStatus');
 const inspectionToggle = document.getElementById('inspectionToggle');
-const themeToggle = document.getElementById('themeToggle');
+const colorPaletteSelect = document.getElementById('colorPaletteSelect');
 const holdToStartToggle = document.getElementById('holdToStartToggle');
 const menuToggle = document.getElementById('menuToggle');
 const settingsMenu = document.getElementById('settingsMenu');
@@ -46,7 +48,7 @@ const EVENTS = [
 let state = 'ready';
 let currentEvent = loadEventPreference();
 let inspectionEnabled = loadInspectionPreference();
-let darkModeEnabled = loadThemePreference();
+let colorPalette = loadThemePreference();
 let holdToStartEnabled = loadHoldToStartPreference();
 let isSpaceDown = false;
 let justStopped = false;
@@ -63,6 +65,39 @@ const scrambleQueues = new Map();
 let recentSolves = loadHistory(currentEvent);
 let lastSolveId = null;
 let selectedSolveId = null;
+import('https://cdn.cubing.net/v0/js/scramble-display')
+  .then(() => {
+    if (scrambleReady) {
+      updateScrambleVisualization(currentEvent, scramble.join(' '));
+    }
+    if (scrambleVisualStatus) {
+      scrambleVisualStatus.textContent = '';
+    }
+  })
+  .catch((error) => {
+    console.error('Unable to load the scramble drawing component.', error);
+    if (scrambleVisualStatus) {
+      scrambleVisualStatus.textContent = 'Scramble drawing is unavailable.';
+    }
+  });
+
+function updateScrambleVisualization(eventCode, scrambleValue) {
+  if (!scrambleVisualization || !scrambleValue) {
+    return;
+  }
+
+  if (scrambleVisualization.getAttribute('event') !== eventCode) {
+    const nextVisualization = document.createElement('scramble-display');
+    nextVisualization.id = 'scrambleVisualization';
+    nextVisualization.setAttribute('event', eventCode);
+    nextVisualization.setAttribute('visualization', '2D');
+    nextVisualization.setAttribute('aria-label', 'Current scramble drawing');
+    scrambleVisualization.replaceWith(nextVisualization);
+    scrambleVisualization = nextVisualization;
+  }
+
+  scrambleVisualization.setAttribute('scramble', scrambleValue);
+}
 
 function eventStorageKey(eventCode) {
   return eventCode === '333' ? STORAGE_KEY : `${STORAGE_KEY}-${eventCode}`;
@@ -152,9 +187,18 @@ function loadInspectionPreference() {
 function loadThemePreference() {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    return saved !== null ? JSON.parse(saved) : false;
+    if (saved === null) {
+      return 'light';
+    }
+
+    const parsed = JSON.parse(saved);
+    if (typeof parsed === 'boolean') {
+      return parsed ? 'night' : 'light';
+    }
+
+    return ['light', 'night', 'shell-pink', 'purple'].includes(parsed) ? parsed : 'light';
   } catch (error) {
-    return false;
+    return 'light';
   }
 }
 
@@ -177,7 +221,7 @@ function saveInspectionPreference() {
 
 function saveThemePreference() {
   try {
-    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(darkModeEnabled));
+    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(colorPalette));
   } catch (error) {
     // Ignore storage errors
   }
@@ -192,10 +236,11 @@ function saveHoldToStartPreference() {
 }
 
 function applyTheme() {
-  document.body.classList.toggle('dark-mode', darkModeEnabled);
+  document.body.classList.toggle('dark-mode', colorPalette === 'night');
+  document.body.dataset.palette = colorPalette;
 
-  if (themeToggle) {
-    themeToggle.checked = !darkModeEnabled;
+  if (colorPaletteSelect) {
+    colorPaletteSelect.value = colorPalette;
   }
 }
 
@@ -547,6 +592,7 @@ function generateScramble(eventCode = currentEvent) {
       if (scrambleText) {
         scrambleText.textContent = nextScramble;
       }
+      updateScrambleVisualization(eventCode, nextScramble);
       return true;
     })
     .catch((error) => {
@@ -577,6 +623,7 @@ function restoreScramble(eventCode = currentEvent) {
   if (scrambleText) {
     scrambleText.textContent = savedScramble;
   }
+  updateScrambleVisualization(eventCode, savedScramble);
   return Promise.resolve(requestId === scrambleRequestId);
 }
 
@@ -1015,7 +1062,11 @@ document.querySelectorAll('.solve-actions .result-action').forEach((button) => {
       return;
     }
 
-    applySolveAction(String(lastSolveId), button.dataset.action);
+    const action = button.dataset.action;
+    applySolveAction(String(lastSolveId), action);
+    if (action === 'delete') {
+      resetSession();
+    }
   });
 });
 
@@ -1029,9 +1080,9 @@ document.querySelectorAll('.solve-detail-actions .result-action').forEach((butto
   });
 });
 
-if (themeToggle) {
-  themeToggle.addEventListener('change', () => {
-    darkModeEnabled = !themeToggle.checked;
+if (colorPaletteSelect) {
+  colorPaletteSelect.addEventListener('change', () => {
+    colorPalette = colorPaletteSelect.value;
     saveThemePreference();
     applyTheme();
   });
