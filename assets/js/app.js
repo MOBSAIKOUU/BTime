@@ -2,6 +2,8 @@ const scrambleText = document.getElementById('scrambleText');
 const timerDisplay = document.getElementById('timerDisplay');
 const timerState = document.getElementById('timerState');
 const timerPanel = document.getElementById('timerPanel');
+const manualTimeToggle = document.getElementById('manualTimeToggle');
+const manualTimeHelp = document.getElementById('manualTimeHelp');
 const newScrambleButton = document.getElementById('newScramble');
 const clearHistoryButton = document.getElementById('clearHistory');
 const clearHistoryDialog = document.getElementById('clearHistoryDialog');
@@ -34,6 +36,7 @@ const EVENT_STORAGE_KEY = 'bcube-timer-event';
 const INSPECTION_STORAGE_KEY = 'bcube-timer-inspection';
 const THEME_STORAGE_KEY = 'bcube-timer-theme';
 const HOLD_TO_START_STORAGE_KEY = 'bcube-timer-hold-to-start';
+const MANUAL_TIME_STORAGE_KEY = 'bcube-timer-manual-time';
 const INSPECTION_SECONDS = 15;
 const INSPECTION_GRACE_SECONDS = 1;
 const SCRAMBLE_PREFETCH_COUNT = 5;
@@ -56,6 +59,8 @@ let currentEvent = loadEventPreference();
 let inspectionEnabled = loadInspectionPreference();
 let colorPalette = loadThemePreference();
 let holdToStartEnabled = loadHoldToStartPreference();
+let manualTimeEntryEnabled = loadManualTimeEntryPreference();
+let manualTimeDraftActive = false;
 let isSpaceDown = false;
 let justStopped = false;
 let spaceStartedInspection = false;
@@ -71,7 +76,7 @@ const scrambleQueues = new Map();
 let recentSolves = loadHistory(currentEvent);
 let lastSolveId = null;
 let selectedSolveId = null;
-import('https://cdn.cubing.net/v0/js/scramble-display')
+import('https://esm.sh/scramble-display@0.59.1?deps=cubing@0.59.1')
   .then(() => {
     if (scrambleReady) {
       updateScrambleVisualization(currentEvent, scramble.join(' '));
@@ -202,7 +207,18 @@ function loadThemePreference() {
       return parsed ? 'night' : 'light';
     }
 
-    return ['light', 'night', 'shell-pink', 'purple', 'chessboard'].includes(parsed)
+    return [
+      'light',
+      'night',
+      'shell-pink',
+      'dessert',
+      'purple',
+      'chessboard',
+      'oilspill',
+      'sunrise',
+      'shibuya',
+      'christmas',
+    ].includes(parsed)
       ? parsed
       : 'light';
   } catch (error) {
@@ -214,6 +230,20 @@ function loadHoldToStartPreference() {
   try {
     const saved = localStorage.getItem(HOLD_TO_START_STORAGE_KEY);
     return saved !== null ? JSON.parse(saved) : false;
+  } catch (error) {
+    return false;
+  }
+}
+
+function loadManualTimeEntryPreference() {
+  try {
+    const saved = localStorage.getItem(MANUAL_TIME_STORAGE_KEY);
+    if (saved === null) {
+      return false;
+    }
+
+    const parsed = JSON.parse(saved);
+    return typeof parsed === 'boolean' ? parsed : false;
   } catch (error) {
     return false;
   }
@@ -243,8 +273,22 @@ function saveHoldToStartPreference() {
   }
 }
 
+function saveManualTimeEntryPreference() {
+  try {
+    localStorage.setItem(MANUAL_TIME_STORAGE_KEY, JSON.stringify(manualTimeEntryEnabled));
+  } catch (error) {
+    // Ignore storage errors
+  }
+}
+
 function applyTheme() {
-  document.body.classList.toggle('dark-mode', colorPalette === 'night');
+  document.body.classList.toggle(
+    'dark-mode',
+    colorPalette === 'night' ||
+    colorPalette === 'oilspill' ||
+    colorPalette === 'sunrise' ||
+    colorPalette === 'shibuya'
+  );
   document.body.dataset.palette = colorPalette;
 
   if (colorPaletteSelect) {
@@ -485,6 +529,7 @@ function setTimerState(nextState) {
   if (eventSelect) {
     eventSelect.disabled = nextState === 'solving';
   }
+  syncManualTimeEntry();
 
   timerState.textContent = labels[nextState] || 'Ready';
   timerState.className = `timer-state ${nextState}`;
@@ -503,9 +548,38 @@ function setTimerState(nextState) {
   }
 }
 
+function syncManualTimeEntry() {
+  if (!timerDisplay) {
+    return;
+  }
+
+  const canEditTime = manualTimeEntryEnabled && state === 'ready';
+  timerDisplay.readOnly = !canEditTime;
+  timerDisplay.setAttribute('aria-label', canEditTime ? 'Enter solve time' : 'Timer display');
+  timerPanel?.classList.toggle('manual-entry-active', canEditTime);
+  if (manualTimeHelp) {
+    manualTimeHelp.hidden = !canEditTime;
+  }
+  if (canEditTime) {
+    if (!manualTimeDraftActive) {
+      timerDisplay.value = '';
+      timerDisplay.style.width = '3.2ch';
+    }
+  } else {
+    manualTimeDraftActive = false;
+    if (!manualTimeEntryEnabled && state === 'ready' && !timerDisplay.value) {
+      timerDisplay.value = '0.00';
+      timerDisplay.style.width = '5.2ch';
+    }
+    timerDisplay.removeAttribute('aria-invalid');
+  }
+  syncSolveActionAvailability();
+}
+
 function updateDisplay(value) {
   if (timerDisplay) {
-    timerDisplay.textContent = value;
+    timerDisplay.value = value;
+    timerDisplay.style.width = `${Math.max(3.2, value.length * 0.8 + 1.2)}ch`;
   }
 }
 
@@ -520,7 +594,11 @@ function flashDisplay() {
 }
 
 async function getNewScramble(eventCode) {
-  const { randomScrambleForEvent } = await import('https://cdn.cubing.net/v0/js/cubing/scramble');
+  const { setSearchDebug } = await import('https://esm.sh/cubing@0.59.1/search');
+  setSearchDebug({ logPerf: false });
+  const { randomScrambleForEvent } = await import(
+    'https://esm.sh/cubing@0.59.1/scramble'
+  );
   const validMove = /^(?:[URFDLB]w?|[2-6][URFDLB]w?|[urfdlb])(?:2|')?$/;
   const cubeEvent = ['222', '333', '444', '555', '666', '777'].includes(eventCode);
 
@@ -646,18 +724,6 @@ function restoreScramble(eventCode = currentEvent) {
   return Promise.resolve(requestId === scrambleRequestId);
 }
 
-async function waitForScramble() {
-  while (!scrambleReady && scrambleRequestPromise) {
-    const currentRequest = scrambleRequestPromise;
-    const succeeded = await currentRequest;
-    if (!succeeded && currentRequest === scrambleRequestPromise) {
-      return false;
-    }
-  }
-
-  return scrambleReady;
-}
-
 function cancelAnimation() {
   if (rafId) {
     cancelAnimationFrame(rafId);
@@ -672,12 +738,7 @@ function cancelInspectionGracePeriod() {
   }
 }
 
-async function beginInspection() {
-  const expectedState = state;
-  if (!(await waitForScramble()) || state !== expectedState) {
-    return;
-  }
-
+function beginInspection() {
   if (!timerPanel || !timerDisplay) {
     return;
   }
@@ -732,12 +793,8 @@ async function beginInspection() {
   rafId = requestAnimationFrame(tick);
 }
 
-async function beginSolve() {
+function beginSolve() {
   cancelInspectionGracePeriod();
-  const expectedState = state;
-  if (!(await waitForScramble()) || state !== expectedState) {
-    return;
-  }
 
   if (!timerPanel || !timerDisplay) {
     return;
@@ -782,17 +839,29 @@ function recordInspectionDnf() {
 }
 
 function hideSolveActions() {
-  if (solveActions) {
-    solveActions.querySelectorAll('.result-action').forEach((button) => {
-      button.disabled = true;
-    });
-  }
+  syncSolveActionAvailability();
 }
 
 function showSolveActions() {
+  syncSolveActionAvailability();
+}
+
+function syncSolveActionAvailability() {
   if (solveActions) {
     solveActions.querySelectorAll('.result-action').forEach((button) => {
-      button.disabled = false;
+      const hasDraft = manualTimeDraftActive && Boolean(timerDisplay?.value.trim());
+      if (manualTimeEntryEnabled) {
+        if (button.dataset.action === 'dnf') {
+          button.disabled = state !== 'ready';
+        } else if (button.dataset.action === 'plus2') {
+          button.disabled = state !== 'ready' || !hasDraft;
+        } else {
+          button.disabled = state !== 'ready' || !hasDraft;
+        }
+        return;
+      }
+
+      button.disabled = !lastSolveId;
     });
   }
 }
@@ -801,12 +870,22 @@ function finishSolve() {
   cancelAnimation();
   const elapsed = performance.now() - solveStartTimestamp;
   const finalTime = Math.max(0, elapsed);
+  recordSolve(finalTime);
+  setTimerState('ready');
+  updateDisplay(formatTime(finalTime));
+  flashDisplay();
+  showSolveActions();
+  solveStartTimestamp = null;
+  inspectionStartTimestamp = null;
+}
+
+function recordSolve(finalTime, result = 'ok') {
   const scrambleUsed = scramble.join(' ');
   const solveEntry = {
     id: Date.now() + Math.random(),
     baseTimeMs: finalTime,
-    timeMs: finalTime,
-    result: 'ok',
+    timeMs: result === 'dnf' ? null : result === '+2' ? finalTime + 2000 : finalTime,
+    result,
     tag: EVENTS.find((event) => event.code === currentEvent).label,
     scramble: scrambleUsed,
   };
@@ -817,13 +896,67 @@ function finishSolve() {
   saveHistory();
   renderStats();
   renderHistory();
+  generateScramble();
+}
+
+function parseManualTime(value) {
+  const enteredTime = value.trim().toLowerCase();
+  if (enteredTime === 'dnf') {
+    return { timeMs: 0, result: 'dnf' };
+  }
+
+  const match = enteredTime.match(/^(\d+(?:\.\d+)?)(\+2)?$/);
+  if (!match) {
+    return null;
+  }
+
+  const parsedTime = Number(match[1]);
+  const seconds = match[1].includes('.') ? parsedTime : parsedTime / 100;
+  const timeMs = Math.round(seconds * 1000);
+  if (!Number.isFinite(timeMs) || timeMs <= 0) {
+    return null;
+  }
+
+  return { timeMs, result: match[2] ? '+2' : 'ok' };
+}
+
+function recordManualTime(resultOverride = null) {
+  if (!timerDisplay || !manualTimeEntryEnabled || state !== 'ready') {
+    return;
+  }
+
+  const parsedTime = resultOverride === 'dnf'
+    ? { timeMs: 0, result: 'dnf' }
+    : parseManualTime(timerDisplay.value);
+  if (parsedTime === null || (resultOverride === '+2' && parsedTime.result === 'dnf')) {
+    timerDisplay.setAttribute('aria-invalid', 'true');
+    timerDisplay.select();
+    return;
+  }
+
+  const result = resultOverride || parsedTime.result;
+  manualTimeDraftActive = false;
+  recordSolve(parsedTime.timeMs, result);
   setTimerState('ready');
-  updateDisplay(formatTime(finalTime));
+  timerDisplay.value = '';
+  timerDisplay.style.width = '3.2ch';
   flashDisplay();
   showSolveActions();
-  generateScramble();
-  solveStartTimestamp = null;
-  inspectionStartTimestamp = null;
+  timerDisplay.removeAttribute('aria-invalid');
+  timerDisplay.blur();
+}
+
+function clearManualTimeDraft() {
+  if (!timerDisplay) {
+    return;
+  }
+
+  manualTimeDraftActive = false;
+  timerDisplay.value = '';
+  timerDisplay.style.width = '3.2ch';
+  timerDisplay.removeAttribute('aria-invalid');
+  syncSolveActionAvailability();
+  timerDisplay.focus();
 }
 
 function resetSession() {
@@ -837,7 +970,7 @@ function resetSession() {
   lastSolveId = null;
   hideSolveActions();
   setTimerState('ready');
-  updateDisplay('0.00');
+  updateDisplay(manualTimeEntryEnabled ? '' : '0.00');
 }
 
 function handleTimerAction() {
@@ -898,7 +1031,16 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
-  if (event.target.closest('input, button, select, textarea, [contenteditable="true"]')) {
+  const isReadOnlyTimerDisplay = event.target === timerDisplay && timerDisplay.readOnly;
+  if (
+    !isReadOnlyTimerDisplay &&
+    event.target.closest('input, button, select, textarea, [contenteditable="true"]')
+  ) {
+    return;
+  }
+
+  if (manualTimeEntryEnabled && state !== 'solving') {
+    event.preventDefault();
     return;
   }
 
@@ -961,6 +1103,14 @@ window.addEventListener('keyup', (event) => {
     return;
   }
 
+  if (manualTimeEntryEnabled && state !== 'solving') {
+    timerDisplay.classList.remove('space-held');
+    if (state === 'holding') {
+      resetSession();
+    }
+    return;
+  }
+
   if (
     holdToStartEnabled &&
     !startedInspection &&
@@ -1020,6 +1170,33 @@ if (eventSelect) {
     restoreScramble(currentEvent);
     renderStats();
     renderHistory();
+  });
+}
+
+if (timerDisplay) {
+  timerDisplay.addEventListener('focus', () => {
+    if (!timerDisplay.readOnly) {
+      timerDisplay.select();
+    }
+  });
+
+  timerDisplay.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !timerDisplay.readOnly) {
+      event.preventDefault();
+      recordManualTime();
+    } else if (event.key === 'Escape' && !timerDisplay.readOnly) {
+      event.preventDefault();
+      updateDisplay('0.00');
+      timerDisplay.blur();
+    }
+  });
+
+  timerDisplay.addEventListener('input', () => {
+    timerDisplay.style.width = `${Math.max(3.2, timerDisplay.value.length * 0.8 + 1.2)}ch`;
+    timerDisplay.removeAttribute('aria-invalid');
+    manualTimeDraftActive =
+      manualTimeEntryEnabled && state === 'ready' && Boolean(timerDisplay.value.trim());
+    syncSolveActionAvailability();
   });
 }
 
@@ -1087,12 +1264,43 @@ if (closeSolveDetailsButton && solveDetails) {
 }
 
 document.querySelectorAll('.solve-actions .result-action').forEach((button) => {
-  button.addEventListener('click', () => {
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const action = button.dataset.action;
+    const hasManualDraft =
+      manualTimeEntryEnabled && state === 'ready' && Boolean(timerDisplay?.value.trim());
+
+    if (action === 'dnf' && manualTimeEntryEnabled && state === 'ready') {
+      recordManualTime('dnf');
+      return;
+    }
+    if (action === 'plus2') {
+      if (manualTimeEntryEnabled) {
+        if (hasManualDraft) {
+          recordManualTime('+2');
+        }
+        return;
+      }
+
+      if (!lastSolveId) {
+        return;
+      }
+
+      applySolveAction(String(lastSolveId), action);
+      return;
+    }
+    if ((action === 'reset' || action === 'delete') && manualTimeEntryEnabled) {
+      if (hasManualDraft) {
+        clearManualTimeDraft();
+      }
+      return;
+    }
+
     if (!lastSolveId) {
       return;
     }
 
-    const action = button.dataset.action;
     applySolveAction(String(lastSolveId), action);
     if (action === 'delete') {
       resetSession();
@@ -1138,7 +1346,12 @@ if (timerPanel) {
   let pointerActionHandled = false;
 
   const handleTimerPointerAction = (event) => {
-    if (event.target.closest('button, input, label')) {
+    if (manualTimeEntryEnabled && state !== 'solving') {
+      return;
+    }
+
+    const isReadOnlyTimerDisplay = event.target === timerDisplay && timerDisplay.readOnly;
+    if (event.target.closest('button, input, label') && !isReadOnlyTimerDisplay) {
       return;
     }
 
@@ -1181,7 +1394,7 @@ if (inspectionToggle) {
     }
 
     if (!inspectionEnabled && state === 'ready') {
-      updateDisplay('0.00');
+      updateDisplay(manualTimeEntryEnabled ? '' : '0.00');
     }
   });
 }
@@ -1195,6 +1408,17 @@ if (holdToStartToggle) {
     if (state === 'holding') {
       resetSession();
     }
+  });
+}
+
+if (manualTimeToggle) {
+  manualTimeToggle.checked = manualTimeEntryEnabled;
+  manualTimeToggle.addEventListener('change', () => {
+    manualTimeEntryEnabled = manualTimeToggle.checked;
+    saveManualTimeEntryPreference();
+    syncManualTimeEntry();
+    syncSolveActionAvailability();
+    timerDisplay?.blur();
   });
 }
 

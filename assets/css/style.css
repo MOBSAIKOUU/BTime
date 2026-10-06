@@ -49,6 +49,99 @@ body[data-palette="shell-pink"] {
   --shadow: 0 24px 60px rgba(136, 19, 55, 0.12);
 }
 
+body[data-palette="dessert"] {
+  --bg: #fff4df;
+  --bg-2: #ffebc9;
+  --panel: rgba(255, 251, 241, 0.94);
+  --panel-strong: rgba(255, 253, 247, 0.98);
+  --panel-soft: #fff8e9;
+  --border: rgba(146, 85, 48, 0.16);
+  --text: #4c3028;
+  --muted: #80645a;
+  --accent: #b45335;
+  --accent-2: #d97745;
+  --warning: #a16207;
+  --danger: #bd3e48;
+  --success: #4f7b4e;
+  --shadow: 0 24px 60px rgba(120, 72, 36, 0.13);
+}
+
+body[data-palette="christmas"] {
+  --bg: #f2fff5;
+  --bg-2: #ffecef;
+  --panel: rgba(255, 255, 255, 0.96);
+  --panel-strong: rgba(255, 255, 255, 0.99);
+  --panel-soft: #f7fff9;
+  --border: rgba(14, 113, 57, 0.25);
+  --text: #123d27;
+  --muted: #486b57;
+  --accent: #087c3a;
+  --accent-2: #ed1c35;
+  --warning: #a45d16;
+  --danger: #c4122f;
+  --success: #0e7d3e;
+  --shadow: none;
+}
+
+body[data-palette="christmas"] * {
+  box-shadow: none;
+  text-shadow: none;
+}
+
+body[data-palette="christmas"] .app-layout {
+  background:
+    radial-gradient(ellipse at 2% 15%, rgba(205, 15, 46, 0.22), transparent 30%),
+    radial-gradient(ellipse at 98% 82%, rgba(0, 115, 54, 0.2), transparent 32%);
+  border-radius: 14px;
+}
+
+body[data-palette="christmas"] .scramble-panel,
+body[data-palette="christmas"] .history-panel {
+  border-top: 4px solid #c81732;
+}
+
+body[data-palette="christmas"] .timer-panel,
+body[data-palette="christmas"] .stats-panel {
+  border-top: 4px solid #087c3a;
+}
+
+body[data-palette="christmas"] .panel-label,
+body[data-palette="christmas"] .history-header h2 {
+  color: #b5122b;
+}
+
+body[data-palette="christmas"] .stat-row:nth-child(odd) strong {
+  color: #b5122b;
+}
+
+body[data-palette="christmas"] .stat-row:nth-child(even) strong {
+  color: #087c3a;
+}
+
+body[data-palette="christmas"] .scramble-refresh {
+  color: #fff;
+  border-color: #b5122b;
+  background: #c81732;
+}
+
+body[data-palette="christmas"] .menu-button {
+  color: #fff;
+  border-color: #087c3a;
+  background: #087c3a;
+}
+
+body[data-palette="christmas"] .solve-actions .result-action:nth-child(odd):not(:disabled) {
+  color: #fff;
+  border-color: #c81732;
+  background: #c81732;
+}
+
+body[data-palette="christmas"] .solve-actions .result-action:nth-child(even):not(:disabled) {
+  color: #fff;
+  border-color: #087c3a;
+  background: #087c3a;
+}
+
 body[data-palette="purple"] {
   --bg: #f4f0ff;
   --bg-2: #e9e1ff;
@@ -81,6 +174,167 @@ body[data-palette="chessboard"] {
   --danger: #ffffff;
   --success: #ffffff;
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+body[data-palette="oilspill"] {
+  --bg: #101321;
+  --bg-2: #101321;
+  --panel: rgba(17, 23, 40, 0.78);
+  --panel-strong: rgba(17, 23, 40, 0.94);
+  --panel-soft: rgba(30, 37, 57, 0.82);
+  --border: rgba(133, 245, 223, 0.2);
+  --text: #effffb;
+  --muted: #b1c9ca;
+  --accent: #68f0d1;
+  --accent-2: #7ad5ff;
+  --warning: #ffcf73;
+  --danger: #ff829e;
+  --success: #8bf2a6;
+  --shadow: 0 24px 60px rgba(2, 8, 24, 0.36);
+  background:
+    radial-gradient(ellipse at 18% 22%, rgba(0, 224, 190, 0.55), transparent 42%),
+    radial-gradient(ellipse at 82% 18%, rgba(65, 91, 255, 0.5), transparent 40%),
+    radial-gradient(ellipse at 74% 82%, rgba(210, 53, 178, 0.44), transparent 44%),
+    radial-gradient(ellipse at 24% 78%, rgba(242, 174, 61, 0.34), transparent 42%),
+    linear-gradient(125deg, #101321, #142431 48%, #18162b);
+  background-size: 170% 170%;
+  animation: oilspill-drift 24s ease-in-out infinite alternate;
+}
+
+body[data-palette="oilspill"] .page-shell {
+  background: transparent;
+}
+
+body[data-palette="sunrise"] {
+  --bg: #311b3b;
+  --bg-2: #f4a261;
+  --panel: rgba(64, 38, 72, 0.78);
+  --panel-strong: rgba(54, 32, 65, 0.95);
+  --panel-soft: rgba(91, 51, 76, 0.78);
+  --border: rgba(255, 218, 165, 0.25);
+  --text: #fff7e9;
+  --muted: #f1c9ae;
+  --accent: #ffbf69;
+  --accent-2: #ff8b63;
+  --warning: #ffd166;
+  --danger: #ff829e;
+  --success: #9be7a5;
+  --shadow: 0 24px 60px rgba(41, 19, 51, 0.38);
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(255, 205, 117, 0.84), transparent 32%),
+    radial-gradient(ellipse at 48% 88%, rgba(255, 126, 92, 0.72), transparent 48%),
+    radial-gradient(ellipse at 12% 18%, rgba(130, 75, 148, 0.58), transparent 43%),
+    linear-gradient(160deg, #312049 0%, #744365 43%, #d87568 74%, #f6b66b 100%);
+}
+
+body[data-palette="sunrise"] .page-shell {
+  background: transparent;
+}
+
+body[data-palette="shibuya"] {
+  --bg: #080a18;
+  --bg-2: #14132d;
+  --panel: rgba(12, 14, 32, 0.78);
+  --panel-strong: rgba(10, 12, 28, 0.94);
+  --panel-soft: rgba(25, 25, 52, 0.86);
+  --border: rgba(119, 234, 255, 0.38);
+  --text: #fff8ff;
+  --muted: #e0cce8;
+  --accent: #70f5ff;
+  --accent-2: #ff58c8;
+  --warning: #ffe27a;
+  --danger: #ff739f;
+  --success: #84ffd0;
+  --shadow: 0 24px 60px rgba(2, 4, 18, 0.62), 0 0 32px rgba(255, 63, 193, 0.12);
+  background:
+    radial-gradient(ellipse at 9% 24%, rgba(255, 35, 151, 0.7), transparent 31%),
+    radial-gradient(ellipse at 91% 18%, rgba(39, 115, 255, 0.68), transparent 34%),
+    radial-gradient(ellipse at 72% 86%, rgba(0, 230, 255, 0.54), transparent 35%),
+    radial-gradient(ellipse at 34% 65%, rgba(255, 147, 45, 0.48), transparent 32%),
+    radial-gradient(ellipse at 55% 8%, rgba(198, 56, 255, 0.4), transparent 36%),
+    linear-gradient(155deg, #100b24 0%, #211333 48%, #081c2c 100%);
+  background-size: 180% 180%;
+  animation: shibuya-glow 18s ease-in-out infinite alternate;
+}
+
+body[data-palette="shibuya"]::before {
+  position: fixed;
+  z-index: 0;
+  inset: -12%;
+  content: "";
+  pointer-events: none;
+  opacity: 0.8;
+  filter: blur(42px);
+  background:
+    radial-gradient(ellipse 18% 24% at 14% 30%, rgba(255, 40, 164, 0.9), transparent 72%),
+    radial-gradient(ellipse 22% 30% at 82% 20%, rgba(50, 111, 255, 0.86), transparent 72%),
+    radial-gradient(ellipse 20% 28% at 72% 78%, rgba(20, 237, 255, 0.78), transparent 72%),
+    radial-gradient(ellipse 16% 22% at 35% 70%, rgba(255, 159, 54, 0.72), transparent 72%),
+    radial-gradient(ellipse 18% 26% at 54% 12%, rgba(203, 60, 255, 0.72), transparent 72%);
+  animation: shibuya-light-drift 20s ease-in-out infinite alternate;
+}
+
+body[data-palette="shibuya"] .page-shell {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+body[data-palette="shibuya"] .panel {
+  border-color: rgba(114, 229, 255, 0.42);
+  box-shadow: var(--shadow), inset 0 0 24px rgba(99, 75, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+body[data-palette="shibuya"] .panel-label,
+body[data-palette="shibuya"] .stat-row strong {
+  text-shadow: 0 0 12px rgba(112, 245, 255, 0.6);
+}
+
+body[data-palette="shibuya"] .scramble-refresh,
+body[data-palette="shibuya"] .menu-button {
+  box-shadow: 0 0 16px rgba(255, 67, 194, 0.24);
+}
+
+@keyframes shibuya-glow {
+  from {
+    background-position: 0% 20%;
+  }
+  to {
+    background-position: 100% 80%;
+  }
+}
+
+@keyframes shibuya-light-drift {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(0.96);
+  }
+  to {
+    transform: translate3d(2%, 1%, 0) scale(1.04);
+  }
+}
+
+@keyframes oilspill-drift {
+  0% {
+    background-position: 0% 20%;
+  }
+  50% {
+    background-position: 100% 70%;
+  }
+  100% {
+    background-position: 25% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-palette="oilspill"],
+  body[data-palette="shibuya"] {
+    animation: none;
+  }
+
+  body[data-palette="shibuya"]::before {
+    animation: none;
+  }
 }
 
 * {
@@ -408,6 +662,13 @@ h1 {
 }
 
 .timer-display {
+  width: 3.2ch;
+  max-width: 100%;
+  padding: 0 0.12em;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  outline: none;
+  background: transparent;
   font-family: "Inter", sans-serif;
   font-size: clamp(3.5rem, 8vw, 7rem);
   font-weight: 500;
@@ -415,7 +676,33 @@ h1 {
   letter-spacing: -0.04em;
   margin-bottom: 18px;
   color: var(--text);
+  text-align: center;
+  cursor: inherit;
+  user-select: none;
   transition: color 0.15s ease, text-shadow 0.15s ease;
+}
+
+.timer-panel.manual-entry-active .timer-display {
+  border-color: var(--border);
+  background: var(--panel-soft);
+  margin-bottom: 6px;
+  caret-color: var(--accent);
+  cursor: text;
+  user-select: text;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.timer-panel.manual-entry-active .timer-display:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.timer-panel.manual-entry-active .timer-hint {
+  margin: 0 0 10px;
+}
+
+.timer-display[aria-invalid="true"] {
+  color: var(--danger);
 }
 
 .solve-actions {
