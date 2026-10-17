@@ -1,45 +1,72 @@
+/**
+ * @file BTime - Rubik's Cube Speedcubing Timer Application
+ * @description Provides random-state scramble generation, 15s WCA inspection,
+ * spacebar/touch timing, manual time entry, Ao5/Ao12 session statistics,
+ * solve penalty management (DNF/+2), and multi-event support.
+ */
+
+/* ==========================================================================
+   1. DOM Element Cache & Constants
+   ========================================================================== */
+
+// Scramble & Visualizer Elements
 const scrambleText = document.getElementById('scrambleText');
-const timerDisplay = document.getElementById('timerDisplay');
-const timerState = document.getElementById('timerState');
-const timerPanel = document.getElementById('timerPanel');
-const manualTimeToggle = document.getElementById('manualTimeToggle');
-const manualTimeHelp = document.getElementById('manualTimeHelp');
-const newScrambleButton = document.getElementById('newScramble');
-const clearHistoryButton = document.getElementById('clearHistory');
-const clearHistoryDialog = document.getElementById('clearHistoryDialog');
-const clearHistoryMessage = document.getElementById('clearHistoryMessage');
-const cancelClearHistoryButton = document.getElementById('cancelClearHistory');
-const confirmClearHistoryButton = document.getElementById('confirmClearHistory');
-const eventSelect = document.getElementById('eventSelect');
 let scrambleVisualization = document.getElementById('scrambleVisualization');
 const scrambleVisualStatus = document.getElementById('scrambleVisualStatus');
-const inspectionToggle = document.getElementById('inspectionToggle');
-const colorPaletteSelect = document.getElementById('colorPaletteSelect');
-const holdToStartToggle = document.getElementById('holdToStartToggle');
-const menuToggle = document.getElementById('menuToggle');
-const settingsMenu = document.getElementById('settingsMenu');
+const newScrambleButton = document.getElementById('newScramble');
+
+// Timer Elements
+const timerPanel = document.getElementById('timerPanel');
+const timerDisplay = document.getElementById('timerDisplay');
+const timerState = document.getElementById('timerState');
+
+// Solve Actions & History Elements
 const solveActions = document.getElementById('solveActions');
 const solveList = document.getElementById('solveList');
+const eventSelect = document.getElementById('eventSelect');
+const clearHistoryButton = document.getElementById('clearHistory');
+
+// Statistics Elements
+const bestTimeEl = document.getElementById('bestTime');
+const bestAvg5El = document.getElementById('bestAvg5');
+const avg5El = document.getElementById('avg5');
+const avg12El = document.getElementById('avg12');
+const meanTimeEl = document.getElementById('meanTime');
+
+// Settings Menu & Toggles
+const menuToggle = document.getElementById('menuToggle');
+const settingsMenu = document.getElementById('settingsMenu');
+const inspectionToggle = document.getElementById('inspectionToggle');
+const holdToStartToggle = document.getElementById('holdToStartToggle');
+const manualTimeToggle = document.getElementById('manualTimeToggle');
+const colorPaletteSelect = document.getElementById('colorPaletteSelect');
+
+// Solve Details Dialog Elements
 const solveDetails = document.getElementById('solveDetails');
 const solveDetailTime = document.getElementById('solveDetailTime');
 const solveDetailScramble = document.getElementById('solveDetailScramble');
 const closeSolveDetailsButton = document.getElementById('closeSolveDetails');
 
-const bestTimeEl = document.getElementById('bestTime');
-const avg5El = document.getElementById('avg5');
-const bestAvg5El = document.getElementById('bestAvg5');
-const avg12El = document.getElementById('avg12');
-const meanTimeEl = document.getElementById('meanTime');
+// Clear History Confirmation Dialog
+const clearHistoryDialog = document.getElementById('clearHistoryDialog');
+const clearHistoryMessage = document.getElementById('clearHistoryMessage');
+const cancelClearHistoryButton = document.getElementById('cancelClearHistory');
+const confirmClearHistoryButton = document.getElementById('confirmClearHistory');
 
+// LocalStorage Keys
 const STORAGE_KEY = 'bcube-timer-history';
 const EVENT_STORAGE_KEY = 'bcube-timer-event';
 const INSPECTION_STORAGE_KEY = 'bcube-timer-inspection';
 const THEME_STORAGE_KEY = 'bcube-timer-theme';
 const HOLD_TO_START_STORAGE_KEY = 'bcube-timer-hold-to-start';
 const MANUAL_TIME_STORAGE_KEY = 'bcube-timer-manual-time';
+
+// Timing & Scramble Parameters
 const INSPECTION_SECONDS = 15;
 const INSPECTION_GRACE_SECONDS = 1;
 const SCRAMBLE_PREFETCH_COUNT = 5;
+
+// WCA Supported Events
 const EVENTS = [
   { code: '333', label: '3x3' },
   { code: '222', label: '2x2' },
@@ -54,28 +81,67 @@ const EVENTS = [
   { code: 'sq1', label: 'Square-1' },
 ];
 
+const CUBE_EVENTS = new Set(['222', '333', '444', '555', '666', '777']);
+const VALID_MOVE_REGEX = /^(?:[URFDLB]w?|[2-6][URFDLB]w?|[urfdlb])(?:2|')?$/;
+const VALID_PALETTES = [
+  'light',
+  'night',
+  'shell-pink',
+  'dessert',
+  'purple',
+  'chessboard',
+  'oilspill',
+  'sunrise',
+  'shibuya',
+  'christmas',
+  'halloween',
+];
+
+/* ==========================================================================
+   2. Application State
+   ========================================================================== */
+
+/** @type {'ready' | 'holding' | 'inspecting' | 'readyToSolve' | 'solving'} */
 let state = 'ready';
+
+// User Preferences
 let currentEvent = loadEventPreference();
 let inspectionEnabled = loadInspectionPreference();
 let colorPalette = loadThemePreference();
 let holdToStartEnabled = loadHoldToStartPreference();
 let manualTimeEntryEnabled = loadManualTimeEntryPreference();
+
+// Input & Timing Flags
 let manualTimeDraftActive = false;
 let isSpaceDown = false;
 let justStopped = false;
 let spaceStartedInspection = false;
+
+// High-resolution Timestamps
 let solveStartTimestamp = null;
 let inspectionStartTimestamp = null;
 let rafId = null;
 let inspectionGraceTimeoutId = null;
+
+// Scramble Pipeline State
 let scramble = [];
 let scrambleReady = false;
 let scrambleRequestPromise = null;
 let scrambleRequestId = 0;
 const scrambleQueues = new Map();
+
+// Solves History State
 let recentSolves = loadHistory(currentEvent);
 let lastSolveId = null;
 let selectedSolveId = null;
+
+// Cached Cubing.js Scrambler Module Loader
+let cubingScramblerPromise = null;
+
+/* ==========================================================================
+   3. Scramble Visualizer Dynamic Web Component Loader
+   ========================================================================== */
+
 import('https://esm.sh/scramble-display@0.59.1?deps=cubing@0.59.1')
   .then(() => {
     if (scrambleReady) {
@@ -92,6 +158,11 @@ import('https://esm.sh/scramble-display@0.59.1?deps=cubing@0.59.1')
     }
   });
 
+/**
+ * Updates the 2D visual representation of the current scramble.
+ * @param {string} eventCode - The WCA event code (e.g. '333')
+ * @param {string} scrambleValue - The move sequence string
+ */
 function updateScrambleVisualization(eventCode, scrambleValue) {
   if (!scrambleVisualization || !scrambleValue) {
     return;
@@ -110,12 +181,20 @@ function updateScrambleVisualization(eventCode, scrambleValue) {
   scrambleVisualization.setAttribute('scramble', scrambleValue);
 }
 
+/* ==========================================================================
+   4. Preferences & Storage Management
+   ========================================================================== */
+
 function eventStorageKey(eventCode) {
   return eventCode === '333' ? STORAGE_KEY : `${STORAGE_KEY}-${eventCode}`;
 }
 
 function scrambleStorageKey(eventCode) {
   return `bcube-timer-scramble-${eventCode}`;
+}
+
+function getEventLabel(eventCode) {
+  return EVENTS.find((event) => event.code === eventCode)?.label || eventCode;
 }
 
 function loadSavedScramble(eventCode) {
@@ -161,11 +240,11 @@ function loadHistory(eventCode) {
 
     return JSON.parse(saved)
       .map((entry) => ({
-        id: entry.id || `${Date.now()}-${Math.random()}`,
+        id: entry.id || generateSolveId(),
         baseTimeMs: Number(entry.baseTimeMs ?? entry.timeMs ?? 0),
         timeMs: Number(entry.timeMs ?? entry.baseTimeMs ?? 0),
         result: entry.result ?? 'ok',
-        tag: entry.tag || EVENTS.find((event) => event.code === eventCode).label,
+        tag: entry.tag || getEventLabel(eventCode),
         scramble: typeof entry.scramble === 'string' ? entry.scramble : '',
       }))
       .filter((entry) => entry.result === 'dnf' || Number.isFinite(entry.baseTimeMs));
@@ -195,6 +274,14 @@ function loadInspectionPreference() {
   }
 }
 
+function saveInspectionPreference() {
+  try {
+    localStorage.setItem(INSPECTION_STORAGE_KEY, JSON.stringify(inspectionEnabled));
+  } catch (error) {
+    // Ignore storage errors
+  }
+}
+
 function loadThemePreference() {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
@@ -207,22 +294,18 @@ function loadThemePreference() {
       return parsed ? 'night' : 'light';
     }
 
-    return [
-      'light',
-      'night',
-      'shell-pink',
-      'dessert',
-      'purple',
-      'chessboard',
-      'oilspill',
-      'sunrise',
-      'shibuya',
-      'christmas',
-    ].includes(parsed)
-      ? parsed
-      : 'light';
+    const normalized = typeof parsed === 'string' ? parsed.toLowerCase() : parsed;
+    return VALID_PALETTES.includes(normalized) ? normalized : 'light';
   } catch (error) {
     return 'light';
+  }
+}
+
+function saveThemePreference() {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(colorPalette));
+  } catch (error) {
+    // Ignore storage errors
   }
 }
 
@@ -235,41 +318,24 @@ function loadHoldToStartPreference() {
   }
 }
 
+function saveHoldToStartPreference() {
+  try {
+    localStorage.setItem(HOLD_TO_START_STORAGE_KEY, JSON.stringify(holdToStartEnabled));
+  } catch (error) {
+    // Ignore storage errors
+  }
+}
+
 function loadManualTimeEntryPreference() {
   try {
     const saved = localStorage.getItem(MANUAL_TIME_STORAGE_KEY);
     if (saved === null) {
       return false;
     }
-
     const parsed = JSON.parse(saved);
     return typeof parsed === 'boolean' ? parsed : false;
   } catch (error) {
     return false;
-  }
-}
-
-function saveInspectionPreference() {
-  try {
-    localStorage.setItem(INSPECTION_STORAGE_KEY, JSON.stringify(inspectionEnabled));
-  } catch (error) {
-    // Ignore storage errors
-  }
-}
-
-function saveThemePreference() {
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(colorPalette));
-  } catch (error) {
-    // Ignore storage errors
-  }
-}
-
-function saveHoldToStartPreference() {
-  try {
-    localStorage.setItem(HOLD_TO_START_STORAGE_KEY, JSON.stringify(holdToStartEnabled));
-  } catch (error) {
-    // Ignore storage errors
   }
 }
 
@@ -281,13 +347,17 @@ function saveManualTimeEntryPreference() {
   }
 }
 
+/**
+ * Applies the active color palette and updates the dark-mode class and select value.
+ */
 function applyTheme() {
   document.body.classList.toggle(
     'dark-mode',
     colorPalette === 'night' ||
     colorPalette === 'oilspill' ||
     colorPalette === 'sunrise' ||
-    colorPalette === 'shibuya'
+    colorPalette === 'shibuya' ||
+    colorPalette === 'halloween'
   );
   document.body.dataset.palette = colorPalette;
 
@@ -296,6 +366,186 @@ function applyTheme() {
   }
 }
 
+/* ==========================================================================
+   5. Scramble Generation Pipeline & Prefetch Queue
+   ========================================================================== */
+
+/**
+ * Asynchronously loads the Cubing.js scramble engine once and caches it.
+ * @returns {Promise<Function>} randomScrambleForEvent function
+ */
+async function loadScrambler() {
+  if (!cubingScramblerPromise) {
+    cubingScramblerPromise = Promise.all([
+      import('https://esm.sh/cubing@0.59.1/search'),
+      import('https://esm.sh/cubing@0.59.1/scramble'),
+    ]).then(([{ setSearchDebug }, { randomScrambleForEvent }]) => {
+      setSearchDebug({ logPerf: false });
+      return randomScrambleForEvent;
+    });
+  }
+  return cubingScramblerPromise;
+}
+
+/**
+ * Generates a valid random-state scramble sequence for the given WCA event.
+ * @param {string} eventCode
+ * @returns {Promise<string>}
+ */
+async function getNewScramble(eventCode) {
+  const randomScrambleForEvent = await loadScrambler();
+  const isCube = CUBE_EVENTS.has(eventCode);
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const generatedScramble = await randomScrambleForEvent(eventCode);
+    const moves = generatedScramble.toString().trim().split(/\s+/);
+    const isValid =
+      moves.length > 0 &&
+      (eventCode !== '333' || (moves.length >= 19 && moves.length <= 22)) &&
+      (!isCube || moves.every((move) => VALID_MOVE_REGEX.test(move)));
+
+    if (isValid) {
+      return moves.join(' ');
+    }
+  }
+
+  throw new Error(`The ${eventCode} scrambler did not return a valid sequence after 10 attempts.`);
+}
+
+function getScrambleQueue(eventCode) {
+  if (!scrambleQueues.has(eventCode)) {
+    scrambleQueues.set(eventCode, { items: [], pending: null, error: null });
+  }
+  return scrambleQueues.get(eventCode);
+}
+
+/**
+ * Proactively fetches scrambles in the background so solves load immediately.
+ * @param {string} eventCode
+ */
+function prefetchScrambles(eventCode = currentEvent) {
+  const queue = getScrambleQueue(eventCode);
+  if (queue.pending || queue.error || queue.items.length >= SCRAMBLE_PREFETCH_COUNT) {
+    return;
+  }
+
+  queue.pending = getNewScramble(eventCode)
+    .then((nextScramble) => {
+      queue.items.push(nextScramble);
+    })
+    .catch((error) => {
+      queue.error = error;
+      console.error(`Unable to prefetch a ${eventCode} scramble.`, error);
+    })
+    .finally(() => {
+      queue.pending = null;
+      if (!queue.error && queue.items.length < SCRAMBLE_PREFETCH_COUNT) {
+        prefetchScrambles(eventCode);
+      }
+    });
+}
+
+/**
+ * Retrieves the next available scramble from the prefetch queue or generates one.
+ * @param {string} eventCode
+ * @returns {Promise<string>}
+ */
+async function getQueuedScramble(eventCode) {
+  const queue = getScrambleQueue(eventCode);
+  while (!queue.items.length) {
+    if (!queue.pending) {
+      prefetchScrambles(eventCode);
+    }
+    if (queue.pending) {
+      await queue.pending;
+    }
+    if (!queue.items.length && queue.error) {
+      const error = queue.error;
+      queue.error = null;
+      throw error;
+    }
+  }
+
+  const nextScramble = queue.items.shift();
+  prefetchScrambles(eventCode);
+  return nextScramble;
+}
+
+/**
+ * Generates and displays a new scramble for the active event.
+ * @param {string} eventCode
+ */
+function generateScramble(eventCode = currentEvent) {
+  const requestId = ++scrambleRequestId;
+  scrambleReady = false;
+
+  if (scrambleText) {
+    scrambleText.textContent = `Generating ${getEventLabel(eventCode)} scramble…`;
+  }
+
+  scrambleRequestPromise = getQueuedScramble(eventCode)
+    .then((nextScramble) => {
+      if (requestId !== scrambleRequestId) {
+        return false;
+      }
+
+      scramble = nextScramble.split(' ');
+      scrambleReady = true;
+      saveScramble(eventCode, nextScramble);
+
+      if (scrambleText) {
+        scrambleText.textContent = nextScramble;
+      }
+      updateScrambleVisualization(eventCode, nextScramble);
+      return true;
+    })
+    .catch((error) => {
+      if (requestId === scrambleRequestId) {
+        scrambleReady = false;
+        if (scrambleText) {
+          scrambleText.textContent = 'Scramble generation failed. Select New scramble to retry.';
+        }
+        console.error(`Unable to generate a ${eventCode} random-state scramble.`, error);
+      }
+      return false;
+    });
+
+  return scrambleRequestPromise;
+}
+
+/**
+ * Restores the previously saved scramble or generates a new one on startup/event switch.
+ * @param {string} eventCode
+ */
+function restoreScramble(eventCode = currentEvent) {
+  prefetchScrambles(eventCode);
+  const requestId = ++scrambleRequestId;
+  const savedScramble = loadSavedScramble(eventCode);
+
+  if (!savedScramble) {
+    return generateScramble(eventCode);
+  }
+
+  scramble = savedScramble.split(/\s+/);
+  scrambleReady = true;
+  scrambleRequestPromise = Promise.resolve(true);
+
+  if (scrambleText) {
+    scrambleText.textContent = savedScramble;
+  }
+  updateScrambleVisualization(eventCode, savedScramble);
+  return Promise.resolve(requestId === scrambleRequestId);
+}
+
+/* ==========================================================================
+   6. Time Formatting & Statistics Mathematics (WCA Ao5 / Ao12)
+   ========================================================================== */
+
+/**
+ * Formats a duration in milliseconds to human-readable string (e.g. "12.34" or "1:05.23").
+ * @param {number} ms
+ * @returns {string}
+ */
 function formatTime(ms) {
   const totalSeconds = ms / 1000;
   const minutes = Math.floor(totalSeconds / 60);
@@ -304,42 +554,64 @@ function formatTime(ms) {
   if (minutes > 0) {
     return `${minutes}:${seconds.toFixed(2).padStart(5, '0')}`;
   }
-
   return `${seconds.toFixed(2)}`;
 }
 
+/**
+ * Formats a statistical metric value or returns '--' when missing.
+ * @param {number|null|undefined} value
+ * @returns {string}
+ */
 function formatMetric(value) {
   return value === null || value === undefined || Number.isNaN(value) ? '--' : formatTime(value);
 }
 
+/**
+ * Computes the numeric time value in milliseconds for a solve entry, accounting for penalties.
+ * @param {object} entry
+ * @returns {number|null} Time in ms or null if DNF
+ */
 function getSolveValue(entry) {
-  if (!entry || entry.result === 'dnf') return null;
+  if (!entry || entry.result === 'dnf') {
+    return null;
+  }
 
   const baseValue = Number(entry.baseTimeMs ?? entry.timeMs ?? 0);
   if (!Number.isFinite(baseValue)) {
     return null;
   }
 
-  const value = entry.result === '+2' ? baseValue + 2000 : baseValue;
-  return value;
+  return entry.result === '+2' ? baseValue + 2000 : baseValue;
 }
 
+/**
+ * Calculates a standard WCA trimmed average for a window of solves.
+ * Drops the fastest and slowest times. Allows at most one DNF (treated as slowest).
+ * @param {Array<object>} solves
+ * @param {number} solveCount - Size of the average (e.g. 5 or 12)
+ * @returns {{ value: number|null, isDnf: boolean }}
+ */
 function getTrimmedAverage(solves, solveCount) {
   if (solves.length < solveCount) {
     return { value: null, isDnf: false };
   }
 
-  const window = solves.slice(-solveCount);
-  const dnfCount = window.filter((solve) => solve.result === 'dnf').length;
+  const windowSolves = solves.slice(-solveCount);
+  const dnfCount = windowSolves.filter((solve) => solve.result === 'dnf').length;
+
+  // More than 1 DNF in an average window results in an overall DNF average
   if (dnfCount > 1) {
     return { value: null, isDnf: true };
   }
 
-  const times = window
+  const times = windowSolves
     .filter((solve) => solve.result !== 'dnf')
-    .map((solve) => getSolveValue(solve))
-    .filter((value) => value !== null && !Number.isNaN(value))
+    .map(getSolveValue)
+    .filter((value) => value !== null && Number.isFinite(value))
     .sort((a, b) => a - b);
+
+  // If there's 1 DNF, it counts as the single worst time; drop 1 best time and average the rest.
+  // Otherwise, drop both the single fastest and single slowest times.
   const countedTimes = dnfCount === 1 ? times.slice(1) : times.slice(1, -1);
 
   return {
@@ -348,48 +620,49 @@ function getTrimmedAverage(solves, solveCount) {
   };
 }
 
+/**
+ * Recalculates and renders Best Single, Best Ao5, Current Ao5, Current Ao12, and Session Mean.
+ */
 function renderStats() {
   if (!bestTimeEl || !avg5El || !bestAvg5El || !avg12El) {
     return;
   }
 
-  const values = recentSolves
+  // Filter valid numeric times across the session
+  const validTimes = recentSolves
     .filter((solve) => solve.result !== 'dnf')
-    .map((solve) => getSolveValue(solve))
-    .filter((value) => value !== null && !Number.isNaN(value));
-  const timedSolveValues = recentSolves
-    .filter((solve) => String(solve.result).toLowerCase() !== 'dnf')
-    .map((solve) => getSolveValue(solve))
+    .map(getSolveValue)
     .filter((value) => value !== null && Number.isFinite(value));
 
-  const best = values.length ? Math.min(...values) : null;
-  const mean = timedSolveValues.length
-    ? timedSolveValues.reduce((sum, value) => sum + value, 0) / timedSolveValues.length
+  const bestSingle = validTimes.length ? Math.min(...validTimes) : null;
+  const meanTime = validTimes.length
+    ? validTimes.reduce((sum, value) => sum + value, 0) / validTimes.length
     : null;
-  const avg5 = getTrimmedAverage(recentSolves, 5);
-  const avg12 = getTrimmedAverage(recentSolves, 12);
-  let bestAvg5 = null;
 
+  const currentAvg5 = getTrimmedAverage(recentSolves, 5);
+  const currentAvg12 = getTrimmedAverage(recentSolves, 12);
+
+  // Compute all-time best Ao5 in this session
+  let bestAvg5 = null;
   for (let end = 5; end <= recentSolves.length; end += 1) {
-    const windowAvg5 = getTrimmedAverage(recentSolves.slice(0, end), 5);
+    const windowAvg5 = getTrimmedAverage(recentSolves.slice(end - 5, end), 5);
     if (!windowAvg5.isDnf && windowAvg5.value !== null) {
       bestAvg5 = bestAvg5 === null ? windowAvg5.value : Math.min(bestAvg5, windowAvg5.value);
     }
   }
 
-  bestTimeEl.textContent = formatMetric(best);
-  avg5El.textContent = avg5.isDnf ? 'DNF' : formatMetric(avg5.value);
+  bestTimeEl.textContent = formatMetric(bestSingle);
   bestAvg5El.textContent = formatMetric(bestAvg5);
-  avg12El.textContent = avg12.isDnf ? 'DNF' : formatMetric(avg12.value);
+  avg5El.textContent = currentAvg5.isDnf ? 'DNF' : formatMetric(currentAvg5.value);
+  avg12El.textContent = currentAvg12.isDnf ? 'DNF' : formatMetric(currentAvg12.value);
+
   if (meanTimeEl) {
-    meanTimeEl.textContent = formatMetric(mean);
+    meanTimeEl.textContent = formatMetric(meanTime);
   }
 }
 
 function formatHistoryValue(entry) {
-  if (!entry) return 'DNF';
-
-  if (entry.result === 'dnf') {
+  if (!entry || entry.result === 'dnf') {
     return 'DNF';
   }
 
@@ -398,13 +671,12 @@ function formatHistoryValue(entry) {
     return 'DNF';
   }
 
-  if (entry.result === '+2') {
-    return `${formatTime(value)} +2`;
-  }
-
-  return formatTime(value);
+  return entry.result === '+2' ? `${formatTime(value)} +2` : formatTime(value);
 }
 
+/**
+ * Renders the session solves list.
+ */
 function renderHistory() {
   if (!solveList) {
     return;
@@ -413,17 +685,17 @@ function renderHistory() {
   solveList.innerHTML = '';
 
   if (!recentSolves.length) {
-    const empty = document.createElement('li');
-    empty.className = 'solve-empty';
-    empty.textContent = 'Nun here bro 😭 Start a solve or smth.';
-    solveList.appendChild(empty);
+    const emptyItem = document.createElement('li');
+    emptyItem.className = 'solve-empty';
+    emptyItem.textContent = 'No solves yet in this session.';
+    solveList.appendChild(emptyItem);
     return;
   }
 
   [...recentSolves].reverse().forEach((entry, index) => {
     const item = document.createElement('li');
     item.className = 'solve-item';
-    const timeText = formatHistoryValue(entry);
+
     const recordButton = document.createElement('button');
     recordButton.className = 'solve-record-button';
     recordButton.type = 'button';
@@ -435,7 +707,7 @@ function renderHistory() {
 
     const timeLabel = document.createElement('span');
     timeLabel.className = 'time';
-    timeLabel.textContent = timeText;
+    timeLabel.textContent = formatHistoryValue(entry);
 
     const tagLabel = document.createElement('span');
     tagLabel.className = 'tag';
@@ -447,12 +719,24 @@ function renderHistory() {
   });
 }
 
+/* ==========================================================================
+   7. Solve Details & Action Management (DNF, +2, Revert, Delete)
+   ========================================================================== */
+
+function generateSolveId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function hasManualTimeDraft() {
+  return manualTimeEntryEnabled && state === 'ready' && Boolean(timerDisplay?.value.trim());
+}
+
+/**
+ * Opens the solve details modal dialog for a specific solve record.
+ * @param {string} solveId
+ */
 function showSolveDetails(solveId) {
-  if (
-    !solveDetails ||
-    !solveDetailTime ||
-    !solveDetailScramble
-  ) {
+  if (!solveDetails || !solveDetailTime || !solveDetailScramble) {
     return;
   }
 
@@ -467,6 +751,11 @@ function showSolveDetails(solveId) {
   solveDetails.showModal();
 }
 
+/**
+ * Modifies or deletes an existing solve entry (DNF, +2 penalty, revert, delete).
+ * @param {string} solveId
+ * @param {'dnf' | 'plus2' | 'reset' | 'delete'} action
+ */
 function applySolveAction(solveId, action) {
   const targetIndex = recentSolves.findIndex((solve) => String(solve.id) === solveId);
   if (targetIndex === -1) {
@@ -474,6 +763,7 @@ function applySolveAction(solveId, action) {
   }
 
   const entry = recentSolves[targetIndex];
+
   if (action === 'delete') {
     recentSolves.splice(targetIndex, 1);
   } else if (action === 'dnf') {
@@ -491,13 +781,14 @@ function applySolveAction(solveId, action) {
 
   if (action === 'delete' && String(lastSolveId) === solveId) {
     lastSolveId = null;
-    hideSolveActions();
+    syncSolveActionAvailability();
   }
 
   saveHistory();
   renderStats();
   renderHistory();
 
+  // Update open modal if modifying the active solve
   if (selectedSolveId === solveId) {
     if (action === 'delete') {
       solveDetails.close();
@@ -507,13 +798,68 @@ function applySolveAction(solveId, action) {
     }
   }
 
+  // Update timer display if reverting the last completed solve
   if (String(lastSolveId) === solveId && action === 'reset') {
     updateDisplay(formatTime(entry.baseTimeMs));
   }
 }
 
+/**
+ * Enables or disables solve action buttons based on solve availability.
+ */
+function syncSolveActionAvailability() {
+  if (!solveActions) {
+    return;
+  }
+
+  const hasDraft = hasManualTimeDraft();
+  solveActions.querySelectorAll('.result-action').forEach((button) => {
+    if (manualTimeEntryEnabled) {
+      if (button.dataset.action === 'dnf') {
+        button.disabled = state !== 'ready';
+      } else {
+        button.disabled = state !== 'ready' || !hasDraft;
+      }
+      return;
+    }
+
+    button.disabled = !lastSolveId;
+  });
+}
+
+/* ==========================================================================
+   8. Timer UI & Manual Entry Synchronization
+   ========================================================================== */
+
+function syncDisplayWidth(value) {
+  if (timerDisplay) {
+    timerDisplay.style.width = `${Math.max(3.2, value.length * 0.8 + 1.2)}ch`;
+  }
+}
+
+function updateDisplay(value) {
+  if (timerDisplay) {
+    timerDisplay.value = value;
+    syncDisplayWidth(value);
+  }
+}
+
+function flashDisplay() {
+  if (!timerDisplay) {
+    return;
+  }
+  timerDisplay.classList.remove('flash');
+  void timerDisplay.offsetWidth;
+  timerDisplay.classList.add('flash');
+}
+
+/**
+ * Updates the visual timer state and styles.
+ * @param {'ready' | 'holding' | 'inspecting' | 'readyToSolve' | 'solving'} nextState
+ */
 function setTimerState(nextState) {
   state = nextState;
+
   const labels = {
     ready: 'Ready',
     holding: 'Release to start',
@@ -548,6 +894,9 @@ function setTimerState(nextState) {
   }
 }
 
+/**
+ * Synchronizes the input element state between physical timer mode and manual entry mode.
+ */
 function syncManualTimeEntry() {
   if (!timerDisplay) {
     return;
@@ -557,9 +906,7 @@ function syncManualTimeEntry() {
   timerDisplay.readOnly = !canEditTime;
   timerDisplay.setAttribute('aria-label', canEditTime ? 'Enter solve time' : 'Timer display');
   timerPanel?.classList.toggle('manual-entry-active', canEditTime);
-  if (manualTimeHelp) {
-    manualTimeHelp.hidden = !canEditTime;
-  }
+
   if (canEditTime) {
     if (!manualTimeDraftActive) {
       timerDisplay.value = '';
@@ -573,156 +920,13 @@ function syncManualTimeEntry() {
     }
     timerDisplay.removeAttribute('aria-invalid');
   }
+
   syncSolveActionAvailability();
 }
 
-function updateDisplay(value) {
-  if (timerDisplay) {
-    timerDisplay.value = value;
-    timerDisplay.style.width = `${Math.max(3.2, value.length * 0.8 + 1.2)}ch`;
-  }
-}
-
-function flashDisplay() {
-  if (!timerDisplay) {
-    return;
-  }
-
-  timerDisplay.classList.remove('flash');
-  void timerDisplay.offsetWidth;
-  timerDisplay.classList.add('flash');
-}
-
-async function getNewScramble(eventCode) {
-  const { setSearchDebug } = await import('https://esm.sh/cubing@0.59.1/search');
-  setSearchDebug({ logPerf: false });
-  const { randomScrambleForEvent } = await import(
-    'https://esm.sh/cubing@0.59.1/scramble'
-  );
-  const validMove = /^(?:[URFDLB]w?|[2-6][URFDLB]w?|[urfdlb])(?:2|')?$/;
-  const cubeEvent = ['222', '333', '444', '555', '666', '777'].includes(eventCode);
-
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const generatedScramble = await randomScrambleForEvent(eventCode);
-    const moves = generatedScramble.toString().trim().split(/\s+/);
-    const isValid =
-      moves.length > 0 &&
-      (eventCode !== '333' || (moves.length >= 19 && moves.length <= 22)) &&
-      (!cubeEvent || moves.every((move) => validMove.test(move)));
-
-    if (isValid) {
-      return moves.join(' ');
-    }
-  }
-
-  throw new Error(`The ${eventCode} scrambler did not return a valid sequence after 10 attempts.`);
-}
-
-function getScrambleQueue(eventCode) {
-  if (!scrambleQueues.has(eventCode)) {
-    scrambleQueues.set(eventCode, { items: [], pending: null, error: null });
-  }
-
-  return scrambleQueues.get(eventCode);
-}
-
-function prefetchScrambles(eventCode = currentEvent) {
-  const queue = getScrambleQueue(eventCode);
-  if (queue.pending || queue.error || queue.items.length >= SCRAMBLE_PREFETCH_COUNT) {
-    return;
-  }
-
-  queue.pending = getNewScramble(eventCode)
-    .then((nextScramble) => {
-      queue.items.push(nextScramble);
-    })
-    .catch((error) => {
-      queue.error = error;
-      console.error(`Unable to prefetch a ${eventCode} scramble.`, error);
-    })
-    .finally(() => {
-      queue.pending = null;
-      if (!queue.error && queue.items.length < SCRAMBLE_PREFETCH_COUNT) {
-        prefetchScrambles(eventCode);
-      }
-    });
-}
-
-async function getQueuedScramble(eventCode) {
-  const queue = getScrambleQueue(eventCode);
-  while (!queue.items.length) {
-    if (!queue.pending) {
-      prefetchScrambles(eventCode);
-    }
-    if (queue.pending) {
-      await queue.pending;
-    }
-    if (!queue.items.length && queue.error) {
-      const error = queue.error;
-      queue.error = null;
-      throw error;
-    }
-  }
-
-  const nextScramble = queue.items.shift();
-  prefetchScrambles(eventCode);
-  return nextScramble;
-}
-
-function generateScramble(eventCode = currentEvent) {
-  const requestId = ++scrambleRequestId;
-  scrambleReady = false;
-  if (scrambleText) {
-    const eventLabel = EVENTS.find((event) => event.code === eventCode).label;
-    scrambleText.textContent = `Generating ${eventLabel} scramble…`;
-  }
-
-  scrambleRequestPromise = getQueuedScramble(eventCode)
-    .then((nextScramble) => {
-      if (requestId !== scrambleRequestId) {
-        return false;
-      }
-
-      scramble = nextScramble.split(' ');
-      scrambleReady = true;
-      saveScramble(eventCode, nextScramble);
-      if (scrambleText) {
-        scrambleText.textContent = nextScramble;
-      }
-      updateScrambleVisualization(eventCode, nextScramble);
-      return true;
-    })
-    .catch((error) => {
-      if (requestId === scrambleRequestId) {
-        scrambleReady = false;
-        if (scrambleText) {
-          scrambleText.textContent = 'Scramble generation failed. Select New scramble to retry.';
-        }
-        console.error(`Unable to generate a ${eventCode} random-state scramble.`, error);
-      }
-      return false;
-    });
-
-  return scrambleRequestPromise;
-}
-
-function restoreScramble(eventCode = currentEvent) {
-  prefetchScrambles(eventCode);
-  const requestId = ++scrambleRequestId;
-  const savedScramble = loadSavedScramble(eventCode);
-  if (!savedScramble) {
-    return generateScramble(eventCode);
-  }
-
-  scramble = savedScramble.split(/\s+/);
-  scrambleReady = true;
-  scrambleRequestPromise = Promise.resolve(true);
-  if (scrambleText) {
-    scrambleText.textContent = savedScramble;
-  }
-  updateScrambleVisualization(eventCode, savedScramble);
-  return Promise.resolve(requestId === scrambleRequestId);
-}
+/* ==========================================================================
+   9. Timer Engine (Inspection, Solving, Recording)
+   ========================================================================== */
 
 function cancelAnimation() {
   if (rafId) {
@@ -738,6 +942,9 @@ function cancelInspectionGracePeriod() {
   }
 }
 
+/**
+ * Initiates the 15-second WCA inspection countdown.
+ */
 function beginInspection() {
   if (!timerPanel || !timerDisplay) {
     return;
@@ -759,6 +966,7 @@ function beginInspection() {
       return;
     }
 
+    // 15 seconds elapsed: enter 1s grace countdown before DNF
     timerDisplay.classList.remove('space-held');
     setTimerState('readyToSolve');
     timerState.textContent = 'Start now';
@@ -770,13 +978,12 @@ function beginInspection() {
       if (state !== 'readyToSolve') {
         return;
       }
-
-      const remaining = Math.max(
+      const graceRemaining = Math.max(
         0,
         INSPECTION_GRACE_SECONDS * 1000 - (performance.now() - graceStartTimestamp),
       );
-      updateDisplay(String(Math.ceil(remaining / 1000)));
-      if (remaining > 0) {
+      updateDisplay(String(Math.ceil(graceRemaining / 1000)));
+      if (graceRemaining > 0) {
         rafId = requestAnimationFrame(updateGraceDisplay);
       }
     };
@@ -793,9 +1000,11 @@ function beginInspection() {
   rafId = requestAnimationFrame(tick);
 }
 
+/**
+ * Starts the live solving timer.
+ */
 function beginSolve() {
   cancelInspectionGracePeriod();
-
   if (!timerPanel || !timerDisplay) {
     return;
   }
@@ -816,11 +1025,11 @@ function beginSolve() {
 function recordInspectionDnf() {
   cancelAnimation();
   const solveEntry = {
-    id: Date.now() + Math.random(),
+    id: generateSolveId(),
     baseTimeMs: 0,
     timeMs: null,
     result: 'dnf',
-    tag: EVENTS.find((event) => event.code === currentEvent).label,
+    tag: getEventLabel(currentEvent),
     scramble: scramble.join(' '),
   };
 
@@ -832,40 +1041,15 @@ function recordInspectionDnf() {
   renderHistory();
   setTimerState('ready');
   updateDisplay('DNF');
-  showSolveActions();
+  syncSolveActionAvailability();
   generateScramble();
   solveStartTimestamp = null;
   inspectionStartTimestamp = null;
 }
 
-function hideSolveActions() {
-  syncSolveActionAvailability();
-}
-
-function showSolveActions() {
-  syncSolveActionAvailability();
-}
-
-function syncSolveActionAvailability() {
-  if (solveActions) {
-    solveActions.querySelectorAll('.result-action').forEach((button) => {
-      const hasDraft = manualTimeDraftActive && Boolean(timerDisplay?.value.trim());
-      if (manualTimeEntryEnabled) {
-        if (button.dataset.action === 'dnf') {
-          button.disabled = state !== 'ready';
-        } else if (button.dataset.action === 'plus2') {
-          button.disabled = state !== 'ready' || !hasDraft;
-        } else {
-          button.disabled = state !== 'ready' || !hasDraft;
-        }
-        return;
-      }
-
-      button.disabled = !lastSolveId;
-    });
-  }
-}
-
+/**
+ * Halts the solving timer and records the solve.
+ */
 function finishSolve() {
   cancelAnimation();
   const elapsed = performance.now() - solveStartTimestamp;
@@ -874,7 +1058,7 @@ function finishSolve() {
   setTimerState('ready');
   updateDisplay(formatTime(finalTime));
   flashDisplay();
-  showSolveActions();
+  syncSolveActionAvailability();
   solveStartTimestamp = null;
   inspectionStartTimestamp = null;
 }
@@ -882,11 +1066,11 @@ function finishSolve() {
 function recordSolve(finalTime, result = 'ok') {
   const scrambleUsed = scramble.join(' ');
   const solveEntry = {
-    id: Date.now() + Math.random(),
+    id: generateSolveId(),
     baseTimeMs: finalTime,
     timeMs: result === 'dnf' ? null : result === '+2' ? finalTime + 2000 : finalTime,
     result,
-    tag: EVENTS.find((event) => event.code === currentEvent).label,
+    tag: getEventLabel(currentEvent),
     scramble: scrambleUsed,
   };
 
@@ -899,6 +1083,15 @@ function recordSolve(finalTime, result = 'ok') {
   generateScramble();
 }
 
+/* ==========================================================================
+   10. Manual Time Entry Processor
+   ========================================================================== */
+
+/**
+ * Parses user-entered manual time strings (e.g. "12.34", "1234", "dnf", "12.34+2").
+ * @param {string} value
+ * @returns {{ timeMs: number, result: string } | null}
+ */
 function parseManualTime(value) {
   const enteredTime = value.trim().toLowerCase();
   if (enteredTime === 'dnf') {
@@ -910,9 +1103,10 @@ function parseManualTime(value) {
     return null;
   }
 
-  const parsedTime = Number(match[1]);
-  const seconds = match[1].includes('.') ? parsedTime : parsedTime / 100;
+  const parsedNumber = Number(match[1]);
+  const seconds = match[1].includes('.') ? parsedNumber : parsedNumber / 100;
   const timeMs = Math.round(seconds * 1000);
+
   if (!Number.isFinite(timeMs) || timeMs <= 0) {
     return null;
   }
@@ -928,6 +1122,7 @@ function recordManualTime(resultOverride = null) {
   const parsedTime = resultOverride === 'dnf'
     ? { timeMs: 0, result: 'dnf' }
     : parseManualTime(timerDisplay.value);
+
   if (parsedTime === null || (resultOverride === '+2' && parsedTime.result === 'dnf')) {
     timerDisplay.setAttribute('aria-invalid', 'true');
     timerDisplay.select();
@@ -941,7 +1136,7 @@ function recordManualTime(resultOverride = null) {
   timerDisplay.value = '';
   timerDisplay.style.width = '3.2ch';
   flashDisplay();
-  showSolveActions();
+  syncSolveActionAvailability();
   timerDisplay.removeAttribute('aria-invalid');
   timerDisplay.blur();
 }
@@ -950,7 +1145,6 @@ function clearManualTimeDraft() {
   if (!timerDisplay) {
     return;
   }
-
   manualTimeDraftActive = false;
   timerDisplay.value = '';
   timerDisplay.style.width = '3.2ch';
@@ -958,6 +1152,10 @@ function clearManualTimeDraft() {
   syncSolveActionAvailability();
   timerDisplay.focus();
 }
+
+/* ==========================================================================
+   11. Session Resets & Action Controllers
+   ========================================================================== */
 
 function resetSession() {
   cancelInspectionGracePeriod();
@@ -968,7 +1166,7 @@ function resetSession() {
   solveStartTimestamp = null;
   inspectionStartTimestamp = null;
   lastSolveId = null;
-  hideSolveActions();
+  syncSolveActionAvailability();
   setTimerState('ready');
   updateDisplay(manualTimeEntryEnabled ? '' : '0.00');
 }
@@ -994,7 +1192,6 @@ function handleTimerAction() {
     } else {
       beginSolve();
     }
-    return;
   }
 }
 
@@ -1015,10 +1212,15 @@ function closeSettingsMenu(restoreTimerFocus = false) {
   }
 }
 
+/* ==========================================================================
+   12. Input Event Handlers (Keyboard, Pointer, Buttons)
+   ========================================================================== */
+
 function isSpaceKey(event) {
   return event.code === 'Space' || event.key === ' ' || event.keyCode === 32;
 }
 
+// Global Keyboard Handler
 window.addEventListener('keydown', (event) => {
   if (!isSpaceKey(event)) {
     if (event.key === 'Escape' && settingsMenu && !settingsMenu.hidden) {
@@ -1034,7 +1236,7 @@ window.addEventListener('keydown', (event) => {
   const isReadOnlyTimerDisplay = event.target === timerDisplay && timerDisplay.readOnly;
   if (
     !isReadOnlyTimerDisplay &&
-    event.target.closest('input, button, select, textarea, [contenteditable="true"]')
+    event.target?.closest?.('input, button, select, textarea, [contenteditable="true"]')
   ) {
     return;
   }
@@ -1045,6 +1247,8 @@ window.addEventListener('keydown', (event) => {
   }
 
   event.preventDefault();
+
+  // Suppress repeat events while holding space
   if (event.repeat || isSpaceDown) {
     return;
   }
@@ -1052,12 +1256,14 @@ window.addEventListener('keydown', (event) => {
   isSpaceDown = true;
   spaceStartedInspection = false;
 
+  // Stop solve immediately on keydown
   if (state === 'solving') {
     finishSolve();
     justStopped = true;
     return;
   }
 
+  // During inspection: pressing space prepares to solve
   if (state === 'inspecting') {
     if (holdToStartEnabled) {
       timerDisplay.classList.add('space-held');
@@ -1067,6 +1273,7 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
+  // Inspection mode start
   if (state === 'ready' && inspectionEnabled) {
     spaceStartedInspection = true;
     if (holdToStartEnabled) {
@@ -1075,11 +1282,11 @@ window.addEventListener('keydown', (event) => {
       updateDisplay('0.00');
       return;
     }
-
     beginInspection();
     return;
   }
 
+  // Hold-to-start ready state
   if ((state === 'ready' || state === 'readyToSolve') && holdToStartEnabled) {
     cancelAnimation();
     setTimerState('holding');
@@ -1098,6 +1305,8 @@ window.addEventListener('keyup', (event) => {
   const startedInspection = spaceStartedInspection;
   spaceStartedInspection = false;
   isSpaceDown = false;
+
+  // Ignore keyup from the stopping tap
   if (justStopped) {
     justStopped = false;
     return;
@@ -1111,6 +1320,7 @@ window.addEventListener('keyup', (event) => {
     return;
   }
 
+  // Releasing space after holding during inspection starts the solve
   if (
     holdToStartEnabled &&
     !startedInspection &&
@@ -1126,6 +1336,7 @@ window.addEventListener('keyup', (event) => {
     return;
   }
 
+  // Releasing space launches the timer
   if (state === 'holding') {
     if (startedInspection && inspectionEnabled) {
       beginInspection();
@@ -1144,6 +1355,7 @@ window.addEventListener('blur', () => {
   spaceStartedInspection = false;
 });
 
+// Scramble Refresh Button
 if (newScrambleButton) {
   newScrambleButton.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -1152,6 +1364,7 @@ if (newScrambleButton) {
   });
 }
 
+// Event Selector Dropdown
 if (eventSelect) {
   eventSelect.value = currentEvent;
   eventSelect.addEventListener('change', () => {
@@ -1165,7 +1378,6 @@ if (eventSelect) {
     saveEventPreference();
     recentSolves = loadHistory(currentEvent);
     lastSolveId = null;
-    hideSolveActions();
     resetSession();
     restoreScramble(currentEvent);
     renderStats();
@@ -1173,6 +1385,7 @@ if (eventSelect) {
   });
 }
 
+// Manual Timer Display Input Handlers
 if (timerDisplay) {
   timerDisplay.addEventListener('focus', () => {
     if (!timerDisplay.readOnly) {
@@ -1192,18 +1405,18 @@ if (timerDisplay) {
   });
 
   timerDisplay.addEventListener('input', () => {
-    timerDisplay.style.width = `${Math.max(3.2, timerDisplay.value.length * 0.8 + 1.2)}ch`;
+    syncDisplayWidth(timerDisplay.value);
     timerDisplay.removeAttribute('aria-invalid');
-    manualTimeDraftActive =
-      manualTimeEntryEnabled && state === 'ready' && Boolean(timerDisplay.value.trim());
+    manualTimeDraftActive = hasManualTimeDraft();
     syncSolveActionAvailability();
   });
 }
 
+// Clear History Confirmation
 if (clearHistoryButton) {
   clearHistoryButton.addEventListener('click', (event) => {
     event.stopPropagation();
-    const eventLabel = EVENTS.find((event) => event.code === currentEvent).label;
+    const eventLabel = getEventLabel(currentEvent);
     if (clearHistoryMessage) {
       clearHistoryMessage.textContent = `Are you sure you want to delete all ${eventLabel} session records? This cannot be undone.`;
     }
@@ -1227,7 +1440,7 @@ if (confirmClearHistoryButton && clearHistoryDialog) {
   confirmClearHistoryButton.addEventListener('click', () => {
     recentSolves = [];
     lastSolveId = null;
-    hideSolveActions();
+    resetSession();
     saveHistory();
     renderStats();
     renderHistory();
@@ -1236,17 +1449,17 @@ if (confirmClearHistoryButton && clearHistoryDialog) {
   });
 }
 
+// Solve History List Item Click -> Opens Details Modal
 if (solveList) {
   solveList.addEventListener('click', (event) => {
     const recordButton = event.target.closest('.solve-record-button');
-    if (!recordButton) {
-      return;
+    if (recordButton) {
+      showSolveDetails(recordButton.dataset.solveId);
     }
-
-    showSolveDetails(recordButton.dataset.solveId);
   });
 }
 
+// Close Solve Details Modal
 if (closeSolveDetailsButton && solveDetails) {
   closeSolveDetailsButton.addEventListener('click', () => {
     solveDetails.close();
@@ -1263,35 +1476,34 @@ if (closeSolveDetailsButton && solveDetails) {
   });
 }
 
+// Last Solve Actions Buttons (Quick DNF, +2, Revert, Delete on main panel)
 document.querySelectorAll('.solve-actions .result-action').forEach((button) => {
   button.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
     const action = button.dataset.action;
-    const hasManualDraft =
-      manualTimeEntryEnabled && state === 'ready' && Boolean(timerDisplay?.value.trim());
+    const hasDraft = hasManualTimeDraft();
 
     if (action === 'dnf' && manualTimeEntryEnabled && state === 'ready') {
       recordManualTime('dnf');
       return;
     }
+
     if (action === 'plus2') {
       if (manualTimeEntryEnabled) {
-        if (hasManualDraft) {
+        if (hasDraft) {
           recordManualTime('+2');
         }
         return;
       }
-
-      if (!lastSolveId) {
-        return;
+      if (lastSolveId) {
+        applySolveAction(String(lastSolveId), action);
       }
-
-      applySolveAction(String(lastSolveId), action);
       return;
     }
+
     if ((action === 'reset' || action === 'delete') && manualTimeEntryEnabled) {
-      if (hasManualDraft) {
+      if (hasDraft) {
         clearManualTimeDraft();
       }
       return;
@@ -1308,16 +1520,16 @@ document.querySelectorAll('.solve-actions .result-action').forEach((button) => {
   });
 });
 
+// Modal Solve Detail Actions
 document.querySelectorAll('.solve-detail-actions .result-action').forEach((button) => {
   button.addEventListener('click', () => {
-    if (!selectedSolveId) {
-      return;
+    if (selectedSolveId) {
+      applySolveAction(selectedSolveId, button.dataset.action);
     }
-
-    applySolveAction(selectedSolveId, button.dataset.action);
   });
 });
 
+// Palette Selector Change
 if (colorPaletteSelect) {
   colorPaletteSelect.addEventListener('change', () => {
     colorPalette = colorPaletteSelect.value;
@@ -1326,6 +1538,7 @@ if (colorPaletteSelect) {
   });
 }
 
+// Settings Menu Dropdown Toggle
 if (menuToggle && settingsMenu) {
   menuToggle.addEventListener('click', () => {
     settingsMenu.hidden = !settingsMenu.hidden;
@@ -1342,6 +1555,7 @@ if (menuToggle && settingsMenu) {
   });
 }
 
+// Touch / Mouse Pointer Interaction on Timer Panel
 if (timerPanel) {
   let pointerActionHandled = false;
 
@@ -1378,11 +1592,11 @@ if (timerPanel) {
     if (event.detail > 0 && pointerActionHandled) {
       return;
     }
-
     handleTimerPointerAction(event);
   });
 }
 
+// Inspection Mode Toggle
 if (inspectionToggle) {
   inspectionToggle.checked = inspectionEnabled;
   inspectionToggle.addEventListener('change', () => {
@@ -1399,6 +1613,7 @@ if (inspectionToggle) {
   });
 }
 
+// Hold to Start Mode Toggle
 if (holdToStartToggle) {
   holdToStartToggle.checked = holdToStartEnabled;
   holdToStartToggle.addEventListener('change', () => {
@@ -1411,6 +1626,7 @@ if (holdToStartToggle) {
   });
 }
 
+// Manual Time Entry Toggle
 if (manualTimeToggle) {
   manualTimeToggle.checked = manualTimeEntryEnabled;
   manualTimeToggle.addEventListener('change', () => {
@@ -1422,8 +1638,12 @@ if (manualTimeToggle) {
   });
 }
 
+/* ==========================================================================
+   13. Application Startup Initialization
+   ========================================================================== */
+
 applyTheme();
-hideSolveActions();
+syncSolveActionAvailability();
 renderStats();
 renderHistory();
 

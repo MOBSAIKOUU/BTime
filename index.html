@@ -14,10 +14,11 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/css/style.css?v=32" />
+    <link rel="stylesheet" href="assets/css/style.css" />
   </head>
   <body>
     <div class="page-shell">
+      <!-- Top Bar: Brand Logo & Settings Menu -->
       <header class="topbar">
         <div class="brand-block">
           <img class="brand-mark" src="assets/Images/Logo/BtimeLogo-transparent.png" alt="BTime logo" />
@@ -26,6 +27,7 @@
             <h1>BTime</h1>
           </div>
         </div>
+
         <div class="topbar-actions">
           <div class="menu">
             <button
@@ -39,8 +41,12 @@
               <span class="menu-icon" aria-hidden="true">☰</span>
               <span>Menu</span>
             </button>
+
+            <!-- Dropdown Settings Panel -->
             <div id="settingsMenu" class="settings-menu" hidden>
               <p class="menu-title">Timer settings</p>
+
+              <!-- Category: Timer Preferences -->
               <section class="settings-category" aria-labelledby="timerSettingsTitle">
                 <h3 id="timerSettingsTitle" class="settings-category-title">Timer</h3>
                 <label class="setting-row">
@@ -56,6 +62,8 @@
                   <input type="checkbox" id="manualTimeToggle" />
                 </label>
               </section>
+
+              <!-- Category: Visual Palette -->
               <section class="settings-category" aria-labelledby="looksSettingsTitle">
                 <h3 id="looksSettingsTitle" class="settings-category-title">Looks</h3>
                 <label class="setting-row" for="colorPaletteSelect">
@@ -71,6 +79,7 @@
                     <option value="sunrise">Sunrise</option>
                     <option value="shibuya">Shibuya</option>
                     <option value="christmas">Christmas</option>
+                    <option value="halloween">Halloween</option>
                   </select>
                 </label>
               </section>
@@ -79,73 +88,80 @@
         </div>
       </header>
 
+      <!-- Main Application Layout -->
       <main class="app-layout">
+        <!-- Left: Workspace (Scramble, Timer, Statistics) -->
         <div class="timer-workspace">
-        <section class="panel scramble-panel">
-          <div class="panel-header">
-            <span class="panel-label">Scramble</span>
-            <button
-              id="newScramble"
-              class="scramble-refresh"
-              type="button"
-              aria-label="Generate a new scramble"
-              title="New scramble"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M20 7v5h-5M4 17v-5h5" />
-                <path d="M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2" />
-              </svg>
-            </button>
-          </div>
-          <p id="scrambleText" class="scramble-text"></p>
-        </section>
+          <!-- Scramble Generator Panel -->
+          <section class="panel scramble-panel">
+            <div class="panel-header">
+              <span class="panel-label">Scramble</span>
+              <button
+                id="newScramble"
+                class="scramble-refresh"
+                type="button"
+                aria-label="Generate a new scramble"
+                title="New scramble"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 7v5h-5M4 17v-5h5" />
+                  <path d="M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2" />
+                </svg>
+              </button>
+            </div>
+            <p id="scrambleText" class="scramble-text"></p>
+          </section>
 
-        <section class="panel timer-panel" id="timerPanel" aria-label="Cube timer panel" tabindex="0">
-          <div id="timerState" class="timer-state">Ready</div>
-          <input
-            id="timerDisplay"
-            class="timer-display"
-            type="text"
-            inputmode="decimal"
-            autocomplete="off"
-            spellcheck="false"
-            value=""
-            readonly
-            aria-label="Timer display"
-            aria-live="polite"
-          />
-          <div id="solveActions" class="solve-actions" aria-label="Last solve actions">
-            <button class="result-action secondary-button" data-action="dnf" type="button" disabled>DNF</button>
-            <button class="result-action secondary-button" data-action="plus2" type="button" disabled>+2</button>
-            <button class="result-action secondary-button" data-action="reset" type="button" disabled>Revert</button>
-            <button class="result-action danger-button" data-action="delete" type="button" disabled>Delete</button>
-          </div>
-        </section>
+          <!-- Interactive Timer Display Panel -->
+          <section class="panel timer-panel" id="timerPanel" aria-label="Cube timer panel" tabindex="0">
+            <div id="timerState" class="timer-state">Ready</div>
+            <input
+              id="timerDisplay"
+              class="timer-display"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              spellcheck="false"
+              value=""
+              readonly
+              aria-label="Timer display"
+              aria-live="polite"
+            />
+            <!-- Quick Actions for Last Completed Solve -->
+            <div id="solveActions" class="solve-actions" aria-label="Last solve actions">
+              <button class="result-action secondary-button" data-action="dnf" type="button" disabled>DNF</button>
+              <button class="result-action secondary-button" data-action="plus2" type="button" disabled>+2</button>
+              <button class="result-action secondary-button" data-action="reset" type="button" disabled>Revert</button>
+              <button class="result-action danger-button" data-action="delete" type="button" disabled>Delete</button>
+            </div>
+          </section>
 
-        <aside class="panel stats-panel">
-          <div class="stat-row">
-            <span>Best single</span>
-            <strong id="bestTime">--</strong>
-          </div>
-          <div class="stat-row">
-            <span>Best Ao5</span>
-            <strong id="bestAvg5">--</strong>
-          </div>
-          <div class="stat-row">
-            <span>Average of 5 (Ao5)</span>
-            <strong id="avg5">--</strong>
-          </div>
-          <div class="stat-row">
-            <span>Average of 12 (Ao12)</span>
-            <strong id="avg12">--</strong>
-          </div>
-          <div class="stat-row" title="Mean of timed solves in this session; +2 penalties are included and DNFs are excluded.">
-            <span>Mean</span>
-            <strong id="meanTime">--</strong>
-          </div>
-        </aside>
+          <!-- Session Statistics Panel -->
+          <aside class="panel stats-panel">
+            <div class="stat-row">
+              <span>Best single</span>
+              <strong id="bestTime">--</strong>
+            </div>
+            <div class="stat-row">
+              <span>Best Ao5</span>
+              <strong id="bestAvg5">--</strong>
+            </div>
+            <div class="stat-row">
+              <span>Average of 5 (Ao5)</span>
+              <strong id="avg5">--</strong>
+            </div>
+            <div class="stat-row">
+              <span>Average of 12 (Ao12)</span>
+              <strong id="avg12">--</strong>
+            </div>
+            <div class="stat-row" title="Mean of timed solves in this session; +2 penalties are included and DNFs are excluded.">
+              <span>Mean</span>
+              <strong id="meanTime">--</strong>
+            </div>
+          </aside>
         </div>
 
+        <!-- Right: Session History & Visual Cube Drawing -->
         <aside class="panel history-panel">
           <div class="history-header">
             <h2>Solves</h2>
@@ -164,10 +180,12 @@
                 <option value="skewb">Skewb</option>
                 <option value="sq1">Square-1</option>
               </select>
-              <button id="clearHistory" class="ghost-button small" type="button">Clear</button>
+              <button id="clearHistory" class="ghost-button" type="button">Clear</button>
             </div>
           </div>
           <ol id="solveList" class="solve-list"></ol>
+
+          <!-- Visual 2D/3D Scramble Drawing -->
           <section class="scramble-visual-panel" aria-labelledby="scrambleVisualTitle">
             <scramble-display
               id="scrambleVisualization"
@@ -182,13 +200,13 @@
           </section>
         </aside>
       </main>
-
     </div>
 
+    <!-- Modal: Individual Solve Details & Modifier Actions -->
     <dialog id="solveDetails" class="solve-dialog" aria-labelledby="solveDetailsTitle">
       <div class="dialog-header">
         <h2 id="solveDetailsTitle">Solve details</h2>
-        <button id="closeSolveDetails" class="dialog-close" type="button" aria-label="Close solve details">×</button>
+        <button id="closeSolveDetails" class="dialog-close" type="button" aria-label="Close solve details">&times;</button>
       </div>
       <div class="solve-detail-row">
         <span>Time</span>
@@ -206,6 +224,7 @@
       </div>
     </dialog>
 
+    <!-- Modal: Confirm Clear Session Solves -->
     <dialog id="clearHistoryDialog" class="solve-dialog confirm-dialog" aria-labelledby="clearHistoryTitle">
       <div class="dialog-header">
         <h2 id="clearHistoryTitle">Clear session records?</h2>
@@ -217,6 +236,7 @@
       </div>
     </dialog>
 
-    <script src="assets/js/app.js?v=35"></script>
+    <!-- Application Script -->
+    <script src="assets/js/app.js"></script>
   </body>
 </html>
