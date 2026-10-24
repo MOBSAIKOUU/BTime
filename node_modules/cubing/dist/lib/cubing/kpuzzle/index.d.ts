@@ -1,0 +1,2 @@
+import { B as KTransformation, G as KTransformationData, H as KPatternData, K as KTransformationOrbitData, R as KPattern, U as KPatternOrbitData, V as KPuzzleDefinition, W as KPuzzleOrbitDefinition, z as KPuzzle } from "../index-nWspzjVK.js";
+export { KPattern, type KPatternData, type KPatternOrbitData, KPuzzle, type KPuzzleDefinition, type KPuzzleOrbitDefinition, KTransformation, type KTransformationData, type KTransformationOrbitData };

@@ -400,9 +400,9 @@ async function getNewScramble(eventCode) {
     const generatedScramble = await randomScrambleForEvent(eventCode);
     const moves = generatedScramble.toString().trim().split(/\s+/);
     const isValid =
-      moves.length > 0 &&
-      (eventCode !== '333' || (moves.length >= 19 && moves.length <= 22)) &&
-      (!isCube || moves.every((move) => VALID_MOVE_REGEX.test(move)));
+          moves.length > 0 &&
+          (eventCode !== '333' || (moves.length >= 19 && moves.length <= 22)) &&
+          (isCube ? moves.every((move) => VALID_MOVE_REGEX.test(move)) : true);
 
     if (isValid) {
       return moves.join(' ');
