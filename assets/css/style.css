@@ -794,6 +794,27 @@ body[data-palette="chessboard"] .timer-state.holding {
   text-shadow: none;
 }
 
+
+/* Hold Duration Feedback (Red while holding <0.75s, Green when ready >=0.75s) */
+.timer-state.holding.holding-wait {
+  color: var(--danger) !important;
+}
+
+.timer-display.holding-wait {
+  color: var(--danger) !important;
+  text-shadow: 0 0 20px rgba(220, 38, 38, 0.35) !important;
+}
+
+.timer-state.holding.holding-ready {
+  color: var(--success) !important;
+  font-weight: 700;
+}
+
+.timer-display.holding-ready {
+  color: var(--success) !important;
+  text-shadow: 0 0 26px rgba(34, 197, 94, 0.45) !important;
+}
+
 .timer-display.flash {
   animation: pulse 0.35s ease-in-out;
 }

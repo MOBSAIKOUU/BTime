@@ -64,6 +64,7 @@ const MANUAL_TIME_STORAGE_KEY = 'bcube-timer-manual-time';
 const INSPECTION_SECONDS = 15;
 const INSPECTION_GRACE_SECONDS = 1;
 const SCRAMBLE_PREFETCH_COUNT = 5;
+const REQUIRED_HOLD_MS = 300;
 
 // WCA Supported Events
 const EVENTS = [
@@ -117,6 +118,9 @@ let justStopped = false;
 let spaceStartedInspection = false;
 let pointerStartedInspection = false;
 let justStoppedPointer = false;
+let holdTimeoutId = null;
+let isHoldReady = false;
+let lastSolveStoppedAt = 0;
 
 // High-resolution Timestamps
 let solveStartTimestamp = null;
@@ -1163,6 +1167,11 @@ function clearManualTimeDraft() {
 function resetSession() {
   cancelInspectionGracePeriod();
   cancelAnimation();
+  if (holdTimeoutId !== null) {
+    clearTimeout(holdTimeoutId);
+    holdTimeoutId = null;
+  }
+  isHoldReady = false;
   isSpaceDown = false;
   justStopped = false;
   spaceStartedInspection = false;
@@ -1174,6 +1183,7 @@ function resetSession() {
   syncSolveActionAvailability();
   setTimerState('ready');
   updateDisplay(manualTimeEntryEnabled ? '' : '0.00');
+  timerDisplay?.classList.remove('holding-wait', 'holding-ready', 'space-held');
 }
 
 function handleTimerAction() {
@@ -1238,7 +1248,7 @@ function clearAllSolves() {
   }
 }
 
-// Global Keyboard Handler
+// Global Keyboard Handler (Spacebar Hold-to-Start)
 window.addEventListener('keydown', (event) => {
   if (!isSpaceKey(event)) {
     if (event.key === 'Escape' && settingsMenu && !settingsMenu.hidden) {
@@ -1246,7 +1256,7 @@ window.addEventListener('keydown', (event) => {
       return;
     }
     
-    // Alt+Z: Clear all solves for current event
+    // Alt+D: Clear all solves for current event
     if (event.altKey && (event.key === 'd' || event.key === 'D')) {
       event.preventDefault();
       clearAllSolves();
@@ -1275,55 +1285,89 @@ window.addEventListener('keydown', (event) => {
 
   event.preventDefault();
 
-  // Suppress repeat events while holding space
+  // Suppress OS key repeat events while holding space
   if (event.repeat || isSpaceDown) {
     return;
   }
 
   isSpaceDown = true;
-  spaceStartedInspection = false;
 
   // Stop solve immediately on keydown
   if (state === 'solving') {
     finishSolve();
+    lastSolveStoppedAt = performance.now();
     justStopped = true;
     return;
   }
-
-  // During inspection: pressing space prepares to solve
-  if (state === 'inspecting') {
+  // During inspection: start solve immediately if holdToStart is disabled, or hold if enabled
+  if (state === 'inspecting' || state === 'readyToSolve') {
     if (holdToStartEnabled) {
-      timerDisplay.classList.add('space-held');
+      isHoldReady = false;
+      timerState.textContent = 'Hold...';
+      timerDisplay.classList.add('space-held', 'holding-wait');
+      timerDisplay.classList.remove('holding-ready');
+
+      if (holdTimeoutId !== null) {
+        clearTimeout(holdTimeoutId);
+      }
+
+      holdTimeoutId = window.setTimeout(() => {
+        isHoldReady = true;
+        timerState.textContent = 'Release to start';
+        timerDisplay.classList.remove('holding-wait');
+        timerDisplay.classList.add('holding-ready');
+        flashDisplay();
+      }, REQUIRED_HOLD_MS);
+
+      return;
     } else {
+      // Instant start when Hold-to-Start is disabled (0ms delay)
       beginSolve();
-    }
-    return;
-  }
-
-  // Inspection mode start
-  if (state === 'ready' && inspectionEnabled) {
-    spaceStartedInspection = true;
-    if (holdToStartEnabled) {
-      cancelAnimation();
-      setTimerState('holding');
-      updateDisplay('0.00');
       return;
     }
-    beginInspection();
-    return;
   }
 
-  // Hold-to-start ready state
-  if ((state === 'ready' || state === 'readyToSolve') && holdToStartEnabled) {
-    cancelAnimation();
-    setTimerState('holding');
-    updateDisplay('0.00');
-    return;
-  }
+  // When ready: if inspection is enabled, start inspection immediately on tap (no hold delay)
+  if (state === 'ready') {
+    if (inspectionEnabled) {
+      spaceStartedInspection = true;
+      beginInspection();
+      return;
+    }
 
-  handleTimerAction();
+    // If inspection is disabled: check holdToStart setting
+    if (holdToStartEnabled) {
+      isHoldReady = false;
+      spaceStartedInspection = false;
+      cancelAnimation();
+      setTimerState('holding');
+      timerState.textContent = 'Hold...';
+      timerState.className = 'timer-state holding holding-wait';
+      timerDisplay.classList.add('holding-wait');
+      timerDisplay.classList.remove('holding-ready');
+      updateDisplay('0.00');
+
+      if (holdTimeoutId !== null) {
+        clearTimeout(holdTimeoutId);
+      }
+
+      holdTimeoutId = window.setTimeout(() => {
+        isHoldReady = true;
+        timerState.textContent = 'Release to start';
+        timerState.className = 'timer-state holding holding-ready';
+        timerDisplay.classList.remove('holding-wait');
+        timerDisplay.classList.add('holding-ready');
+        flashDisplay();
+      }, REQUIRED_HOLD_MS);
+
+      return;
+    } else {
+      // Instant start when Hold-to-Start is disabled (0ms delay)
+      beginSolve();
+      return;
+    }
+  }
 });
-
 window.addEventListener('keyup', (event) => {
   if (!isSpaceKey(event) || !timerPanel) {
     return;
@@ -1333,47 +1377,77 @@ window.addEventListener('keyup', (event) => {
   spaceStartedInspection = false;
   isSpaceDown = false;
 
-  // Ignore keyup from the stopping tap
+  if (holdTimeoutId !== null) {
+    clearTimeout(holdTimeoutId);
+    holdTimeoutId = null;
+  }
+
+    // Ignore keyup from the stopping tap
   if (justStopped) {
     justStopped = false;
     return;
   }
 
+  // If space tap started inspection, ignore keyup
+  if (startedInspection) {
+    return;
+  }
+
   if (manualTimeEntryEnabled && state !== 'solving') {
-    timerDisplay.classList.remove('space-held');
+    timerDisplay.classList.remove('space-held', 'holding-wait', 'holding-ready');
     if (state === 'holding') {
       resetSession();
     }
     return;
   }
-
-  // Releasing space after holding during inspection starts the solve
-  if (
-    holdToStartEnabled &&
-    !startedInspection &&
-    (state === 'inspecting' || state === 'readyToSolve')
-  ) {
-    timerDisplay.classList.remove('space-held');
-    beginSolve();
+  if (!holdToStartEnabled) {
     return;
   }
 
-  if (state === 'inspecting') {
-    timerDisplay.classList.remove('space-held');
-    return;
-  }
+  // Releasing after full hold: start solve!
+  if (isHoldReady) {
+    isHoldReady = false;
+    timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
 
-  // Releasing space launches the timer
-  if (state === 'holding') {
-    if (startedInspection && inspectionEnabled) {
-      beginInspection();
-    } else {
+    if (state === 'holding') {
       beginSolve();
+      return;
+    }
+
+    if (state === 'inspecting' || state === 'readyToSolve') {
+      beginSolve();
+      return;
+    }
+  } else {
+    // Released too early -> Cancel and do not start!
+    isHoldReady = false;
+    timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
+
+    if (state === 'holding') {
+      setTimerState('ready');
+      const lastSolve = recentSolves.find((s) => String(s.id) === String(lastSolveId));
+      if (lastSolve && Number.isFinite(lastSolve.baseTimeMs)) {
+        updateDisplay(formatTime(lastSolve.baseTimeMs));
+      } else {
+        updateDisplay('0.00');
+      }
+      return;
+    }
+
+    if (state === 'inspecting') {
+      timerState.textContent = 'Inspecting';
+      timerState.className = 'timer-state inspecting';
     }
   }
 });
 
 window.addEventListener('blur', () => {
+  if (holdTimeoutId !== null) {
+    clearTimeout(holdTimeoutId);
+    holdTimeoutId = null;
+  }
+  isHoldReady = false;
+  timerDisplay?.classList.remove('holding-wait', 'holding-ready', 'space-held');
   if (state === 'holding') {
     resetSession();
   }
@@ -1613,14 +1687,29 @@ if (timerPanel) {
     'pointerdown',
     (event) => {
       if (state === 'solving') {
-        // Disallow mouse clicks on PC from stopping the solve
         if (event.pointerType === 'mouse') {
           return;
         }
         if (!event.target.closest('#settingsMenu, .solve-dialog')) {
+          event.preventDefault();
+          event.stopPropagation(); // CRITICAL: Stop event from bubbling to timerPanel
           finishSolve();
+          lastSolveStoppedAt = performance.now();
           justStopped = true;
           justStoppedPointer = true;
+        }
+      }
+    },
+    { capture: true }
+  );
+
+  // Prevent lifting finger after stopping from re-triggering anything
+  window.addEventListener(
+    'pointerup',
+    (event) => {
+      if (justStoppedPointer || performance.now() - lastSolveStoppedAt < 600) {
+        justStoppedPointer = false;
+        if (event.pointerType !== 'mouse') {
           event.preventDefault();
         }
       }
@@ -1629,16 +1718,19 @@ if (timerPanel) {
   );
 
   timerPanel.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 && event.pointerType === 'mouse') {
+    if (shouldIgnorePointer(event)) {
       return;
     }
 
-    if (shouldIgnorePointer(event)) {
+    // Cooldown lockout after stopping a solve
+    if (performance.now() - lastSolveStoppedAt < 600) {
+      event.preventDefault();
       return;
     }
 
     if (state === 'solving') {
       finishSolve();
+      lastSolveStoppedAt = performance.now();
       justStopped = true;
       justStoppedPointer = true;
       event.preventDefault();
@@ -1647,86 +1739,169 @@ if (timerPanel) {
 
     justStoppedPointer = false;
 
-    // During inspection: pressing prepares to solve
-    if (state === 'inspecting') {
-      if (holdToStartEnabled) {
-        timerDisplay.classList.add('space-held');
-      } else {
-        beginSolve();
-      }
-      event.preventDefault();
-      return;
-    }
-
-    // Hold-to-start preparation on touch/click
-    if (holdToStartEnabled) {
-      if (state === 'ready' && inspectionEnabled) {
+        // When ready: if inspection is enabled, start inspection immediately on tap (no hold delay)
+    if (state === 'ready') {
+      if (inspectionEnabled) {
         pointerStartedInspection = true;
-        cancelAnimation();
-        setTimerState('holding');
-        updateDisplay('0.00');
+        beginInspection();
         event.preventDefault();
         return;
       }
-
-      if (state === 'ready' || state === 'readyToSolve') {
+      // If inspection is disabled: check holdToStart setting
+      if (holdToStartEnabled) {
+        isHoldReady = false;
         pointerStartedInspection = false;
         cancelAnimation();
         setTimerState('holding');
+        timerState.textContent = 'Hold...';
+        timerState.className = 'timer-state holding holding-wait';
+        timerDisplay.classList.add('holding-wait');
+        timerDisplay.classList.remove('holding-ready');
         updateDisplay('0.00');
+
+        if (holdTimeoutId !== null) {
+          clearTimeout(holdTimeoutId);
+        }
+
+        holdTimeoutId = window.setTimeout(() => {
+          isHoldReady = true;
+          timerState.textContent = 'Release to start';
+          timerState.className = 'timer-state holding holding-ready';
+          timerDisplay.classList.remove('holding-wait');
+          timerDisplay.classList.add('holding-ready');
+          flashDisplay();
+          if (navigator.vibrate) {
+            try { navigator.vibrate(40); } catch (_) {}
+          }
+        }, REQUIRED_HOLD_MS);
+
+        event.preventDefault();
+        return;
+      } else {
+        // Instant start when Hold-to-Start is disabled (0ms delay)
+        beginSolve();
         event.preventDefault();
         return;
       }
-    } else {
-      // Tap to start
-      if (state === 'ready' || state === 'readyToSolve') {
-        handleTimerAction();
+    }
+
+    // During inspection: instant start if holdToStart is disabled, or hold if enabled
+    if (state === 'inspecting' || state === 'readyToSolve') {
+      if (holdToStartEnabled) {
+        isHoldReady = false;
+        timerState.textContent = 'Hold...';
+        timerDisplay.classList.add('space-held', 'holding-wait');
+        timerDisplay.classList.remove('holding-ready');
+
+        if (holdTimeoutId !== null) {
+          clearTimeout(holdTimeoutId);
+        }
+
+        holdTimeoutId = window.setTimeout(() => {
+          isHoldReady = true;
+          timerState.textContent = 'Release to start';
+          timerDisplay.classList.remove('holding-wait');
+          timerDisplay.classList.add('holding-ready');
+          flashDisplay();
+          if (navigator.vibrate) {
+            try { navigator.vibrate(40); } catch (_) {}
+          }
+        }, REQUIRED_HOLD_MS);
+
         event.preventDefault();
+        return;
+      } else {
+        // Instant start when Hold-to-Start is disabled (0ms delay)
+        beginSolve();
+        event.preventDefault();
+        return;
       }
     }
   });
 
   const handlePointerRelease = (event) => {
+    if (holdTimeoutId !== null) {
+      clearTimeout(holdTimeoutId);
+      holdTimeoutId = null;
+    }
+
     if (shouldIgnorePointer(event)) {
       return;
     }
 
-    if (justStoppedPointer) {
+        if (justStoppedPointer || performance.now() - lastSolveStoppedAt < 600) {
       justStoppedPointer = false;
       return;
     }
 
+    // If tap started inspection, ignore pointerup
+    if (pointerStartedInspection) {
+      pointerStartedInspection = false;
+      return;
+    }
     if (!holdToStartEnabled) {
       return;
     }
 
-    // Releasing after holding starts the timer or inspection
-    if (state === 'holding') {
-      if (pointerStartedInspection && inspectionEnabled) {
-        beginInspection();
-      } else {
-        beginSolve();
-      }
-      pointerStartedInspection = false;
-      event.preventDefault();
-      return;
-    }
+    // If held for full hold duration: start solve!
+    if (isHoldReady) {
+      isHoldReady = false;
+      timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
 
-    // Releasing after holding during inspection starts the solve
-    if (state === 'inspecting' || state === 'readyToSolve') {
-      timerDisplay.classList.remove('space-held');
-      if (!pointerStartedInspection) {
+      if (state === 'holding') {
         beginSolve();
+        pointerStartedInspection = false;
+        event.preventDefault();
+        return;
       }
-      pointerStartedInspection = false;
-      event.preventDefault();
+
+      if (state === 'inspecting' || state === 'readyToSolve') {
+        beginSolve();
+        pointerStartedInspection = false;
+        event.preventDefault();
+        return;
+      }
+    } else {
+      // Released too early -> Cancel and do not start!
+      isHoldReady = false;
+      timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
+
+      if (state === 'holding') {
+        setTimerState('ready');
+        const lastSolve = recentSolves.find((s) => String(s.id) === String(lastSolveId));
+        if (lastSolve && Number.isFinite(lastSolve.baseTimeMs)) {
+          updateDisplay(formatTime(lastSolve.baseTimeMs));
+        } else {
+          updateDisplay('0.00');
+        }
+        event.preventDefault();
+        return;
+      }
+
+      if (state === 'inspecting') {
+        timerState.textContent = 'Inspecting';
+        timerState.className = 'timer-state inspecting';
+      }
     }
   };
 
   timerPanel.addEventListener('pointerup', handlePointerRelease);
   timerPanel.addEventListener('pointercancel', () => {
+    if (holdTimeoutId !== null) {
+      clearTimeout(holdTimeoutId);
+      holdTimeoutId = null;
+    }
+    isHoldReady = false;
+    timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
+
     if (state === 'holding') {
-      resetSession();
+      setTimerState('ready');
+      const lastSolve = recentSolves.find((s) => String(s.id) === String(lastSolveId));
+      if (lastSolve && Number.isFinite(lastSolve.baseTimeMs)) {
+        updateDisplay(formatTime(lastSolve.baseTimeMs));
+      } else {
+        updateDisplay('0.00');
+      }
     }
     pointerStartedInspection = false;
     justStoppedPointer = false;
