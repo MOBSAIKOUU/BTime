@@ -4,7 +4,9 @@
  * spacebar/touch timing, manual time entry, Ao5/Ao12 session statistics,
  * solve penalty management (DNF/+2), and multi-event support.
  */
+  import { inject } from '@vercel/analytics';
 
+  inject();
 /* ==========================================================================
    1. DOM Element Cache & Constants
    ========================================================================== */
@@ -906,6 +908,7 @@ function syncManualTimeEntry() {
   timerDisplay.readOnly = !canEditTime;
   timerDisplay.setAttribute('aria-label', canEditTime ? 'Enter solve time' : 'Timer display');
   timerPanel?.classList.toggle('manual-entry-active', canEditTime);
+  
 
   if (canEditTime) {
     if (!manualTimeDraftActive) {
@@ -1129,7 +1132,7 @@ function recordManualTime(resultOverride = null) {
     return;
   }
 
-  const result = resultOverride || parsedTime.result;
+    const result = resultOverride || parsedTime.result;
   manualTimeDraftActive = false;
   recordSolve(parsedTime.timeMs, result);
   setTimerState('ready');
@@ -1138,7 +1141,8 @@ function recordManualTime(resultOverride = null) {
   flashDisplay();
   syncSolveActionAvailability();
   timerDisplay.removeAttribute('aria-invalid');
-  timerDisplay.blur();
+  // Keep focus on timer display for fast entry
+  timerDisplay.focus();
 }
 
 function clearManualTimeDraft() {
@@ -1220,12 +1224,34 @@ function isSpaceKey(event) {
   return event.code === 'Space' || event.key === ' ' || event.keyCode === 32;
 }
 
+// Clear All Solves Handler
+function clearAllSolves() {
+  if (confirmClearHistoryButton && clearHistoryDialog) {
+    const eventLabel = getEventLabel(currentEvent);
+    if (clearHistoryMessage) {
+      clearHistoryMessage.textContent = `Are you sure you want to delete all ${eventLabel} session records? This cannot be undone.`;
+    }
+    clearHistoryDialog.showModal();
+    // Focus the confirm button for quick confirmation
+    setTimeout(() => confirmClearHistoryButton?.focus(), 10);
+  }
+}
+
 // Global Keyboard Handler
 window.addEventListener('keydown', (event) => {
   if (!isSpaceKey(event)) {
     if (event.key === 'Escape' && settingsMenu && !settingsMenu.hidden) {
       closeSettingsMenu(true);
+      return;
     }
+    
+    // Alt+Z: Clear all solves for current event
+    if (event.altKey && (event.key === 'd' || event.key === 'D')) {
+      event.preventDefault();
+      clearAllSolves();
+      return;
+    }
+    
     return;
   }
 
