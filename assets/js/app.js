@@ -115,6 +115,8 @@ let manualTimeDraftActive = false;
 let isSpaceDown = false;
 let justStopped = false;
 let spaceStartedInspection = false;
+let pointerStartedInspection = false;
+let justStoppedPointer = false;
 
 // High-resolution Timestamps
 let solveStartTimestamp = null;
@@ -1164,6 +1166,8 @@ function resetSession() {
   isSpaceDown = false;
   justStopped = false;
   spaceStartedInspection = false;
+  pointerStartedInspection = false;
+  justStoppedPointer = false;
   solveStartTimestamp = null;
   inspectionStartTimestamp = null;
   lastSolveId = null;
@@ -1376,6 +1380,8 @@ window.addEventListener('blur', () => {
   isSpaceDown = false;
   justStopped = false;
   spaceStartedInspection = false;
+  pointerStartedInspection = false;
+  justStoppedPointer = false;
 });
 
 // Scramble Refresh Button
@@ -1580,42 +1586,150 @@ if (menuToggle && settingsMenu) {
 
 // Touch / Mouse Pointer Interaction on Timer Panel
 if (timerPanel) {
-  let pointerActionHandled = false;
-
-  const handleTimerPointerAction = (event) => {
-    if (manualTimeEntryEnabled && state !== 'solving') {
-      return;
+  // Prevent context menu (magnifier/copy callout) on long press
+  timerPanel.addEventListener('contextmenu', (event) => {
+    if (event.target !== timerDisplay || timerDisplay.readOnly) {
+      event.preventDefault();
     }
-
-    const isReadOnlyTimerDisplay = event.target === timerDisplay && timerDisplay.readOnly;
-    if (event.target.closest('button, input, label') && !isReadOnlyTimerDisplay) {
-      return;
-    }
-
-    if (holdToStartEnabled && state !== 'solving') {
-      return;
-    }
-
-    handleTimerAction();
-  };
-
-  timerPanel.addEventListener('pointerup', (event) => {
-    if (event.button !== 0) {
-      return;
-    }
-
-    pointerActionHandled = true;
-    window.setTimeout(() => {
-      pointerActionHandled = false;
-    }, 800);
-    handleTimerPointerAction(event);
   });
 
-  timerPanel.addEventListener('click', (event) => {
-    if (event.detail > 0 && pointerActionHandled) {
+  const shouldIgnorePointer = (event) => {
+    // Disallow mouse clicks on PC - only allow touch/smartphone/tablet interactions
+    if (event.pointerType === 'mouse') {
+      return true;
+    }
+    if (manualTimeEntryEnabled && state !== 'solving') {
+      return true;
+    }
+    const isReadOnlyTimerDisplay = event.target === timerDisplay && timerDisplay.readOnly;
+    if (event.target.closest('button, select, label, [role="button"]') && !isReadOnlyTimerDisplay) {
+      return true;
+    }
+    return false;
+  };
+
+  // Immediate stop on screen touch down when solving (smartphone / touchscreen only)
+  window.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (state === 'solving') {
+        // Disallow mouse clicks on PC from stopping the solve
+        if (event.pointerType === 'mouse') {
+          return;
+        }
+        if (!event.target.closest('#settingsMenu, .solve-dialog')) {
+          finishSolve();
+          justStopped = true;
+          justStoppedPointer = true;
+          event.preventDefault();
+        }
+      }
+    },
+    { capture: true }
+  );
+
+  timerPanel.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 && event.pointerType === 'mouse') {
       return;
     }
-    handleTimerPointerAction(event);
+
+    if (shouldIgnorePointer(event)) {
+      return;
+    }
+
+    if (state === 'solving') {
+      finishSolve();
+      justStopped = true;
+      justStoppedPointer = true;
+      event.preventDefault();
+      return;
+    }
+
+    justStoppedPointer = false;
+
+    // During inspection: pressing prepares to solve
+    if (state === 'inspecting') {
+      if (holdToStartEnabled) {
+        timerDisplay.classList.add('space-held');
+      } else {
+        beginSolve();
+      }
+      event.preventDefault();
+      return;
+    }
+
+    // Hold-to-start preparation on touch/click
+    if (holdToStartEnabled) {
+      if (state === 'ready' && inspectionEnabled) {
+        pointerStartedInspection = true;
+        cancelAnimation();
+        setTimerState('holding');
+        updateDisplay('0.00');
+        event.preventDefault();
+        return;
+      }
+
+      if (state === 'ready' || state === 'readyToSolve') {
+        pointerStartedInspection = false;
+        cancelAnimation();
+        setTimerState('holding');
+        updateDisplay('0.00');
+        event.preventDefault();
+        return;
+      }
+    } else {
+      // Tap to start
+      if (state === 'ready' || state === 'readyToSolve') {
+        handleTimerAction();
+        event.preventDefault();
+      }
+    }
+  });
+
+  const handlePointerRelease = (event) => {
+    if (shouldIgnorePointer(event)) {
+      return;
+    }
+
+    if (justStoppedPointer) {
+      justStoppedPointer = false;
+      return;
+    }
+
+    if (!holdToStartEnabled) {
+      return;
+    }
+
+    // Releasing after holding starts the timer or inspection
+    if (state === 'holding') {
+      if (pointerStartedInspection && inspectionEnabled) {
+        beginInspection();
+      } else {
+        beginSolve();
+      }
+      pointerStartedInspection = false;
+      event.preventDefault();
+      return;
+    }
+
+    // Releasing after holding during inspection starts the solve
+    if (state === 'inspecting' || state === 'readyToSolve') {
+      timerDisplay.classList.remove('space-held');
+      if (!pointerStartedInspection) {
+        beginSolve();
+      }
+      pointerStartedInspection = false;
+      event.preventDefault();
+    }
+  };
+
+  timerPanel.addEventListener('pointerup', handlePointerRelease);
+  timerPanel.addEventListener('pointercancel', () => {
+    if (state === 'holding') {
+      resetSession();
+    }
+    pointerStartedInspection = false;
+    justStoppedPointer = false;
   });
 }
 

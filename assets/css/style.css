@@ -393,19 +393,25 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  min-height: 100dvh;
   font-family: "Inter", sans-serif;
   background: linear-gradient(135deg, var(--bg), var(--bg-2));
   color: var(--text);
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 0;
   transition: background 0.2s ease, color 0.2s ease;
+  overscroll-behavior-y: none;
 }
 
 button {
   font: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* --------------------------------------------------------------------------
@@ -414,9 +420,17 @@ button {
 
 .page-shell {
   width: 100%;
+  max-width: 1560px;
+  margin: 0 auto;
   height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
-  padding: clamp(20px, 3vw, 44px);
+  min-height: 100dvh;
+  padding: clamp(14px, 2.2vw, 36px);
+  padding-top: max(clamp(14px, 2.2vw, 36px), env(safe-area-inset-top));
+  padding-bottom: max(clamp(14px, 2.2vw, 36px), env(safe-area-inset-bottom));
+  padding-left: max(clamp(14px, 2.2vw, 36px), env(safe-area-inset-left));
+  padding-right: max(clamp(14px, 2.2vw, 36px), env(safe-area-inset-right));
   background: var(--bg);
   display: flex;
   flex-direction: column;
@@ -426,20 +440,20 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 24px;
+  gap: 16px;
+  margin-bottom: clamp(12px, 2vh, 22px);
 }
 
 .brand-block {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: clamp(10px, 1.4vw, 16px);
 }
 
 .brand-mark {
   display: block;
-  width: 80px;
-  height: 96px;
+  width: clamp(52px, 5.5vw, 80px);
+  height: clamp(62px, 6.5vw, 96px);
   object-fit: contain;
   object-position: center;
 }
@@ -573,7 +587,7 @@ h1 {
 .app-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 350px);
-  gap: 20px;
+  gap: clamp(14px, 1.8vw, 20px);
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -583,25 +597,25 @@ h1 {
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(160px, auto) minmax(0, 1fr) auto;
-  gap: 20px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(12px, 1.8vh, 18px);
 }
 
 .panel {
   border: 1px solid var(--border);
   background: var(--panel);
   border-radius: 10px;
-  padding: 18px 20px;
+  padding: clamp(14px, 1.8vh, 20px) clamp(16px, 1.8vw, 20px);
 }
 
 /* Scramble Panel */
 .scramble-panel {
-  min-height: 180px;
+  min-height: clamp(90px, 15vh, 150px);
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .panel-header {
@@ -630,6 +644,8 @@ h1 {
   background: var(--panel-soft);
   color: var(--text);
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 
@@ -654,13 +670,14 @@ h1 {
 
 .scramble-text {
   margin: 0;
-  min-height: 72px;
+  min-height: auto;
   text-align: center;
   font-family: "JetBrains Mono", monospace;
-  font-size: clamp(1rem, 1.8vw, 1.4rem);
-  line-height: 1.8;
-  letter-spacing: 0.05em;
+  font-size: clamp(0.95rem, 1.4vw, 1.35rem);
+  line-height: 1.65;
+  letter-spacing: 0.04em;
   color: var(--text);
+  word-break: break-word;
 }
 
 /* --------------------------------------------------------------------------
@@ -675,7 +692,10 @@ h1 {
   min-height: 0;
   background: var(--panel-strong);
   user-select: none;
-  cursor: pointer;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  cursor: default;
 }
 
 .timer-panel:focus {
@@ -699,15 +719,17 @@ h1 {
   outline: none;
   background: transparent;
   font-family: "Inter", sans-serif;
-  font-size: clamp(3.5rem, 8vw, 7rem);
+  font-size: clamp(3.2rem, 9.5vh, 6.8rem);
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.04em;
-  margin-bottom: 18px;
+  margin-bottom: clamp(10px, 1.8vh, 18px);
   color: var(--text);
   text-align: center;
   cursor: inherit;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   transition: color 0.15s ease, text-shadow 0.15s ease;
 }
 
@@ -1201,61 +1223,28 @@ scramble-display {
 @media (max-width: 840px) {
   .page-shell {
     height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    padding: 14px 12px;
   }
 
   .app-layout {
     grid-template-columns: 1fr;
     flex: 0 0 auto;
     min-height: 0;
+    gap: 14px;
   }
 
   .timer-workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(280px, 1fr) auto;
-  }
-
-  .scramble-panel,
-  .stats-panel {
-    grid-column: auto;
-  }
-
-  .stats-panel {
-    flex-wrap: wrap;
-  }
-
-  .stat-row {
-    flex: 1 1 calc(50% - 12px);
+    grid-template-rows: auto auto auto;
+    gap: 12px;
   }
 
   .topbar {
-    margin-bottom: 18px;
-  }
-
-  .topbar-actions {
-    margin-left: auto;
-  }
-
-  .history-panel {
-    max-height: min(55vh, 480px);
-  }
-
-  .solve-actions {
-    width: 100%;
-  }
-}
-
-@media (max-width: 520px) {
-  .page-shell {
-    padding: 16px 12px;
-  }
-
-  .topbar {
-    flex-wrap: wrap;
-    align-items: flex-start;
-  }
-
-  .topbar-actions {
-    width: 100%;
+    margin-bottom: 12px;
+    align-items: center;
   }
 
   .brand-block {
@@ -1263,32 +1252,310 @@ scramble-display {
   }
 
   .brand-mark {
-    width: 64px;
-    height: 76px;
+    width: 48px;
+    height: 58px;
+  }
+
+  .eyebrow {
+    font-size: 0.68rem;
+    margin-bottom: 0;
+  }
+
+  h1 {
+    font-size: 1.5rem;
   }
 
   .topbar-actions .menu {
-    flex-basis: 110px;
+    flex: 0 0 auto;
   }
 
   .topbar-actions .menu-button {
-    min-width: 110px;
+    min-width: 96px;
+    height: 42px;
+    padding: 0 12px;
+    font-size: 0.88rem;
   }
 
   .scramble-panel,
-  .timer-panel,
-  .stats-panel,
+  .stats-panel {
+    grid-column: auto;
+  }
+
+  .scramble-panel {
+    min-height: auto;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .scramble-text {
+    min-height: auto;
+    font-size: clamp(0.95rem, 3.8vw, 1.25rem);
+    line-height: 1.55;
+  }
+
+  .timer-panel {
+    min-height: clamp(260px, 44vh, 380px);
+    padding: 20px 14px;
+  }
+
+  .timer-display {
+    font-size: clamp(3.8rem, 15vw, 5.8rem);
+    margin-bottom: 14px;
+  }
+
+  .solve-actions {
+    width: min(100%, 280px);
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .solve-actions .result-action {
+    aspect-ratio: auto;
+    min-height: 42px;
+    height: 42px;
+    font-size: 0.82rem;
+  }
+
+  .stats-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .stat-row {
+    flex: 1 1 calc(33.333% - 8px);
+    min-width: 90px;
+    padding: 8px 10px;
+    gap: 4px;
+  }
+
+  .stat-row span {
+    font-size: 0.72rem;
+  }
+
+  .stat-row strong {
+    font-size: 1rem;
+  }
+
   .history-panel {
-    padding: 16px;
+    height: auto;
+    max-height: none;
+    padding: 14px;
+  }
+
+  .solve-list {
+    max-height: 280px;
+  }
+
+  scramble-display {
+    height: 160px;
+  }
+}
+
+@media (max-width: 520px) {
+  .page-shell {
+    padding: 10px 10px 18px 10px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+
+  .topbar {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .brand-block {
+    gap: 8px;
+  }
+
+  .brand-mark {
+    width: 40px;
+    height: 48px;
+  }
+
+  .eyebrow {
+    font-size: 0.62rem;
+  }
+
+  h1 {
+    font-size: 1.35rem;
+  }
+
+  .topbar-actions .menu {
+    flex-basis: auto;
+  }
+
+  .topbar-actions .menu-button {
+    min-width: 86px;
+    height: 38px;
+    font-size: 0.82rem;
+  }
+
+  .timer-panel {
+    min-height: clamp(230px, 40vh, 330px);
+    padding: 16px 12px;
+  }
+
+  .timer-display {
+    font-size: clamp(3.4rem, 16vw, 4.8rem);
+  }
+
+  .stat-row {
+    flex: 1 1 calc(50% - 6px);
+    padding: 8px 10px;
   }
 
   .history-header {
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-wrap: nowrap;
+    gap: 8px;
   }
 
   .history-controls {
-    flex: 1 1 100%;
-    width: 100%;
+    flex: 0 0 auto;
+    width: auto;
+    gap: 6px;
+  }
+
+  .history-controls #eventSelect {
+    min-height: 40px;
+    height: 40px;
+    font-size: 0.82rem;
+    padding: 0 6px;
+  }
+
+  .history-controls #clearHistory {
+    flex: 0 0 58px;
+    width: 58px;
+    min-height: 40px;
+    height: 40px;
+    font-size: 0.82rem;
+  }
+
+  .solve-record-button {
+    padding: 10px 12px;
+  }
+
+  scramble-display {
+    height: 145px;
+  }
+}
+
+/* Smartphone & Device Landscape Optimization (e.g. iPhone, Android on desk) */
+@media (max-height: 540px) and (orientation: landscape) {
+  .page-shell {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    padding: 8px 14px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .topbar {
+    margin-bottom: 6px;
+  }
+
+  .brand-mark {
+    width: 32px;
+    height: 38px;
+  }
+
+  h1 {
+    font-size: 1.15rem;
+  }
+
+  .eyebrow {
+    display: none;
+  }
+
+  .topbar-actions .menu-button {
+    height: 34px;
+    min-width: 80px;
+    font-size: 0.8rem;
+  }
+
+  .app-layout {
+    grid-template-columns: minmax(0, 1.35fr) minmax(260px, 1fr);
+    gap: 10px;
+  }
+
+  .timer-workspace {
+    gap: 8px;
+    grid-template-rows: auto auto auto;
+  }
+
+  .scramble-panel {
+    min-height: auto;
+    padding: 6px 12px;
+    gap: 4px;
+  }
+
+  .scramble-text {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .timer-panel {
+    min-height: 180px;
+    padding: 10px;
+  }
+
+  .timer-display {
+    font-size: clamp(2.6rem, 18vh, 4rem);
+    margin-bottom: 4px;
+  }
+
+  .timer-state {
+    margin-bottom: 4px;
+    font-size: 0.72rem;
+  }
+
+  .solve-actions {
+    margin-bottom: 4px;
+    gap: 6px;
+  }
+
+  .solve-actions .result-action {
+    min-height: 34px;
+    height: 34px;
+    font-size: 0.75rem;
+  }
+
+  .stats-panel {
+    padding: 6px 8px;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .stat-row {
+    padding: 4px 6px;
+    gap: 2px;
+  }
+
+  .stat-row span {
+    font-size: 0.65rem;
+  }
+
+  .stat-row strong {
+    font-size: 0.85rem;
+  }
+
+  .history-panel {
+    height: auto;
+    max-height: 85vh;
+    padding: 10px;
+  }
+
+  .solve-list {
+    max-height: 160px;
+  }
+
+  scramble-display {
+    height: 120px;
   }
 }
