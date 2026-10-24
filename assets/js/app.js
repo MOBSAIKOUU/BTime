@@ -4,6 +4,9 @@
  * spacebar/touch timing, manual time entry, Ao5/Ao12 session statistics,
  * solve penalty management (DNF/+2), and multi-event support.
  */
+
+// Initialize Vercel Web Analytics
+import './analytics.js';
 /* ==========================================================================
    1. DOM Element Cache & Constants
    ========================================================================== */
