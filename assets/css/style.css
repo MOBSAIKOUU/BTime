@@ -9,7 +9,7 @@
 /* Default Light Theme */
 :root {
   --bg: #f3f4f6;
-  --bg-2: #e5e7eb;
+  --bg-2: #f3f4f6;
   --panel: rgba(255, 255, 255, 0.92);
   --panel-strong: rgba(255, 255, 255, 0.98);
   --panel-soft: #f8fafc;
@@ -27,7 +27,7 @@
 /* Night / Dark Mode */
 body.dark-mode {
   --bg: #0b1020;
-  --bg-2: #111827;
+  --bg-2: #0b1020;
   --panel: rgba(15, 23, 42, 0.9);
   --panel-strong: rgba(15, 23, 42, 0.96);
   --panel-soft: rgba(30, 41, 59, 0.8);
@@ -45,7 +45,7 @@ body.dark-mode {
 /* Bella Pink Palette */
 body[data-palette="shell-pink"] {
   --bg: #fff1f4;
-  --bg-2: #ffe4eb;
+  --bg-2: #fff1f4;
   --panel: rgba(255, 255, 255, 0.92);
   --panel-strong: rgba(255, 255, 255, 0.98);
   --panel-soft: #fff7f9;
@@ -63,7 +63,7 @@ body[data-palette="shell-pink"] {
 /* Vanilla Cream / Dessert Palette */
 body[data-palette="dessert"] {
   --bg: #fff4df;
-  --bg-2: #ffebc9;
+  --bg-2: #fff4df;
   --panel: rgba(255, 251, 241, 0.94);
   --panel-strong: rgba(255, 253, 247, 0.98);
   --panel-soft: #fff8e9;
@@ -81,7 +81,7 @@ body[data-palette="dessert"] {
 /* Lavender / Purple Palette */
 body[data-palette="purple"] {
   --bg: #f4f0ff;
-  --bg-2: #e9e1ff;
+  --bg-2: #f4f0ff;
   --panel: rgba(255, 255, 255, 0.92);
   --panel-strong: rgba(255, 255, 255, 0.98);
   --panel-soft: #faf8ff;
@@ -99,7 +99,7 @@ body[data-palette="purple"] {
 /* Chessboard Monochromatic Palette */
 body[data-palette="chessboard"] {
   --bg: #000000;
-  --bg-2: #111111;
+  --bg-2: #000000;
   --panel: #080808;
   --panel-strong: #080808;
   --panel-soft: #161616;
@@ -118,7 +118,7 @@ body[data-palette="chessboard"] {
 body[data-palette="halloween"],
 body[data-palette="Halloween"] {
   --bg: #0d0a14;
-  --bg-2: #190f24;
+  --bg-2: #0d0a14;
   --panel: rgba(26, 17, 36, 0.88);
   --panel-strong: rgba(30, 20, 42, 0.96);
   --panel-soft: #271838;
@@ -135,10 +135,7 @@ body[data-palette="Halloween"] {
 
 body[data-palette="halloween"] .page-shell,
 body[data-palette="Halloween"] .page-shell {
-  background:
-    radial-gradient(ellipse at 85% 15%, rgba(249, 115, 22, 0.22), transparent 40%),
-    radial-gradient(ellipse at 15% 85%, rgba(147, 51, 234, 0.18), transparent 36%),
-    linear-gradient(135deg, #0d0a14, #190f24);
+  background: var(--bg);
 }
 
 body[data-palette="halloween"] .timer-display.holding,
@@ -148,13 +145,12 @@ body[data-palette="Halloween"] .timer-display.holding,
 body[data-palette="Halloween"] .timer-display.inspecting.space-held,
 body[data-palette="Halloween"] .timer-state.holding {
   color: #fb923c;
-  text-shadow: 0 0 24px rgba(249, 115, 22, 0.6);
 }
 
 /* Christmas Palette */
 body[data-palette="christmas"] {
   --bg: #f2fff5;
-  --bg-2: #ffecef;
+  --bg-2: #f2fff5;
   --panel: rgba(255, 255, 255, 0.96);
   --panel-strong: rgba(255, 255, 255, 0.99);
   --panel-soft: #f7fff9;
@@ -166,12 +162,10 @@ body[data-palette="christmas"] {
   --warning: #a45d16;
   --danger: #c4122f;
   --success: #0e7d3e;
-  --shadow: none;
 }
 
-body[data-palette="christmas"] * {
-  box-shadow: none;
-  text-shadow: none;
+body[data-palette="christmas"] .page-shell {
+  background: var(--bg);
 }
 
 body[data-palette="christmas"] .scramble-panel,
@@ -237,6 +231,9 @@ body[data-palette="oilspill"] {
   --danger: #ff829e;
   --success: #8bf2a6;
   --shadow: 0 24px 60px rgba(2, 8, 24, 0.36);
+}
+
+body[data-palette="oilspill"] {
   background:
     radial-gradient(ellipse at 18% 22%, rgba(0, 224, 190, 0.55), transparent 42%),
     radial-gradient(ellipse at 82% 18%, rgba(65, 91, 255, 0.5), transparent 40%),
@@ -267,6 +264,9 @@ body[data-palette="sunrise"] {
   --danger: #ff829e;
   --success: #9be7a5;
   --shadow: 0 24px 60px rgba(41, 19, 51, 0.38);
+}
+
+body[data-palette="sunrise"] {
   background:
     radial-gradient(ellipse at 50% 100%, rgba(255, 205, 117, 0.84), transparent 32%),
     radial-gradient(ellipse at 48% 88%, rgba(255, 126, 92, 0.72), transparent 48%),
@@ -294,6 +294,9 @@ body[data-palette="shibuya"] {
   --danger: #ff739f;
   --success: #84ffd0;
   --shadow: 0 24px 60px rgba(2, 4, 18, 0.62), 0 0 32px rgba(255, 63, 193, 0.12);
+}
+
+body[data-palette="shibuya"] {
   background:
     radial-gradient(ellipse at 9% 24%, rgba(255, 35, 151, 0.7), transparent 31%),
     radial-gradient(ellipse at 91% 18%, rgba(39, 115, 255, 0.68), transparent 34%),
@@ -406,7 +409,10 @@ body {
   padding: 0;
   transition: background 0.2s ease, color 0.2s ease;
   overscroll-behavior-y: none;
+  overflow-x: hidden;
 }
+
+/* Animation backgrounds handled directly on body for each palette */
 
 button {
   font: inherit;
