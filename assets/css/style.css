@@ -698,10 +698,14 @@ h1 {
   min-height: 0;
   background: var(--panel-strong);
   user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
   touch-action: none;
   cursor: default;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Safari */
+  -khtml-user-select: none;     /* Konqueror HTML */
+  -moz-user-select: none;      /* Old Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;           /* Non-prefixed version, supported by modern browsers */
 }
 
 .timer-panel:focus {
@@ -733,9 +737,12 @@ h1 {
   color: var(--text);
   text-align: center;
   cursor: inherit;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Safari */
+  -khtml-user-select: none;     /* Konqueror HTML */
+  -moz-user-select: none;       /* Old versions of Firefox */
+  -ms-user-select: none;        /* Internet Explorer/Edge */
+  user-select: none;            /* Non-prefixed version, supported by modern browsers */
   transition: color 0.15s ease, text-shadow 0.15s ease;
 }
 
@@ -916,6 +923,12 @@ body[data-palette="chessboard"] .timer-state.holding {
   align-items: stretch;
   grid-column: 1 / -1;
   gap: 12px;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Safari */
+  -khtml-user-select: none;     /* Konqueror HTML */
+  -moz-user-select: none;      /* Old Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;           /* Non-prefixed version, supported by modern browsers */
 }
 
 .stat-row {
@@ -1296,8 +1309,8 @@ scramble-display {
     flex: 0 0 auto;
   }
 
-  .topbar-actions .menu-button {
-    min-width: 96px;
+    .topbar-actions .menu-button {
+    min-width: 50px;
     height: 42px;
     padding: 0 12px;
     font-size: 0.88rem;
@@ -1415,8 +1428,8 @@ scramble-display {
     flex-basis: auto;
   }
 
-  .topbar-actions .menu-button {
-    min-width: 86px;
+    .topbar-actions .menu-button {
+    min-width: 78px;
     height: 38px;
     font-size: 0.82rem;
   }
@@ -1500,9 +1513,9 @@ scramble-display {
     display: none;
   }
 
-  .topbar-actions .menu-button {
+    .topbar-actions .menu-button {
     height: 34px;
-    min-width: 80px;
+    min-width: 72px;
     font-size: 0.8rem;
   }
 
