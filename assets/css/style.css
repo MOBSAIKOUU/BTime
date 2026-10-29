@@ -462,6 +462,13 @@ button {
   height: clamp(62px, 6.5vw, 96px);
   object-fit: contain;
   object-position: center;
+  transition: transform 0.45s ease;
+  transform: rotate(-10deg);
+}
+
+.brand-mark:hover {
+    transform: rotate(-29deg) translateX(20px) scale(1.5);
+
 }
 
 .eyebrow {
@@ -1073,7 +1080,6 @@ body[data-palette="chessboard"] .timer-state.holding {
 .solve-record-button:hover {
   background: var(--panel);
   border-color: rgba(148, 163, 184, 0.35);
-  transform: translateY(-1px);
 }
 
 .solve-record-button:focus-visible {
@@ -1289,12 +1295,15 @@ scramble-display {
 
   .brand-block {
     gap: 10px;
+    
   }
 
   .brand-mark {
     width: 48px;
     height: 58px;
+    
   }
+
 
   .eyebrow {
     font-size: 0.68rem;
@@ -1309,7 +1318,7 @@ scramble-display {
     flex: 0 0 auto;
   }
 
-    .topbar-actions .menu-button {
+  .topbar-actions .menu-button {
     min-width: 50px;
     height: 42px;
     padding: 0 12px;
@@ -1428,8 +1437,7 @@ scramble-display {
     flex-basis: auto;
   }
 
-    .topbar-actions .menu-button {
-    min-width: 78px;
+  .topbar-actions .menu-button {
     height: 38px;
     font-size: 0.82rem;
   }
