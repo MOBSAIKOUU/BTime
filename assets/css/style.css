@@ -957,7 +957,7 @@ body[data-palette="chessboard"] .timer-state.holding {
 
 .stat-row strong {
   font-size: 1.1rem;
-  font-family: "JetBrains Mono", monospace;
+  font-family: "Inter", sans-serif;
 }
 
 /* --------------------------------------------------------------------------
@@ -1093,7 +1093,7 @@ body[data-palette="chessboard"] .timer-state.holding {
 }
 
 .solve-record-button .time {
-  font-family: "JetBrains Mono", monospace;
+  font-family: "Inter", sans-serif;
   font-weight: 700;
   font-size: 1.1rem;
 }
@@ -1214,6 +1214,7 @@ scramble-display {
 .solve-detail-row strong {
   font-family: "JetBrains Mono", monospace;
   text-align: right;
+  
 }
 
 .solve-detail-actions {
@@ -1350,6 +1351,7 @@ scramble-display {
   .timer-display {
     font-size: clamp(3.8rem, 15vw, 5.8rem);
     margin-bottom: 14px;
+
   }
 
   .solve-actions {
