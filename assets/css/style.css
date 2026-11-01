@@ -1780,3 +1780,16 @@ body[data-palette="cartoon"] .solve-dialog::backdrop { background: rgba(41, 36, 
 @media (max-width: 840px), (max-height: 540px) and (orientation: landscape) {
   .settings-menu { max-height: calc(100dvh - 80px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
 }
+
+/* Keep mobile confirmation controls out of backdrop-blur compositing layers. */
+@media (max-width: 840px), (max-height: 540px) and (orientation: landscape) {
+  body .solve-dialog.confirm-dialog {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--panel-strong);
+  }
+  .confirm-dialog::backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

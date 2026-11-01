@@ -1372,7 +1372,9 @@ function clearAllSolves() {
     }
     clearHistoryDialog.showModal();
     // Focus the confirm button for quick confirmation
-    setTimeout(() => confirmClearHistoryButton?.focus({ preventScroll: true }), 10);
+    setTimeout(() => {
+      if (clearHistoryDialog.open) confirmClearHistoryButton?.focus({ preventScroll: true });
+    }, 10);
   }
 }
 
@@ -1646,20 +1648,52 @@ if (timerDisplay) {
 }
 
 // Clear History Confirmation
+function bindConfirmationAction(button, action) {
+  if (!button) return;
+  let press = null;
+  let lastTouchActivation = -Infinity;
+  button.addEventListener('pointerdown', (event) => {
+    if ((event.pointerType === 'touch' || event.pointerType === 'pen') && !button.disabled) {
+      press = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    }
+  });
+  button.addEventListener('pointercancel', () => { press = null; });
+  button.addEventListener('pointerup', (event) => {
+    const start = press;
+    press = null;
+    if (!start || start.id !== event.pointerId || button.disabled) return;
+    const rect = button.getBoundingClientRect();
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 12 ||
+        event.clientX < rect.left || event.clientX > rect.right ||
+        event.clientY < rect.top || event.clientY > rect.bottom) return;
+    // Some installed iOS sessions omit the synthesized click after a modal tap.
+    // Handle the completed tap directly and ignore its follow-up click if one arrives.
+    event.preventDefault();
+    event.stopPropagation();
+    lastTouchActivation = performance.now();
+    action();
+  });
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (button.disabled || performance.now() - lastTouchActivation < 700) return;
+    action();
+  });
+}
+
 if (clearHistoryButton) {
   clearHistoryButton.addEventListener('click', (event) => {
+    event.preventDefault();
     event.stopPropagation();
-    const eventLabel = getEventLabel(currentEvent);
-    if (clearHistoryMessage) {
-      clearHistoryMessage.textContent = `Are you sure you want to delete all ${eventLabel} session records? This cannot be undone.`;
-    }
-    clearHistoryDialog?.showModal();
+    if (state !== 'solving' && !clearHistoryDialog?.open) clearAllSolves();
   });
 }
 
 if (cancelClearHistoryButton && clearHistoryDialog) {
-  cancelClearHistoryButton.addEventListener('click', () => {
+  bindConfirmationAction(cancelClearHistoryButton, () => {
+    if (!clearHistoryDialog.open) return;
     clearHistoryDialog.close();
+    timerPanel?.focus({ preventScroll: true });
   });
 
   clearHistoryDialog.addEventListener('click', (event) => {
@@ -1670,7 +1704,8 @@ if (cancelClearHistoryButton && clearHistoryDialog) {
 }
 
 if (confirmClearHistoryButton && clearHistoryDialog) {
-  confirmClearHistoryButton.addEventListener('click', () => {
+  bindConfirmationAction(confirmClearHistoryButton, () => {
+    if (!clearHistoryDialog.open || state === 'solving') return;
     recentSolves = [];
     lastSolveId = null;
     resetSession();
@@ -1679,6 +1714,7 @@ if (confirmClearHistoryButton && clearHistoryDialog) {
     renderHistory();
     clearHistoryDialog.close();
     clearHistoryButton?.blur();
+    timerPanel?.focus({ preventScroll: true });
   });
 }
 

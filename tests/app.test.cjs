@@ -214,6 +214,40 @@ test('touching a timer action does not cancel an in-progress hold', () => {
   assert.equal(app.run('holdTimeoutId'), 123);
 });
 
+test('confirmation touch fallback handles one tap once and preserves keyboard clicks', () => {
+  const app = createApp();
+  app.run(`globalThis.confirmationCalls=0;globalThis.probe=document.createElement('button');
+    probe.getBoundingClientRect=()=>({left:0,right:100,top:0,bottom:40});
+    bindConfirmationAction(probe,()=>confirmationCalls++);
+    probe.dispatch('pointerdown',{pointerType:'touch',pointerId:1,clientX:10,clientY:10});
+    probe.dispatch('pointerup',{pointerType:'touch',pointerId:1,clientX:10,clientY:10});
+    probe.dispatch('click');`);
+  assert.equal(app.run('confirmationCalls'), 1);
+  app.advance(701);
+  app.run("probe.dispatch('click')");
+  assert.equal(app.run('confirmationCalls'), 2);
+  app.run(`probe.dispatch('pointerdown',{pointerType:'touch',pointerId:2,clientX:10,clientY:10});
+    probe.dispatch('pointerup',{pointerType:'touch',pointerId:2,clientX:90,clientY:10});`);
+  assert.equal(app.run('confirmationCalls'), 2, 'drag is not a tap');
+  app.run("probe.disabled=true;probe.dispatch('click')");
+  assert.equal(app.run('confirmationCalls'), 2, 'disabled button remains inert');
+});
+
+test('clear confirmation cancel preserves solves and confirm clears only the current event', () => {
+  const app = createApp({ 'bcube-timer-history-222': '[{"id":"other","baseTimeMs":1000,"result":"ok"}]' });
+  app.run('recordSolve(12340)');
+  app.element('clearHistory').dispatch('click');
+  assert.equal(app.element('clearHistoryDialog').open, true);
+  app.element('cancelClearHistory').dispatch('click');
+  assert.equal(app.run('recentSolves.length'), 1);
+  app.element('clearHistory').dispatch('click');
+  app.element('confirmClearHistory').dispatch('click');
+  assert.equal(app.run('recentSolves.length'), 0);
+  assert.equal(app.element('clearHistoryDialog').open, false);
+  assert.equal(app.storage.get('bcube-timer-history'), '[]');
+  assert.equal(JSON.parse(app.storage.get('bcube-timer-history-222')).length, 1);
+});
+
 test('penalties, revert, and trimmed averages retain their behavior', () => {
   const app = createApp();
   app.run('recordSolve(10000); applySolveAction(String(lastSolveId), "plus2")');

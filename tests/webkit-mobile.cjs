@@ -58,6 +58,28 @@ const origin = process.env.BTIME_TEST_ORIGIN || 'http://127.0.0.1:4173';
       await tap(`.solve-detail-actions [data-action="${action}"]`);
       await check(`After ${action}`);
     }
+    await tap('#menuToggle');
+    await page.locator('#manualTimeToggle').check();
+    await tap('#menuToggle');
+    await page.locator('#timerDisplay').fill('9.87');
+    await page.locator('#timerDisplay').press('Enter');
+    await tap('#menuToggle');
+    await page.locator('#manualTimeToggle').uncheck();
+    await tap('#menuToggle');
+    await tap('#clearHistory');
+    assert.equal(await page.locator('#clearHistoryDialog').evaluate((element) => element.open), true);
+    await tap('#cancelClearHistory');
+    assert.equal(await page.locator('#clearHistoryDialog').evaluate((element) => element.open), false);
+    assert.equal(await page.locator('.solve-record-button').count(), 1);
+    await tap('#clearHistory');
+    await tap('#confirmClearHistory');
+    assert.equal(await page.locator('#clearHistoryDialog').evaluate((element) => element.open), false);
+    assert.equal(await page.locator('.solve-record-button').count(), 0);
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('bcube-timer-history'))), []);
+    await check('After clear confirmation');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    assert.equal(await page.locator('.solve-record-button').count(), 0);
+    console.log('WebKit Clear dialog: Cancel, confirm, and persisted empty history passed');
     for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 390, height: 664 }]) {
       await page.setViewportSize(viewport);
       await page.waitForTimeout(100);

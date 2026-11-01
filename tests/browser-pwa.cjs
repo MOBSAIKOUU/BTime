@@ -196,6 +196,16 @@ const timeout = (promise, milliseconds = 20000) => {
   await touchTap('.solve-detail-actions [data-action="delete"]');
   assert.equal(await evaluate('document.querySelectorAll(".solve-record-button").length'), 0);
   console.log('Native mobile touch: copy, +2, DNF, revert, close, and delete passed');
+  await evaluate(`(()=>{const toggle=document.getElementById('manualTimeToggle');toggle.checked=true;toggle.dispatchEvent(new Event('change'));const input=document.getElementById('timerDisplay');input.value='9.87';input.dispatchEvent(new Event('input'));input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));toggle.checked=false;toggle.dispatchEvent(new Event('change'));})()`);
+  await touchTap('#clearHistory');
+  assert.equal(await evaluate('document.getElementById("clearHistoryDialog").open'), true);
+  await touchTap('#cancelClearHistory');
+  assert.equal(await evaluate('document.querySelectorAll(".solve-record-button").length'), 1);
+  await touchTap('#clearHistory');
+  await touchTap('#confirmClearHistory');
+  assert.equal(await evaluate('document.getElementById("clearHistoryDialog").open'), false);
+  assert.equal(await evaluate('localStorage.getItem("bcube-timer-history")'), '[]');
+  console.log('Native mobile Clear dialog: Cancel and Clear records passed');
   const manifest = await send('Page.getAppManifest', {}, sessionId);
   assert.equal(manifest.errors.length, 0);
   console.log('Browser manifest validation passed');
