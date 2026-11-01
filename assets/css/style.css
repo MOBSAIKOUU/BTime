@@ -942,9 +942,11 @@ body[data-palette="chessboard"] .timer-state.holding {
   left: 12px;
   bottom: 12px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: 6px;
-  width: 104px;
+  width: 56px;
+  height: min(162px, calc(100% - 24px));
   margin: 0;
 }
 
@@ -960,8 +962,8 @@ body[data-palette="chessboard"] .timer-state.holding {
 }
 
 .solve-actions .result-action {
-  min-height: 36px;
-  height: 36px;
+  min-height: 0;
+  height: 100%;
   aspect-ratio: auto;
   padding: 0 4px;
   font-size: 0.68rem;
@@ -1440,11 +1442,11 @@ scramble-display {
     letter-spacing: 0.02em;
   }
 
-  .timer-panel { min-height: 0; padding: 8px 8px 8px 122px; }
+  .timer-panel { min-height: 0; padding: 8px 8px 8px 78px; }
   .timer-state { margin-bottom: 4px; font-size: 0.7rem; }
   .timer-display { font-size: clamp(2.8rem, 9vh, 5.5rem); font-size: clamp(2.8rem, 9dvh, 5.5rem); margin-bottom: 8px; }
-  .solve-actions { left: 8px; bottom: 8px; width: 104px; gap: 6px; margin: 0; }
-  .solve-actions .result-action { aspect-ratio: auto; min-width: 0; height: 36px; min-height: 36px; padding: 0 4px; font-size: 0.68rem; }
+  .solve-actions { left: 8px; bottom: 8px; width: 56px; height: min(162px, calc(100% - 16px)); gap: 6px; margin: 0; }
+  .solve-actions .result-action { aspect-ratio: auto; min-width: 0; height: 100%; min-height: 0; padding: 0 4px; font-size: 0.68rem; }
   .palette-select, .event-control .event-select { font-size: 16px; }
 
   .stats-panel { grid-column: auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 5px; }
@@ -1554,7 +1556,7 @@ scramble-display {
   .timer-workspace { grid-template-rows: minmax(60px, 0.7fr) minmax(100px, 1fr) auto; gap: 5px; }
   .timer-display { font-size: clamp(2.2rem, 12dvh, 4rem); margin-bottom: 4px; }
   .timer-state { margin-bottom: 2px; font-size: 0.62rem; }
-  .solve-actions .result-action { min-height: 36px; height: 36px; }
+  .solve-actions .result-action { min-height: 0; height: 100%; }
   .stat-row { padding: 3px; gap: 2px; }
   .stat-row span { font-size: 0.55rem; }
   .stat-row strong { font-size: 0.78rem; }
