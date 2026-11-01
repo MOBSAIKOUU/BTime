@@ -1523,14 +1523,26 @@ scramble-display {
   .stat-row span { font-size: 0.55rem; }
   .stat-row strong { font-size: 0.75rem; }
 
-  .history-header { grid-column: 1; grid-row: 3; }
+  /* One frame around the header and scrollable records, matching adjacent panels. */
+  .app-layout::before {
+    content: '';
+    grid-column: 1;
+    grid-row: 3 / 5;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    pointer-events: none;
+  }
+  .history-header { grid-column: 1; grid-row: 3; position: relative; padding: 0 4px; }
   .history-header h2 { font-size: 0.8rem; }
   .history-controls #clearHistory { padding: 0 5px; }
   .solve-list {
     grid-column: 1;
     grid-row: 4;
+    position: relative;
+    margin: 0 4px 4px;
     border-radius: 7px;
-    background: var(--panel);
+    background: transparent;
   }
   .solve-record-button { grid-template-columns: 18px minmax(0, 1fr); }
   .solve-record-button .tag { grid-column: 2; }
