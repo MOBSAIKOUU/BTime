@@ -248,6 +248,26 @@ test('clear confirmation cancel preserves solves and confirm clears only the cur
   assert.equal(JSON.parse(app.storage.get('bcube-timer-history-222')).length, 1);
 });
 
+test('read-only timer opts out of input focus; manual mode restores editing', () => {
+  const app = createApp();
+  assert.equal(app.element('timerDisplay').inputMode, 'none');
+  assert.equal(app.element('timerDisplay').tabIndex, -1);
+  app.run('manualTimeEntryEnabled=true;syncManualTimeEntry()');
+  assert.equal(app.element('timerDisplay').inputMode, 'decimal');
+  assert.equal(app.element('timerDisplay').tabIndex, 0);
+  assert.equal(app.element('timerDisplay').readOnly, false);
+});
+
+test('accidental touch selections clear without interfering with editable targets', () => {
+  const app = createApp();
+  app.run(`navigator.maxTouchPoints=1;globalThis.selectionClears=0;
+    window.getSelection=()=>({rangeCount:1,removeAllRanges(){selectionClears++}});
+    clearAccidentalTouchSelection({target:timerPanel});`);
+  assert.equal(app.run('selectionClears'), 1);
+  app.run(`clearAccidentalTouchSelection({target:{closest:()=>({})}})`);
+  assert.equal(app.run('selectionClears'), 1);
+});
+
 test('penalties, revert, and trimmed averages retain their behavior', () => {
   const app = createApp();
   app.run('recordSolve(10000); applySolveAction(String(lastSolveId), "plus2")');

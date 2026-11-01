@@ -796,6 +796,13 @@ h1 {
   transition: color 0.15s ease, text-shadow 0.15s ease;
 }
 
+/* A read-only display is a touch surface, never an iOS text/autofill target. */
+.timer-display[readonly] {
+  pointer-events: none;
+  caret-color: transparent;
+  -webkit-touch-callout: none;
+}
+
 /* Manual Time Entry Mode */
 .timer-panel.manual-entry-active .timer-display {
   border-color: var(--border);
@@ -1430,12 +1437,26 @@ scramble-display {
 
   .panel { min-width: 0; padding: 8px 10px; }
   .scramble-panel { grid-column: auto; min-height: 0; gap: 4px; }
+  .scramble-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-content: start;
+    padding: 8px 10px;
+  }
+  .scramble-panel .panel-header { display: contents; }
+  .scramble-panel .event-control { grid-column: 1; grid-row: 1; justify-self: start; }
+  .scramble-panel .scramble-refresh { grid-column: 2; grid-row: 1; }
   .scramble-panel .panel-header { flex-wrap: nowrap; gap: 6px; flex: 0 0 auto; }
   .panel-label { font-size: 0.65rem; letter-spacing: 0.08em; }
   .event-control { gap: 5px; min-width: 0; }
-  .event-control .event-select { min-height: 36px; height: 36px; max-width: 120px; padding: 0 5px; font-size: 0.8rem; }
-  .scramble-refresh { flex-basis: 36px; width: 36px; height: 36px; }
+  .event-control .event-select { min-height: 32px; height: 32px; width: var(--event-select-width, 112px); max-width: 100%; padding: 0 6px; font-size: 16px; }
+  .scramble-refresh { flex-basis: 32px; width: 32px; height: 32px; }
   .scramble-text {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: center;
+    max-height: 100%;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1499,7 +1520,7 @@ scramble-display {
 @media (max-width: 840px) and (orientation: portrait) {
   .app-layout {
     grid-template-columns: minmax(0, 1.1fr) minmax(64px, 0.55fr) minmax(0, 1fr);
-    grid-template-rows: minmax(72px, 0.6fr) minmax(140px, 1.4fr) 36px minmax(130px, 0.6fr);
+    grid-template-rows: minmax(72px, 0.6fr) minmax(140px, 1.4fr) 44px minmax(130px, 0.6fr);
     column-gap: 6px;
     row-gap: 6px;
   }
@@ -1535,9 +1556,9 @@ scramble-display {
     background: var(--panel);
     pointer-events: none;
   }
-  .history-header { grid-column: 1; grid-row: 3; position: relative; padding: 0 4px; }
+  .history-header { grid-column: 1; grid-row: 3; position: relative; padding: 4px 6px; }
   .history-header h2 { font-size: 0.8rem; }
-  .history-controls #clearHistory { padding: 0 5px; }
+  .history-controls #clearHistory { padding: 0 5px; min-height: 32px; height: 32px; }
   .solve-list {
     grid-column: 1;
     grid-row: 4;

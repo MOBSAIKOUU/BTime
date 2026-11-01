@@ -78,6 +78,7 @@ const origin = process.env.BTIME_TEST_ORIGIN || 'http://127.0.0.1:4173';
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('bcube-timer-history'))), []);
     await check('After clear confirmation');
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.page-shell')).display === 'flex');
     assert.equal(await page.locator('.solve-record-button').count(), 0);
     console.log('WebKit Clear dialog: Cancel, confirm, and persisted empty history passed');
     for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 390, height: 664 }]) {

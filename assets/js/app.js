@@ -984,6 +984,8 @@ function syncManualTimeEntry() {
 
   const canEditTime = manualTimeEntryEnabled && state === 'ready';
   timerDisplay.readOnly = !canEditTime;
+  timerDisplay.inputMode = canEditTime ? 'decimal' : 'none';
+  timerDisplay.tabIndex = canEditTime ? 0 : -1;
   timerDisplay.setAttribute('aria-label', canEditTime ? 'Enter solve time' : 'Timer display');
   timerPanel?.classList.toggle('manual-entry-active', canEditTime);
   
@@ -1600,8 +1602,18 @@ if (newScrambleButton) {
 }
 
 // Event Selector Dropdown
+function syncEventSelectorWidth() {
+  if (!eventSelect) return;
+  const label = getEventLabel(currentEvent);
+  const context = document.createElement('canvas').getContext?.('2d');
+  if (context) context.font = '600 16px Inter, sans-serif';
+  const textWidth = context ? context.measureText(label).width : label.length * 9;
+  eventSelect.style.setProperty('--event-select-width', `${Math.max(64, Math.ceil(textWidth + 38))}px`);
+}
+
 if (eventSelect) {
   eventSelect.value = currentEvent;
+  syncEventSelectorWidth();
   eventSelect.addEventListener('change', () => {
     const selectedEvent = EVENTS.find((event) => event.code === eventSelect.value);
     if (!selectedEvent || state === 'solving') {
@@ -1610,6 +1622,7 @@ if (eventSelect) {
     }
 
     currentEvent = selectedEvent.code;
+    syncEventSelectorWidth();
     saveEventPreference();
     recentSolves = loadHistory(currentEvent);
     lastSolveId = null;
@@ -1797,6 +1810,33 @@ document.querySelectorAll('.solve-actions .result-action').forEach((button) => {
 
 // Prevent manual copying/cutting; only the explicit scramble-copy action is allowed.
 let scrambleCopyFallbackText = null;
+function isEditableTouchTarget(target) {
+  return Boolean(target?.closest?.('input:not([readonly]):not([type="checkbox"]):not([type="radio"]):not([type="button"]), textarea:not([readonly]), select, [contenteditable="true"]'));
+}
+
+function clearAccidentalTouchSelection(event) {
+  const touchDevice = navigator.maxTouchPoints > 0 || window.matchMedia?.('(pointer: coarse)').matches;
+  if (!touchDevice || scrambleCopyFallbackText !== null || isEditableTouchTarget(event?.target)) return;
+  const selection = window.getSelection?.();
+  if (selection?.rangeCount) selection.removeAllRanges();
+  if (document.activeElement === timerDisplay && timerDisplay.readOnly) {
+    timerDisplay.blur();
+    timerPanel?.focus({ preventScroll: true });
+  }
+}
+
+document.addEventListener('pointerdown', clearAccidentalTouchSelection, { capture: true });
+document.addEventListener('touchend', clearAccidentalTouchSelection, { passive: true });
+document.addEventListener('selectionchange', () => {
+  clearAccidentalTouchSelection({ target: document.activeElement });
+});
+document.addEventListener('contextmenu', (event) => {
+  const touchDevice = navigator.maxTouchPoints > 0 || window.matchMedia?.('(pointer: coarse)').matches;
+  if (touchDevice && !isEditableTouchTarget(event.target)) {
+    event.preventDefault();
+    clearAccidentalTouchSelection(event);
+  }
+});
 document.addEventListener('copy', (event) => {
   event.preventDefault();
   if (scrambleCopyFallbackText !== null) {
