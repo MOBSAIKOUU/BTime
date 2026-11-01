@@ -142,6 +142,7 @@ let scrambleWarmupTimer = null;
 let recentSolves = loadHistory(currentEvent);
 let lastSolveId = null;
 let selectedSolveId = null;
+const runningControlStates = new Map();
 
 // Cached Cubing.js Scrambler Module Loader
 let cubingScramblerPromise = null;
@@ -886,6 +887,14 @@ function syncSolveActionAvailability() {
 
   const hasDraft = hasManualTimeDraft();
   solveActions.querySelectorAll('.result-action').forEach((button) => {
+    if (state === 'solving') {
+      button.disabled = true;
+      return;
+    }
+    if (button.dataset.action === 'dnf') {
+      button.disabled = state !== 'ready';
+      return;
+    }
     if (manualTimeEntryEnabled) {
       if (button.dataset.action === 'dnf') {
         button.disabled = state !== 'ready';
@@ -929,6 +938,23 @@ function flashDisplay() {
  * Updates the visual timer state and styles.
  * @param {'ready' | 'holding' | 'inspecting' | 'readyToSolve' | 'solving'} nextState
  */
+function syncRunningControls() {
+  if (state === 'solving') {
+    closeSettingsMenu();
+    document.querySelectorAll('button, select, input:not(#timerDisplay)').forEach((control) => {
+      if (!runningControlStates.has(control)) {
+        runningControlStates.set(control, control.disabled);
+      }
+      control.disabled = true;
+    });
+  } else {
+    runningControlStates.forEach((disabled, control) => {
+      control.disabled = disabled;
+    });
+    runningControlStates.clear();
+  }
+}
+
 function setTimerState(nextState) {
   state = nextState;
 
@@ -944,9 +970,7 @@ function setTimerState(nextState) {
     return;
   }
 
-  if (eventSelect) {
-    eventSelect.disabled = nextState === 'solving';
-  }
+  syncRunningControls();
   syncManualTimeEntry();
 
   timerState.textContent = labels[nextState] || 'Ready';
@@ -1294,12 +1318,33 @@ function closeSettingsMenu(restoreTimerFocus = false) {
   }
 }
 
+function focusTimerAfterAction() {
+  // A modal makes the timer inert, so close it before returning focus.
+  if (solveDetails?.open) {
+    solveDetails.close();
+  }
+  timerPanel?.focus({ preventScroll: true });
+}
+
 /* ==========================================================================
    12. Input Event Handlers (Keyboard, Pointer, Buttons)
    ========================================================================== */
 
 function isSpaceKey(event) {
   return event.code === 'Space' || event.key === ' ' || event.keyCode === 32;
+}
+
+// With the hold delay disabled, arm immediately but still wait for release.
+function armImmediateRelease() {
+  if (state === 'ready') {
+    cancelAnimation();
+    setTimerState('holding');
+    updateDisplay('0.00');
+  }
+  isHoldReady = true;
+  timerState.textContent = 'Release to start';
+  timerDisplay.classList.remove('holding-wait');
+  timerDisplay.classList.add('holding-ready');
 }
 
 // Clear All Solves Handler
@@ -1316,6 +1361,17 @@ function clearAllSolves() {
 }
 
 // Global Keyboard Handler (Spacebar Start, Any Key Stop)
+// Ignore control interactions while timing, including touches that would otherwise stop it.
+const blockRunningControlInteraction = (event) => {
+  if (state === 'solving' && event.target?.closest?.('button, select, input:not(#timerDisplay), label')) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+};
+window.addEventListener('pointerdown', blockRunningControlInteraction, { capture: true });
+window.addEventListener('click', blockRunningControlInteraction, { capture: true });
+window.addEventListener('change', blockRunningControlInteraction, { capture: true });
+
 window.addEventListener('keydown', (event) => {
   if (timerPanel && state === 'solving') {
     event.preventDefault();
@@ -1352,6 +1408,7 @@ window.addEventListener('keydown', (event) => {
     const entry = recentSolves.find((solve) => String(solve.id) === String(solveId));
     if (entry && (penaltyAction !== 'reset' || entry.result === '+2' || entry.result === 'dnf')) {
       applySolveAction(String(entry.id), penaltyAction);
+      focusTimerAfterAction();
     }
     return;
   }
@@ -1398,7 +1455,7 @@ window.addEventListener('keydown', (event) => {
 
   isSpaceDown = true;
 
-  // During inspection: start solve immediately if holdToStart is disabled, or hold if enabled
+  // During inspection: arm on press and start on release, with an optional hold delay.
   if (state === 'inspecting' || state === 'readyToSolve') {
     if (holdToStartEnabled) {
       isHoldReady = false;
@@ -1420,8 +1477,7 @@ window.addEventListener('keydown', (event) => {
 
       return;
     } else {
-      // Instant start when Hold-to-Start is disabled (0ms delay)
-      beginSolve();
+      armImmediateRelease();
       return;
     }
   }
@@ -1461,8 +1517,7 @@ window.addEventListener('keydown', (event) => {
 
       return;
     } else {
-      // Instant start when Hold-to-Start is disabled (0ms delay)
-      beginSolve();
+      armImmediateRelease();
       return;
     }
   }
@@ -1499,10 +1554,6 @@ window.addEventListener('keyup', (event) => {
     }
     return;
   }
-  if (!holdToStartEnabled) {
-    return;
-  }
-
   // Releasing after full hold: start solve!
   if (isHoldReady) {
     isHoldReady = false;
@@ -1686,8 +1737,14 @@ document.querySelectorAll('.solve-actions .result-action').forEach((button) => {
     const action = button.dataset.action;
     const hasDraft = hasManualTimeDraft();
 
-    if (action === 'dnf' && manualTimeEntryEnabled && state === 'ready') {
-      recordManualTime('dnf');
+    if (action === 'dnf' && state === 'ready') {
+      if (manualTimeEntryEnabled && (hasDraft || !lastSolveId)) {
+        recordManualTime('dnf');
+      } else if (lastSolveId) {
+        applySolveAction(String(lastSolveId), 'dnf');
+      } else {
+        recordInspectionDnf();
+      }
       return;
     }
 
@@ -1729,6 +1786,11 @@ document.querySelectorAll('.solve-detail-actions .result-action').forEach((butto
       applySolveAction(selectedSolveId, button.dataset.action);
     }
   });
+});
+
+// Run after the action handlers, including branches that return early.
+document.querySelectorAll('.solve-actions .result-action, .solve-detail-actions .result-action').forEach((button) => {
+  button.addEventListener('click', focusTimerAfterAction);
 });
 
 // Palette Selector Change
@@ -1877,14 +1939,13 @@ if (timerPanel) {
         event.preventDefault();
         return;
       } else {
-        // Instant start when Hold-to-Start is disabled (0ms delay)
-        beginSolve();
+        armImmediateRelease();
         event.preventDefault();
         return;
       }
     }
 
-    // During inspection: instant start if holdToStart is disabled, or hold if enabled
+    // During inspection: arm on press and start on release, with an optional hold delay.
     if (state === 'inspecting' || state === 'readyToSolve') {
       if (holdToStartEnabled) {
         isHoldReady = false;
@@ -1910,8 +1971,7 @@ if (timerPanel) {
         event.preventDefault();
         return;
       } else {
-        // Instant start when Hold-to-Start is disabled (0ms delay)
-        beginSolve();
+        armImmediateRelease();
         event.preventDefault();
         return;
       }
@@ -1938,10 +1998,6 @@ if (timerPanel) {
       pointerStartedInspection = false;
       return;
     }
-    if (!holdToStartEnabled) {
-      return;
-    }
-
     // If held for full hold duration: start solve!
     if (isHoldReady) {
       isHoldReady = false;
