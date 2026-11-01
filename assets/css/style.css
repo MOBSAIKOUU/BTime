@@ -1031,8 +1031,6 @@ body[data-palette="chessboard"] .timer-state.holding {
 .event-select {
   padding: 0 10px;
   border: 1px solid var(--border);
-  background: var(--panel-soft);
-  color: var(--text);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
@@ -1292,345 +1290,144 @@ scramble-display {
    12. Responsive Breakpoints
    -------------------------------------------------------------------------- */
 
-@media (max-width: 840px) {
-  .page-shell {
-    height: auto;
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow-y: auto;
-    padding: 14px 12px;
-  }
-
-  .app-layout {
-    grid-template-columns: 1fr;
-    flex: 0 0 auto;
+/* Keep the application in the visible viewport, including browser chrome changes. */
+@media (max-width: 840px), (max-height: 540px) and (orientation: landscape) {
+  html, body {
+    height: 100%;
     min-height: 0;
-    gap: 14px;
+    overflow: hidden;
   }
 
-  .timer-workspace {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 12px;
+  .page-shell {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding: 8px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+    gap: 8px;
   }
 
   .topbar {
-    margin-bottom: 12px;
-    align-items: center;
-  }
-
-  .brand-block {
-    gap: 10px;
-    
-  }
-
-  .brand-mark {
-    width: 48px;
-    height: 58px;
-    
-  }
-
-
-  .eyebrow {
-    font-size: 0.68rem;
-    margin-bottom: 0;
-  }
-
-  h1 {
-    font-size: 1.5rem;
-  }
-
-  .topbar-actions .menu {
     flex: 0 0 auto;
-  }
-
-  .topbar-actions .menu-button {
-    min-width: 50px;
-    height: 42px;
-    padding: 0 12px;
-    font-size: 0.88rem;
-  }
-
-  .scramble-panel,
-  .stats-panel {
-    grid-column: auto;
-  }
-
-  .scramble-panel {
-    min-height: auto;
-    padding: 12px 14px;
+    min-height: 44px;
+    margin: 0;
     gap: 8px;
   }
 
+  .brand-block { gap: 8px; }
+  .brand-mark { width: 32px; height: 40px; }
+  .brand-mark:hover { transform: rotate(-10deg); }
+  .eyebrow { font-size: 0.55rem; letter-spacing: 0.08em; }
+  h1 { font-size: 1.3rem; }
+  .topbar-actions .menu { flex: 0 0 auto; }
+  .topbar-actions .menu-button { min-width: 44px; width: 44px; height: 44px; padding: 0; }
+
+  .settings-menu {
+    max-height: calc(100vh - 80px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 80px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .app-layout {
+    flex: 1 1 0;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(128px, 0.48fr);
+    gap: 8px;
+  }
+
+  .timer-workspace {
+    min-height: 0;
+    grid-template-rows: minmax(72px, 0.7fr) minmax(120px, 1.3fr) auto;
+    gap: 8px;
+  }
+
+  .panel { min-width: 0; padding: 8px 10px; }
+  .scramble-panel { grid-column: auto; min-height: 0; gap: 4px; }
+  .scramble-panel .panel-header { flex-wrap: nowrap; gap: 6px; flex: 0 0 auto; }
+  .panel-label { font-size: 0.65rem; letter-spacing: 0.08em; }
+  .event-control { gap: 5px; min-width: 0; }
+  .event-control .event-select { min-height: 36px; height: 36px; max-width: 120px; padding: 0 5px; font-size: 0.8rem; }
+  .scramble-refresh { flex-basis: 36px; width: 36px; height: 36px; }
   .scramble-text {
-    min-height: auto;
-    font-size: clamp(0.95rem, 3.8vw, 1.25rem);
-    line-height: 1.55;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    font-size: clamp(0.78rem, 2.8vw, 1rem);
+    line-height: 1.5;
+    letter-spacing: 0.02em;
   }
 
-  .timer-panel {
-    min-height: clamp(260px, 44vh, 380px);
-    padding: 20px 14px;
-  }
+  .timer-panel { min-height: 0; padding: 8px; }
+  .timer-state { margin-bottom: 4px; font-size: 0.7rem; }
+  .timer-display { font-size: clamp(2.8rem, 9vh, 5.5rem); font-size: clamp(2.8rem, 9dvh, 5.5rem); margin-bottom: 8px; }
+  .solve-actions { width: min(100%, 320px); gap: 6px; margin: 0; }
+  .solve-actions .result-action { aspect-ratio: auto; min-width: 0; height: 40px; min-height: 40px; padding: 0 4px; font-size: 0.75rem; }
 
-  .timer-display {
-    font-size: clamp(3.8rem, 15vw, 5.8rem);
-    margin-bottom: 14px;
+  .stats-panel { grid-column: auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 5px; }
+  .stat-row { min-width: 0; padding: 5px 3px; gap: 4px; align-items: center; text-align: center; }
+  .stat-row span { font-size: 0.6rem; line-height: 1.25; }
+  .stat-row strong { max-width: 100%; font-size: clamp(0.68rem, 2.5vw, 0.95rem); overflow-wrap: anywhere; }
 
-  }
-
-  .solve-actions {
-    width: min(100%, 280px);
-    gap: 8px;
-    margin-bottom: 4px;
-  }
-
-  .solve-actions .result-action {
-    aspect-ratio: auto;
-    min-height: 42px;
-    height: 42px;
-    font-size: 0.82rem;
-  }
-
-  .stats-panel {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px;
-  }
-
-  .stat-row {
-    flex: 1 1 calc(33.333% - 8px);
-    min-width: 90px;
-    padding: 8px 10px;
-    gap: 4px;
-  }
-
-  .stat-row span {
-    font-size: 0.72rem;
-  }
-
-  .stat-row strong {
-    font-size: 1rem;
-  }
-
+  /* History and drawing share the bottom strip instead of stacking below the timer. */
   .history-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 8px;
+    row-gap: 5px;
+    min-height: 0;
     height: auto;
     max-height: none;
-    padding: 14px;
+    padding: 8px;
   }
-
-  .solve-list {
-    max-height: 280px;
+  .history-header { grid-column: 1; margin: 0; gap: 4px; }
+  .history-header h2 { font-size: 0.9rem; }
+  .history-controls { width: auto; flex: 0 0 auto; }
+  .history-controls #clearHistory { flex: 0 0 auto; width: auto; height: 36px; min-height: 36px; padding: 0 8px; font-size: 0.72rem; }
+  .solve-list { grid-column: 1; grid-row: 2; max-height: none; gap: 5px; overscroll-behavior: contain; scrollbar-gutter: auto; }
+  .solve-record-button { grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px; min-height: 40px; padding: 6px; }
+  .solve-record-button .index, .solve-record-button .tag { font-size: 0.62rem; letter-spacing: 0; }
+  .solve-record-button .time { font-size: 0.9rem; }
+  .solve-empty { padding: 8px; font-size: 0.75rem; }
+  .scramble-visual-panel {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0 0 0 8px;
+    border-top: 0;
+    border-left: 1px solid var(--border);
   }
-
-  scramble-display {
-    height: 160px;
-  }
+  .scramble-visual-panel scramble-display { flex: 1 1 0; min-height: 0; height: 0; }
+  .scramble-visual-status { flex: 0 0 auto; margin-top: 3px; font-size: 0.65rem; }
+  .scramble-visual-credit { flex: 0 0 auto; margin-top: 3px; font-size: 0.55rem; }
+  .solve-dialog { max-height: 88vh; max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain; padding: 16px; }
 }
 
-@media (max-width: 520px) {
-  .page-shell {
-    padding: 10px 10px 18px 10px;
-    padding-top: max(10px, env(safe-area-inset-top));
-    padding-bottom: max(18px, env(safe-area-inset-bottom));
-    padding-left: max(10px, env(safe-area-inset-left));
-    padding-right: max(10px, env(safe-area-inset-right));
-  }
-
-  .topbar {
-    flex-wrap: nowrap;
-    align-items: center;
-  }
-
-  .brand-block {
-    gap: 8px;
-  }
-
-  .brand-mark {
-    width: 40px;
-    height: 48px;
-  }
-
-  .eyebrow {
-    font-size: 0.62rem;
-  }
-
-  h1 {
-    font-size: 1.35rem;
-  }
-
-  .topbar-actions .menu {
-    flex-basis: auto;
-  }
-
-  .topbar-actions .menu-button {
-    height: 38px;
-    font-size: 0.82rem;
-  }
-
-  .timer-panel {
-    min-height: clamp(230px, 40vh, 330px);
-    padding: 16px 12px;
-  }
-
-  .timer-display {
-    font-size: clamp(3.4rem, 16vw, 4.8rem);
-  }
-
-  .stat-row {
-    flex: 1 1 calc(50% - 6px);
-    padding: 8px 10px;
-  }
-
-  .history-header {
-    flex-wrap: nowrap;
-    gap: 8px;
-  }
-
-  .history-controls {
-    flex: 0 0 auto;
-    width: auto;
-    gap: 6px;
-  }
-
-  .history-controls #eventSelect {
-    min-height: 40px;
-    height: 40px;
-    font-size: 0.82rem;
-    padding: 0 6px;
-  }
-
-  .history-controls #clearHistory {
-    flex: 0 0 58px;
-    width: 58px;
-    min-height: 40px;
-    height: 40px;
-    font-size: 0.82rem;
-  }
-
-  .solve-record-button {
-    padding: 10px 12px;
-  }
-
-  scramble-display {
-    height: 145px;
-  }
-}
-
-/* Smartphone & Device Landscape Optimization (e.g. iPhone, Android on desk) */
 @media (max-height: 540px) and (orientation: landscape) {
-  .page-shell {
-    height: auto;
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow-y: auto;
-    padding: 8px 14px;
-    padding-left: max(14px, env(safe-area-inset-left));
-    padding-right: max(14px, env(safe-area-inset-right));
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
-  }
-
-  .topbar {
-    margin-bottom: 6px;
-  }
-
-  .brand-mark {
-    width: 32px;
-    height: 38px;
-  }
-
-  h1 {
-    font-size: 1.15rem;
-  }
-
-  .eyebrow {
-    display: none;
-  }
-
-    .topbar-actions .menu-button {
-    height: 34px;
-    min-width: 72px;
-    font-size: 0.8rem;
-  }
-
-  .app-layout {
-    grid-template-columns: minmax(0, 1.35fr) minmax(260px, 1fr);
-    gap: 10px;
-  }
-
-  .timer-workspace {
-    gap: 8px;
-    grid-template-rows: auto auto auto;
-  }
-
-  .scramble-panel {
-    min-height: auto;
-    padding: 6px 12px;
-    gap: 4px;
-  }
-
-  .scramble-text {
-    font-size: 0.88rem;
-    line-height: 1.35;
-  }
-
-  .timer-panel {
-    min-height: 180px;
-    padding: 10px;
-  }
-
-  .timer-display {
-    font-size: clamp(2.6rem, 18vh, 4rem);
-    margin-bottom: 4px;
-  }
-
-  .timer-state {
-    margin-bottom: 4px;
-    font-size: 0.72rem;
-  }
-
-  .solve-actions {
-    margin-bottom: 4px;
-    gap: 6px;
-  }
-
-  .solve-actions .result-action {
-    min-height: 34px;
-    height: 34px;
-    font-size: 0.75rem;
-  }
-
-  .stats-panel {
-    padding: 6px 8px;
-    gap: 6px;
-    flex-wrap: nowrap;
-  }
-
-  .stat-row {
-    padding: 4px 6px;
-    gap: 2px;
-  }
-
-  .stat-row span {
-    font-size: 0.65rem;
-  }
-
-  .stat-row strong {
-    font-size: 0.85rem;
-  }
-
-  .history-panel {
-    height: auto;
-    max-height: 85vh;
-    padding: 10px;
-  }
-
-  .solve-list {
-    max-height: 160px;
-  }
-
-  scramble-display {
-    height: 120px;
-  }
+  .page-shell { gap: 5px; padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+  .topbar { min-height: 36px; }
+  .brand-mark { width: 26px; height: 32px; }
+  .eyebrow { display: none; }
+  h1 { font-size: 1.1rem; }
+  .topbar-actions .menu-button { min-height: 36px; height: 36px; }
+  .app-layout { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 6px; }
+  .timer-workspace { grid-template-rows: minmax(60px, 0.7fr) minmax(100px, 1fr) auto; gap: 5px; }
+  .timer-display { font-size: clamp(2.2rem, 12dvh, 4rem); margin-bottom: 4px; }
+  .timer-state { margin-bottom: 2px; font-size: 0.62rem; }
+  .solve-actions .result-action { min-height: 36px; height: 36px; }
+  .stat-row { padding: 3px; gap: 2px; }
+  .stat-row span { font-size: 0.55rem; }
+  .stat-row strong { font-size: 0.78rem; }
+  .history-panel { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) minmax(80px, 0.9fr); gap: 5px; }
+  .scramble-visual-panel { grid-column: 1; grid-row: 3; border-left: 0; border-top: 1px solid var(--border); padding: 5px 0 0; }
 }
