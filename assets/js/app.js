@@ -69,6 +69,10 @@ const INSPECTION_SECONDS = 15;
 const INSPECTION_GRACE_SECONDS = 1;
 const SCRAMBLE_PREFETCH_COUNT = 5;
 const REQUIRED_HOLD_MS = 300;
+const MAX_HISTORY_ENTRIES = 50;
+const MAX_SCRAMBLE_LENGTH = 10000;
+const MAX_STORAGE_LENGTH = 1000000;
+const VALID_RESULTS = new Set(['ok', '+2', 'dnf']);
 
 // WCA Supported Events
 const EVENTS = [
@@ -156,7 +160,7 @@ let scrambleDrawingFailed = false;
    3. Scramble Visualizer Dynamic Web Component Loader
    ========================================================================== */
 
-import('https://esm.sh/scramble-display@0.59.1?deps=cubing@0.59.1')
+import('/assets/vendor/2a3049222214d6d1997b.mjs')
   .then(() => {
     if (solveDetailDrawingStatus) {
       solveDetailDrawingStatus.textContent = '';
@@ -221,94 +225,106 @@ function getEventLabel(eventCode) {
   return EVENTS.find((event) => event.code === eventCode)?.label || eventCode;
 }
 
-function loadSavedScramble(eventCode) {
+// Treat persisted data as untrusted; all rendering continues to use textContent.
+function readStoredValue(key, fallback = null) {
   try {
-    return localStorage.getItem(scrambleStorageKey(eventCode)) || '';
-  } catch (error) {
-    console.error(`Unable to load the saved ${eventCode} scramble.`, error);
-    return '';
+    const value = localStorage.getItem(key);
+    return value !== null && value.length <= MAX_STORAGE_LENGTH ? value : fallback;
+  } catch {
+    return fallback;
   }
+}
+
+function readStoredJson(key, fallback = null) {
+  const value = readStoredValue(key);
+  if (value === null) return fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+function writeStoredValue(key, value) {
+  try { localStorage.setItem(key, value); } catch { /* Storage is optional. */ }
+}
+
+function readBooleanPreference(key, fallback) {
+  const value = readStoredJson(key);
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function normalizeScramble(value) {
+  return typeof value === 'string' && value.length <= MAX_SCRAMBLE_LENGTH &&
+    !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f<>]/.test(value)
+    ? value.trim() : '';
+}
+
+function loadSavedScramble(eventCode) {
+  return normalizeScramble(readStoredValue(scrambleStorageKey(eventCode), ''));
 }
 
 function saveScramble(eventCode, value) {
-  try {
-    localStorage.setItem(scrambleStorageKey(eventCode), value);
-  } catch (error) {
-    console.error(`Unable to save the ${eventCode} scramble.`, error);
-  }
+  const normalized = normalizeScramble(value);
+  if (normalized) writeStoredValue(scrambleStorageKey(eventCode), normalized);
 }
 
 function loadEventPreference() {
-  try {
-    const saved = localStorage.getItem(EVENT_STORAGE_KEY);
-    return EVENTS.some((event) => event.code === saved) ? saved : '333';
-  } catch (error) {
-    return '333';
-  }
+  const saved = readStoredValue(EVENT_STORAGE_KEY);
+  return EVENTS.some((event) => event.code === saved) ? saved : '333';
 }
 
 function saveEventPreference() {
-  try {
-    localStorage.setItem(EVENT_STORAGE_KEY, currentEvent);
-  } catch (error) {
-    console.error('Unable to save the selected event.', error);
-  }
+  writeStoredValue(EVENT_STORAGE_KEY, currentEvent);
+}
+
+function normalizeSolve(entry, eventCode) {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+  const result = entry.result ?? 'ok';
+  if (!VALID_RESULTS.has(result)) return null;
+  const rawTime = entry.baseTimeMs ?? entry.timeMs ?? (result === 'dnf' ? 0 : null);
+  if (typeof rawTime !== 'number' && typeof rawTime !== 'string') return null;
+  if (typeof rawTime === 'string' && !/^\d+(?:\.\d+)?$/.test(rawTime)) return null;
+  const baseTimeMs = Number(rawTime);
+  if (!Number.isFinite(baseTimeMs) || baseTimeMs < 0 || baseTimeMs > Number.MAX_SAFE_INTEGER - 2000) return null;
+  const id = typeof entry.id === 'string' || typeof entry.id === 'number' ? String(entry.id) : '';
+  return {
+    id: id && id.length <= 128 ? id : generateSolveId(),
+    baseTimeMs,
+    timeMs: result === 'dnf' ? null : baseTimeMs + (result === '+2' ? 2000 : 0),
+    result,
+    tag: getEventLabel(eventCode),
+    scramble: normalizeScramble(entry.scramble),
+  };
+}
+
+function normalizeHistory(entries, eventCode) {
+  if (!Array.isArray(entries)) return [];
+  const ids = new Set();
+  return entries.slice(-MAX_HISTORY_ENTRIES).map((entry) => normalizeSolve(entry, eventCode))
+    .filter((entry) => {
+      if (!entry) return false;
+      if (ids.has(entry.id)) entry.id = generateSolveId();
+      ids.add(entry.id);
+      return true;
+    });
 }
 
 function loadHistory(eventCode) {
-  try {
-    const saved = localStorage.getItem(eventStorageKey(eventCode));
-    if (!saved) {
-      return [];
-    }
-
-    return JSON.parse(saved)
-      .map((entry) => ({
-        id: entry.id || generateSolveId(),
-        baseTimeMs: Number(entry.baseTimeMs ?? entry.timeMs ?? 0),
-        timeMs: Number(entry.timeMs ?? entry.baseTimeMs ?? 0),
-        result: entry.result ?? 'ok',
-        tag: entry.tag || getEventLabel(eventCode),
-        scramble: typeof entry.scramble === 'string' ? entry.scramble : '',
-      }))
-      .filter((entry) => entry.result === 'dnf' || Number.isFinite(entry.baseTimeMs));
-  } catch (error) {
-    return [];
-  }
+  return normalizeHistory(readStoredJson(eventStorageKey(eventCode)), eventCode);
 }
 
 function saveHistory() {
-  try {
-    const cleanHistory = recentSolves
-      .filter((entry) => entry.result === 'dnf' || Number.isFinite(entry.baseTimeMs))
-      .slice(0, 50);
-
-    localStorage.setItem(eventStorageKey(currentEvent), JSON.stringify(cleanHistory));
-  } catch (error) {
-    console.error(`Unable to save ${currentEvent} solve history.`, error);
-  }
+  writeStoredValue(eventStorageKey(currentEvent), JSON.stringify(normalizeHistory(recentSolves, currentEvent)));
 }
 
 function loadInspectionPreference() {
-  try {
-    const saved = localStorage.getItem(INSPECTION_STORAGE_KEY);
-    return saved !== null ? JSON.parse(saved) : true;
-  } catch (error) {
-    return true;
-  }
+  return readBooleanPreference(INSPECTION_STORAGE_KEY, true);
 }
 
 function saveInspectionPreference() {
-  try {
-    localStorage.setItem(INSPECTION_STORAGE_KEY, JSON.stringify(inspectionEnabled));
-  } catch (error) {
-    // Ignore storage errors
-  }
+  writeStoredValue(INSPECTION_STORAGE_KEY, JSON.stringify(inspectionEnabled));
 }
 
 function loadThemePreference() {
   try {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    const saved = readStoredValue(THEME_STORAGE_KEY);
     if (saved === null) {
       return 'light';
     }
@@ -326,68 +342,30 @@ function loadThemePreference() {
 }
 
 function saveThemePreference() {
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(colorPalette));
-  } catch (error) {
-    // Ignore storage errors
-  }
+  writeStoredValue(THEME_STORAGE_KEY, JSON.stringify(colorPalette));
 }
 
 function loadHoldToStartPreference() {
-  try {
-    const saved = localStorage.getItem(HOLD_TO_START_STORAGE_KEY);
-    return saved !== null ? JSON.parse(saved) : false;
-  } catch (error) {
-    return false;
-  }
+  return readBooleanPreference(HOLD_TO_START_STORAGE_KEY, false);
 }
 
 function saveHoldToStartPreference() {
-  try {
-    localStorage.setItem(HOLD_TO_START_STORAGE_KEY, JSON.stringify(holdToStartEnabled));
-  } catch (error) {
-    // Ignore storage errors
-  }
+  writeStoredValue(HOLD_TO_START_STORAGE_KEY, JSON.stringify(holdToStartEnabled));
 }
 
 function loadManualTimeEntryPreference() {
-  try {
-    const saved = localStorage.getItem(MANUAL_TIME_STORAGE_KEY);
-    if (saved === null) {
-      return false;
-    }
-    const parsed = JSON.parse(saved);
-    return typeof parsed === 'boolean' ? parsed : false;
-  } catch (error) {
-    return false;
-  }
+  return readBooleanPreference(MANUAL_TIME_STORAGE_KEY, false);
 }
 
 function saveManualTimeEntryPreference() {
-  try {
-    localStorage.setItem(MANUAL_TIME_STORAGE_KEY, JSON.stringify(manualTimeEntryEnabled));
-  } catch (error) {
-    // Ignore storage errors
-  }
+  writeStoredValue(MANUAL_TIME_STORAGE_KEY, JSON.stringify(manualTimeEntryEnabled));
 }
 
-/**
- * Applies the active color palette and updates the dark-mode class and select value.
- */
 function applyTheme() {
-  document.body.classList.toggle(
-    'dark-mode',
-    colorPalette === 'night' ||
-    colorPalette === 'oilspill' ||
-    colorPalette === 'sunrise' ||
-    colorPalette === 'shibuya' ||
-    colorPalette === 'halloween'
-  );
+  document.body.classList.toggle('dark-mode',
+    ['night', 'oilspill', 'sunrise', 'shibuya', 'halloween'].includes(colorPalette));
   document.body.dataset.palette = colorPalette;
-
-  if (colorPaletteSelect) {
-    colorPaletteSelect.value = colorPalette;
-  }
+  if (colorPaletteSelect) colorPaletteSelect.value = colorPalette;
 }
 
 /* ==========================================================================
@@ -401,8 +379,8 @@ function applyTheme() {
 async function loadScrambler() {
   if (!cubingScramblerPromise) {
     cubingScramblerPromise = Promise.all([
-      import('https://esm.sh/cubing@0.59.1/search'),
-      import('https://esm.sh/cubing@0.59.1/scramble'),
+      import('/assets/vendor/9829f1d814e7ab3c04a8.mjs'),
+      import('/assets/vendor/838ac984e44e3339009f.mjs'),
     ]).then(([{ setSearchDebug }, { randomScrambleForEvent }]) => {
       setSearchDebug({ logPerf: false });
       return randomScrambleForEvent;
@@ -740,7 +718,7 @@ function renderHistory() {
     return;
   }
 
-  solveList.innerHTML = '';
+  solveList.replaceChildren();
 
   if (!recentSolves.length) {
     const emptyItem = document.createElement('li');
@@ -1138,7 +1116,7 @@ function recordInspectionDnf() {
 
   recentSolves.push(solveEntry);
   lastSolveId = solveEntry.id;
-  recentSolves = recentSolves.slice(-50);
+  recentSolves = recentSolves.slice(-MAX_HISTORY_ENTRIES);
   saveHistory();
   renderStats();
   renderHistory();
@@ -1179,7 +1157,7 @@ function recordSolve(finalTime, result = 'ok') {
 
   recentSolves.push(solveEntry);
   lastSolveId = solveEntry.id;
-  recentSolves = recentSolves.slice(-50);
+  recentSolves = recentSolves.slice(-MAX_HISTORY_ENTRIES);
   saveHistory();
   renderStats();
   renderHistory();
@@ -1196,6 +1174,7 @@ function recordSolve(finalTime, result = 'ok') {
  * @returns {{ timeMs: number, result: string } | null}
  */
 function parseManualTime(value) {
+  if (typeof value !== 'string' || value.length > 64) return null;
   const enteredTime = value.trim().toLowerCase();
   if (enteredTime === 'dnf') {
     return { timeMs: 0, result: 'dnf' };
@@ -1210,7 +1189,7 @@ function parseManualTime(value) {
   const seconds = match[1].includes('.') ? parsedNumber : parsedNumber / 100;
   const timeMs = Math.round(seconds * 1000);
 
-  if (!Number.isFinite(timeMs) || timeMs <= 0) {
+  if (!Number.isSafeInteger(timeMs) || timeMs <= 0 || timeMs > Number.MAX_SAFE_INTEGER - 2000) {
     return null;
   }
 
@@ -1232,7 +1211,7 @@ function recordManualTime(resultOverride = null) {
     return;
   }
 
-    const result = resultOverride || parsedTime.result;
+  const result = resultOverride || parsedTime.result;
   manualTimeDraftActive = false;
   recordSolve(parsedTime.timeMs, result);
   setTimerState('ready');
@@ -1338,6 +1317,37 @@ function focusTimerAfterAction() {
 
 function isSpaceKey(event) {
   return event.code === 'Space' || event.key === ' ' || event.keyCode === 32;
+}
+
+// Shared delayed-start feedback for keyboard and touch, including optional haptics.
+function prepareDelayedStart(vibrate = false) {
+  const inspecting = state === 'inspecting' || state === 'readyToSolve';
+  isHoldReady = false;
+  if (holdTimeoutId !== null) clearTimeout(holdTimeoutId);
+  if (!inspecting) {
+    spaceStartedInspection = false;
+    pointerStartedInspection = false;
+    cancelAnimation();
+    setTimerState('holding');
+    updateDisplay('0.00');
+  }
+  timerState.textContent = 'Hold...';
+  if (!inspecting) timerState.className = 'timer-state holding holding-wait';
+  timerDisplay.classList.add('holding-wait');
+  if (inspecting) timerDisplay.classList.add('space-held');
+  timerDisplay.classList.remove('holding-ready');
+  holdTimeoutId = window.setTimeout(() => {
+    holdTimeoutId = null;
+    isHoldReady = true;
+    timerState.textContent = 'Release to start';
+    if (!inspecting) timerState.className = 'timer-state holding holding-ready';
+    timerDisplay.classList.remove('holding-wait');
+    timerDisplay.classList.add('holding-ready');
+    flashDisplay();
+    if (vibrate && navigator.vibrate) {
+      try { navigator.vibrate(40); } catch { /* Haptics are optional. */ }
+    }
+  }, REQUIRED_HOLD_MS);
 }
 
 // With the hold delay disabled, arm immediately but still wait for release.
@@ -1464,22 +1474,7 @@ window.addEventListener('keydown', (event) => {
   // During inspection: arm on press and start on release, with an optional hold delay.
   if (state === 'inspecting' || state === 'readyToSolve') {
     if (holdToStartEnabled) {
-      isHoldReady = false;
-      timerState.textContent = 'Hold...';
-      timerDisplay.classList.add('space-held', 'holding-wait');
-      timerDisplay.classList.remove('holding-ready');
-
-      if (holdTimeoutId !== null) {
-        clearTimeout(holdTimeoutId);
-      }
-
-      holdTimeoutId = window.setTimeout(() => {
-        isHoldReady = true;
-        timerState.textContent = 'Release to start';
-        timerDisplay.classList.remove('holding-wait');
-        timerDisplay.classList.add('holding-ready');
-        flashDisplay();
-      }, REQUIRED_HOLD_MS);
+      prepareDelayedStart(false);
 
       return;
     } else {
@@ -1498,28 +1493,7 @@ window.addEventListener('keydown', (event) => {
 
     // If inspection is disabled: check holdToStart setting
     if (holdToStartEnabled) {
-      isHoldReady = false;
-      spaceStartedInspection = false;
-      cancelAnimation();
-      setTimerState('holding');
-      timerState.textContent = 'Hold...';
-      timerState.className = 'timer-state holding holding-wait';
-      timerDisplay.classList.add('holding-wait');
-      timerDisplay.classList.remove('holding-ready');
-      updateDisplay('0.00');
-
-      if (holdTimeoutId !== null) {
-        clearTimeout(holdTimeoutId);
-      }
-
-      holdTimeoutId = window.setTimeout(() => {
-        isHoldReady = true;
-        timerState.textContent = 'Release to start';
-        timerState.className = 'timer-state holding holding-ready';
-        timerDisplay.classList.remove('holding-wait');
-        timerDisplay.classList.add('holding-ready');
-        flashDisplay();
-      }, REQUIRED_HOLD_MS);
+      prepareDelayedStart(false);
 
       return;
     } else {
@@ -1960,31 +1934,7 @@ if (timerPanel) {
       }
       // If inspection is disabled: check holdToStart setting
       if (holdToStartEnabled) {
-        isHoldReady = false;
-        pointerStartedInspection = false;
-        cancelAnimation();
-        setTimerState('holding');
-        timerState.textContent = 'Hold...';
-        timerState.className = 'timer-state holding holding-wait';
-        timerDisplay.classList.add('holding-wait');
-        timerDisplay.classList.remove('holding-ready');
-        updateDisplay('0.00');
-
-        if (holdTimeoutId !== null) {
-          clearTimeout(holdTimeoutId);
-        }
-
-        holdTimeoutId = window.setTimeout(() => {
-          isHoldReady = true;
-          timerState.textContent = 'Release to start';
-          timerState.className = 'timer-state holding holding-ready';
-          timerDisplay.classList.remove('holding-wait');
-          timerDisplay.classList.add('holding-ready');
-          flashDisplay();
-          if (navigator.vibrate) {
-            try { navigator.vibrate(40); } catch (_) {}
-          }
-        }, REQUIRED_HOLD_MS);
+        prepareDelayedStart(true);
 
         event.preventDefault();
         return;
@@ -1998,25 +1948,7 @@ if (timerPanel) {
     // During inspection: arm on press and start on release, with an optional hold delay.
     if (state === 'inspecting' || state === 'readyToSolve') {
       if (holdToStartEnabled) {
-        isHoldReady = false;
-        timerState.textContent = 'Hold...';
-        timerDisplay.classList.add('space-held', 'holding-wait');
-        timerDisplay.classList.remove('holding-ready');
-
-        if (holdTimeoutId !== null) {
-          clearTimeout(holdTimeoutId);
-        }
-
-        holdTimeoutId = window.setTimeout(() => {
-          isHoldReady = true;
-          timerState.textContent = 'Release to start';
-          timerDisplay.classList.remove('holding-wait');
-          timerDisplay.classList.add('holding-ready');
-          flashDisplay();
-          if (navigator.vibrate) {
-            try { navigator.vibrate(40); } catch (_) {}
-          }
-        }, REQUIRED_HOLD_MS);
+        prepareDelayedStart(true);
 
         event.preventDefault();
         return;

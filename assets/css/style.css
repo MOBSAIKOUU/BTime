@@ -1713,3 +1713,37 @@ body[data-palette="cartoon"] .solve-dialog::backdrop { background: rgba(41, 36, 
 @media (max-width: 840px) {
   body[data-palette="cartoon"] .panel { box-shadow: 2px 2px 0 var(--border); }
 }
+
+/* Install controls and a compact update notice, independent of the timer layout. */
+.install-button { margin-top: 10px; }
+.pwa-hint { margin: 8px 0 0; color: var(--muted); font-size: 0.75rem; line-height: 1.45; }
+#installBTime[hidden], .pwa-hint[hidden], .pwa-update-notice[hidden] { display: none; }
+.pwa-update-notice {
+  position: fixed;
+  z-index: 10;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: calc(100vw - 24px);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-strong);
+  box-shadow: var(--shadow);
+}
+#refreshBTime {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+#refreshBTime:disabled { opacity: 0.5; cursor: default; }
+#refreshBTime:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.settings-menu { max-height: calc(100dvh - 140px - env(safe-area-inset-top)); overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 840px), (max-height: 540px) and (orientation: landscape) {
+  .settings-menu { max-height: calc(100dvh - 80px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+}

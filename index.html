@@ -3,6 +3,8 @@
 
   <head>
     <meta charset="UTF-8" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Content-Security-Policy" content="base-uri 'none'; object-src 'none'; form-action 'none'; frame-src 'none'; script-src-attr 'none'" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
@@ -28,8 +30,8 @@
 
     <link rel="icon" href="assets/Images/Logo/Favicon Assets/favicon.ico" sizes="32x32">
     <link rel="apple-touch-icon" href="assets/Images/Logo/Favicon Assets/apple-touch-icon.png">
-    <link rel="manifest" href="assets/Images/Logo/Favicon Assets/site.webmanifest">
-    <link rel="canonical" href="https://btime.site/" />
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="canonical" href="https://www.btime.site/" />
     <link rel="stylesheet" href="assets/css/style.css" />
     
 
@@ -90,7 +92,7 @@
                     <option value="light">Default</option>
                     <option value="night">Night</option>
                     <option value="liquid-glass">Liquid Glass</option>
-                    <option value="cartoon">Cartoon</option>
+                    <option value="cartoon">Playground</option>
                     <option value="shell-pink">Bella pink</option>
                     <option value="dessert">Vanilla cream</option>
                     <option value="purple">Lavender</option>
@@ -102,6 +104,12 @@
                     <option value="halloween">Halloween</option>
                   </select>
                 </label>
+              </section>
+              <section class="settings-category" aria-labelledby="installSettingsTitle">
+                <h3 id="installSettingsTitle" class="settings-category-title">BTime app</h3>
+                <button id="installBTime" class="secondary-button install-button" type="button" hidden>Install BTime</button>
+                <p id="installHint" class="pwa-hint" hidden></p>
+                <p id="offlineStatus" class="pwa-hint" role="status">Preparing offline support…</p>
               </section>
             </div>
           </div>
@@ -270,9 +278,14 @@
     </dialog>
 
     <!-- Vercel Web Analytics -->
+    <div id="pwaUpdateNotice" class="pwa-update-notice" role="status" hidden>
+      <button id="refreshBTime" type="button">Update available, tap to refresh</button>
+    </div>
+
     <script defer src="/_vercel/insights/script.js"></script>
 
     <!-- Application Script -->
     <script type="module" src="/assets/js/app.js"></script>
+    <script type="module" src="/assets/js/pwa.js"></script>
   </body>
 </html>

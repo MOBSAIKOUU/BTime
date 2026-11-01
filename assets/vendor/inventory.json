@@ -1,0 +1,346 @@
+[
+  {
+    "path": "/assets/vendor/2a3049222214d6d1997b.mjs",
+    "source": "https://esm.sh/scramble-display@0.59.1?deps=cubing@0.59.1&target=es2022"
+  },
+  {
+    "path": "/assets/vendor/9829f1d814e7ab3c04a8.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/search?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/838ac984e44e3339009f.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/scramble?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/92e8b7ac70a910de94fc.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-7GUL3OBQ.mjs"
+  },
+  {
+    "path": "/assets/vendor/394a90fc5d16352bddd1.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-7D7ZUWUK.mjs"
+  },
+  {
+    "path": "/assets/vendor/2f516a66ebd1765936d3.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-2HSEQ2FC.mjs"
+  },
+  {
+    "path": "/assets/vendor/621af29ba7372c330589.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-NX2Q6B7Y.mjs"
+  },
+  {
+    "path": "/assets/vendor/69278bda016a4f62f0f2.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-OJI4YUWF.mjs"
+  },
+  {
+    "path": "/assets/vendor/8fb22ad4e2a4ee1a708e.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/search.mjs"
+  },
+  {
+    "path": "/assets/vendor/2ed0aeb0abfa0f374088.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-WIZJQ7QS.mjs"
+  },
+  {
+    "path": "/assets/vendor/89a64143ddf0b4923b52.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/scramble.mjs"
+  },
+  {
+    "path": "/assets/vendor/ea37851fac95c2c40c2f.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-PSQEELP4.mjs"
+  },
+  {
+    "path": "/assets/vendor/98933d3733d619f51e88.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-RUSWM2KK.mjs"
+  },
+  {
+    "path": "/assets/vendor/4c1fa2d58b4e69a49660.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/puzzles.mjs"
+  },
+  {
+    "path": "/assets/vendor/04e16d7b4d3057c322ae.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/alg.mjs"
+  },
+  {
+    "path": "/assets/vendor/7a7883226f3c008b2acb.mjs",
+    "source": "https://esm.sh/scramble-display@0.59.1/X-ZGN1YmluZ0AwLjU5LjE/es2022/scramble-display.mjs"
+  },
+  {
+    "path": "/assets/vendor/9d3493270fc89c07b9dd.mjs",
+    "source": "https://esm.sh/node/process.mjs"
+  },
+  {
+    "path": "/assets/vendor/e1065bc452c72d7531c5.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/twisty.mjs"
+  },
+  {
+    "path": "/assets/vendor/2322c7a9283049842b80.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-worker-entry.mjs"
+  },
+  {
+    "path": "/assets/vendor/e70d928bf601a11d9459.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-worker-entry.js"
+  },
+  {
+    "path": "/assets/vendor/9b47b987b2ce50b73b4d.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-3x3x3-B2L4IN34.mjs"
+  },
+  {
+    "path": "/assets/vendor/372f209ee1a675c1cb65.mjs",
+    "source": "https://esm.sh/random-uint-below@v3.3.0?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/aa5a806fb2aa2076e4f1.mjs",
+    "source": "https://esm.sh/comlink@%5E4.4.1?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/39be9e7d46ea852ad389.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/big-puzzle-orientation-3GQ3L26S.mjs"
+  },
+  {
+    "path": "/assets/vendor/2039eadf9d9ad6ec6a79.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/puzzles-dynamic-4x4x4-REUXFQJ4.mjs"
+  },
+  {
+    "path": "/assets/vendor/8a3aff03ea1560d20690.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/puzzle-geometry.mjs"
+  },
+  {
+    "path": "/assets/vendor/390780cd5b9eacd33a1e.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/puzzles-dynamic-side-events-BOGUHF4Q.mjs"
+  },
+  {
+    "path": "/assets/vendor/3c0f0cdcc7bcc3ec7dd1.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/puzzles-dynamic-3x3x3-JWIWLLZA.mjs"
+  },
+  {
+    "path": "/assets/vendor/d00d4798f860464a393c.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/puzzles-dynamic-megaminx-2LVHIDL4.mjs"
+  },
+  {
+    "path": "/assets/vendor/a69891dca6574a8db54e.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/twisty-dynamic-3d-SIRF3JVR.mjs"
+  },
+  {
+    "path": "/assets/vendor/4482af8fc17462a76e11.mjs",
+    "source": "https://esm.sh/node/events.mjs"
+  },
+  {
+    "path": "/assets/vendor/0e074e8cebd5b749fdcd.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/puzzles-dynamic-unofficial-P3TW433I.mjs"
+  },
+  {
+    "path": "/assets/vendor/24fb09aac45f984d67d9.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-UD4LT3FY.mjs"
+  },
+  {
+    "path": "/assets/vendor/65f567c2ee495b253fa3.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/inside-NS3PIQ5Z.mjs"
+  },
+  {
+    "path": "/assets/vendor/54186365b6107d9be397.mjs",
+    "source": "https://esm.sh/node/tty.mjs"
+  },
+  {
+    "path": "/assets/vendor/1cb29b3215295144d8d6.mjs",
+    "source": "https://esm.sh/random-uint-below@3.3.0/es2022/random-uint-below.mjs"
+  },
+  {
+    "path": "/assets/vendor/2c30f1ff53ca97114048.mjs",
+    "source": "https://esm.sh/comlink@4.4.2/es2022/comlink.mjs"
+  },
+  {
+    "path": "/assets/vendor/e0e42015fc967aac5d73.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/constants?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/ca87d7cf9be9953ac666.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/core/BufferGeometry?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/824da5329b5b0d56e526.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/core/Object3D?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/1be09893cc5189b4d832.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/loaders/TextureLoader?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/3d307f9bdfc59ff01187.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/geometries/BoxGeometry?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/a983c35eb9851669eec0.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/core/BufferAttribute?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/7b5b1e77cf2e749e4b80.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/math/Quaternion?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/73f1f4cad56c71e02884.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/math/Euler?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/31f88b515bfeb5eac623.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/materials/MeshBasicMaterial?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/aa442d81e0bab225e976.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/math/Color?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/613480c386c40e31d7c1.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/math/Matrix4?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/d2005c8587641fe21e29.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/math/Vector3?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/a35437540297a069863e.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/objects/Mesh?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/dc5d825315edc1171385.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/cameras/PerspectiveCamera?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/feb93aa43918457a5a9a.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/math/Vector2?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/12be7b3c2af31743088b.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/objects/Group?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/5a6b2a422712fc8f3fd5.mjs",
+    "source": "https://esm.sh/node/async_hooks.mjs"
+  },
+  {
+    "path": "/assets/vendor/9f35988f58be7d295ce4.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/math/Spherical?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/e6b36a8d74f3d17e9e67.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/scenes/Scene?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/e3fb8c2c7c524744bb2d.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/core/Raycaster?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/0281c5150b162f7c7542.mjs",
+    "source": "https://esm.sh/three@%5E0.170.0/src/renderers/WebGLRenderer?target=es2022"
+  },
+  {
+    "path": "/assets/vendor/a5b873c81d9be7a12ced.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/twsearch-SXB7BAMF.mjs"
+  },
+  {
+    "path": "/assets/vendor/a4ebabb82eda24bcb7b9.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-fto-HZREG6ZH.mjs"
+  },
+  {
+    "path": "/assets/vendor/3102126e2996e593115c.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-4x4x4-GNM5XEZR.mjs"
+  },
+  {
+    "path": "/assets/vendor/bec7f8054f78c22b291d.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-sgs-side-events-SYC27DSG.mjs"
+  },
+  {
+    "path": "/assets/vendor/0dea11482baa920b98c4.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-sgs-unofficial-QGGV4PCJ.mjs"
+  },
+  {
+    "path": "/assets/vendor/b117b6e81939673492ec.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-master_tetraminx-GIS7T5B7.mjs"
+  },
+  {
+    "path": "/assets/vendor/4be03f18520ec80cd6cb.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-kilominx-GCNVEBDJ.mjs"
+  },
+  {
+    "path": "/assets/vendor/4e49d9202ee01feedda1.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/constants.mjs"
+  },
+  {
+    "path": "/assets/vendor/d500c2b704d4a54e5945.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/core/BufferAttribute.mjs"
+  },
+  {
+    "path": "/assets/vendor/2813b595a0ce36d7fb49.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/core/BufferGeometry.mjs"
+  },
+  {
+    "path": "/assets/vendor/7baddc64a544bf6857bf.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/core/Object3D.mjs"
+  },
+  {
+    "path": "/assets/vendor/284a18b673061f23b78c.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/materials/MeshBasicMaterial.mjs"
+  },
+  {
+    "path": "/assets/vendor/ec55c0cb18866aa6c97d.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/math/Color.mjs"
+  },
+  {
+    "path": "/assets/vendor/8e78f998295c0a9f2d8c.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/geometries/BoxGeometry.mjs"
+  },
+  {
+    "path": "/assets/vendor/8026345ef95a15e5fea4.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/loaders/TextureLoader.mjs"
+  },
+  {
+    "path": "/assets/vendor/b87e60ca60a839a32ff4.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/math/Quaternion.mjs"
+  },
+  {
+    "path": "/assets/vendor/68c5fc4f803cda270031.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/math/Euler.mjs"
+  },
+  {
+    "path": "/assets/vendor/d4a5fb1763ee7251d927.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/math/Vector2.mjs"
+  },
+  {
+    "path": "/assets/vendor/d45928c7b373ea2ddca9.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/math/Matrix4.mjs"
+  },
+  {
+    "path": "/assets/vendor/45aaa9b2764d54cb7c6b.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/math/Vector3.mjs"
+  },
+  {
+    "path": "/assets/vendor/c3249de2c0cb44f12bdd.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/core/Raycaster.mjs"
+  },
+  {
+    "path": "/assets/vendor/86e68fa30e85321b3c64.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/math/Spherical.mjs"
+  },
+  {
+    "path": "/assets/vendor/0261e730c12865059b1a.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/objects/Mesh.mjs"
+  },
+  {
+    "path": "/assets/vendor/3b6b5fd20ec20e22f2f7.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/objects/Group.mjs"
+  },
+  {
+    "path": "/assets/vendor/9519a8300dcf4f6712a5.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/cameras/PerspectiveCamera.mjs"
+  },
+  {
+    "path": "/assets/vendor/c640b643a464f0f3ab3b.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/scenes/Scene.mjs"
+  },
+  {
+    "path": "/assets/vendor/526a9d4dce0b07aff917.mjs",
+    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/twsearch_wasm_bg-2J7XXRGI-WOU3FVAE.mjs"
+  },
+  {
+    "path": "/assets/vendor/ad1a0cadd1fd3ea99625.mjs",
+    "source": "https://esm.sh/three@0.170.0/es2022/src/renderers/WebGLRenderer.mjs"
+  }
+]
