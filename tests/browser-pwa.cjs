@@ -207,6 +207,9 @@ const timeout = (promise, milliseconds = 20000) => {
     const layout = await evaluate(`(()=>({viewport:[innerWidth,innerHeight],page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],clipped:['.topbar','.scramble-panel','.timer-panel','.stats-panel','.history-header','.solve-list','.scramble-visual-panel'].filter(selector=>{const r=document.querySelector(selector).getBoundingClientRect();return r.top<0||r.left<0||r.bottom>innerHeight+1||r.right>innerWidth+1})}))()`);
     assert.deepEqual(layout.clipped, [], `Clipped controls at ${width}x${height}`);
     assert.ok(layout.page[0] <= width + 1 && layout.page[1] <= height + 1, `Page overflow at ${width}x${height}`);
+    const touchArea = await evaluate(`(()=>{const display=document.getElementById('timerDisplay').getBoundingClientRect(),actions=document.getElementById('solveActions').getBoundingClientRect();return {scrollY,overlap:display.left<actions.right&&display.right>actions.left&&display.top<actions.bottom&&display.bottom>actions.top}})()`);
+    assert.equal(touchArea.scrollY, 0, `Document shifted at ${width}x${height}`);
+    assert.equal(touchArea.overlap, false, `Timer text overlaps actions at ${width}x${height}`);
     layouts.push(layout);
     const screenshot = await send('Page.captureScreenshot', { format: 'png' }, sessionId);
     fs.writeFileSync(path.join(root, 'artifacts', `pwa-${width}x${height}.png`), Buffer.from(screenshot.data, 'base64'));

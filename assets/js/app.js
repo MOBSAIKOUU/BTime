@@ -1221,7 +1221,7 @@ function recordManualTime(resultOverride = null) {
   syncSolveActionAvailability();
   timerDisplay.removeAttribute('aria-invalid');
   // Keep focus on timer display for fast entry
-  timerDisplay.focus();
+  timerDisplay.focus({ preventScroll: true });
 }
 
 function clearManualTimeDraft() {
@@ -1233,7 +1233,7 @@ function clearManualTimeDraft() {
   timerDisplay.style.width = '3.2ch';
   timerDisplay.removeAttribute('aria-invalid');
   syncSolveActionAvailability();
-  timerDisplay.focus();
+  timerDisplay.focus({ preventScroll: true });
 }
 
 /* ==========================================================================
@@ -1299,7 +1299,7 @@ function closeSettingsMenu(restoreTimerFocus = false) {
   }
 
   if (restoreTimerFocus && timerPanel) {
-    timerPanel.focus();
+    timerPanel.focus({ preventScroll: true });
   }
 }
 
@@ -1372,7 +1372,7 @@ function clearAllSolves() {
     }
     clearHistoryDialog.showModal();
     // Focus the confirm button for quick confirmation
-    setTimeout(() => confirmClearHistoryButton?.focus(), 10);
+    setTimeout(() => confirmClearHistoryButton?.focus({ preventScroll: true }), 10);
   }
 }
 
@@ -1784,6 +1784,9 @@ copySolveScramble?.addEventListener('click', async () => {
       input.value = entry.scramble;
       input.style.position = 'fixed';
       input.style.opacity = '0';
+      input.style.top = '0';
+      input.style.left = '0';
+      input.readOnly = true;
       input.style.setProperty('user-select', 'text', 'important');
       input.style.setProperty('-webkit-user-select', 'text', 'important');
       solveDetails.appendChild(input);
