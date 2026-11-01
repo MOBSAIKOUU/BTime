@@ -89,6 +89,8 @@
                   <select id="colorPaletteSelect" class="palette-select">
                     <option value="light">Default</option>
                     <option value="night">Night</option>
+                    <option value="liquid-glass">Liquid Glass</option>
+                    <option value="cartoon">Cartoon</option>
                     <option value="shell-pink">Bella pink</option>
                     <option value="dessert">Vanilla cream</option>
                     <option value="purple">Lavender</option>
@@ -240,7 +242,16 @@
       </div>
       <div class="scramble-detail">
         <h3>Scramble</h3>
-        <p id="solveDetailScramble"></p>
+        <div class="saved-scramble-panel">
+          <p id="solveDetailScramble"></p>
+          <button id="copySolveScramble" class="secondary-button" type="button" aria-label="Copy scramble" title="Copy scramble" disabled>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="9" y="9" width="12" height="12" rx="2" />
+              <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+            </svg>
+          </button>
+        </div>
+        <div id="copyScrambleStatus" class="scramble-visual-status" role="status"></div>
         <div id="solveDetailDrawing" class="solve-detail-drawing" hidden></div>
         <div id="solveDetailDrawingStatus" class="scramble-visual-status" role="status"></div>
       </div>

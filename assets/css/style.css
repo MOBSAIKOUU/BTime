@@ -42,6 +42,25 @@ body.dark-mode {
   --shadow: 0 24px 60px rgba(2, 6, 23, 0.52);
 }
 
+/* Liquid Glass */
+body[data-palette="liquid-glass"] {
+  --bg: #dce9f5;
+  --bg-2: #eae4f5;
+  --panel: rgba(255, 255, 255, 0.42);
+  --panel-strong: rgba(255, 255, 255, 0.64);
+  --panel-soft: rgba(255, 255, 255, 0.36);
+  --border: rgba(255, 255, 255, 0.72);
+  --text: #172b43;
+  --muted: #405873;
+  --accent: #145bc0;
+  --accent-2: #3477df;
+  --warning: #985000;
+  --danger: #b42342;
+  --success: #157347;
+  --shadow: 0 20px 60px rgba(61, 88, 139, 0.16);
+}
+
+
 /* Bella Pink */
 body[data-palette="shell-pink"] {
   --bg: #fff1f4;
@@ -390,6 +409,12 @@ body[data-palette="shibuya"] .menu-button {
 
 * {
   box-sizing: border-box;
+}
+
+html, body, body * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none;
 }
 
 html,
@@ -1246,6 +1271,40 @@ scramble-display {
   margin-top: 16px;
 }
 
+.saved-scramble-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel-soft);
+}
+
+.saved-scramble-panel #solveDetailScramble {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px;
+  border: 0;
+  background: transparent;
+}
+
+#copySolveScramble {
+  flex: 0 0 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+#copySolveScramble:disabled { opacity: 0.45; cursor: not-allowed; }
+
+#copyScrambleStatus:not(:empty) { margin: 0 0 8px; }
+
 .solve-detail-drawing {
   margin-top: 12px;
 }
@@ -1484,4 +1543,173 @@ scramble-display {
   .stat-row strong { font-size: 0.78rem; }
   .history-panel { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) minmax(80px, 0.9fr); gap: 5px; }
   .scramble-visual-panel { grid-column: 1; grid-row: 3; border-left: 0; border-top: 1px solid var(--border); padding: 5px 0 0; }
+}
+
+/* Subtle glass on the drawing itself; retain the existing panel dimensions. */
+body[data-palette="liquid-glass"] {
+  --panel: rgba(255, 255, 255, 0.42);
+  --panel-strong: rgba(255, 255, 255, 0.64);
+  --panel-soft: rgba(255, 255, 255, 0.36);
+  --border: rgba(255, 255, 255, 0.72);
+  background:
+    radial-gradient(ellipse at 8% 12%, rgba(123, 191, 247, 0.68), transparent 52%),
+    radial-gradient(ellipse at 95% 42%, rgba(197, 164, 244, 0.6), transparent 48%),
+    radial-gradient(ellipse at 30% 100%, rgba(151, 223, 210, 0.62), transparent 55%),
+    linear-gradient(145deg, #e7f0fa, #eae5f4);
+}
+
+body[data-palette="liquid-glass"] .page-shell { background: transparent; }
+
+body[data-palette="liquid-glass"] .panel,
+body[data-palette="liquid-glass"] .settings-menu,
+body[data-palette="liquid-glass"] .solve-dialog {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.22));
+  border-color: var(--border);
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.24), 0 8px 28px rgba(56, 82, 131, 0.12);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+body[data-palette="liquid-glass"] .settings-menu,
+body[data-palette="liquid-glass"] .solve-dialog {
+  background-color: rgba(240, 246, 255, 0.76);
+}
+
+body[data-palette="liquid-glass"] .stat-row,
+body[data-palette="liquid-glass"] .solve-record-button,
+body[data-palette="liquid-glass"] .saved-scramble-panel,
+body[data-palette="liquid-glass"] .secondary-button,
+body[data-palette="liquid-glass"] .ghost-button,
+body[data-palette="liquid-glass"] .scramble-refresh {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.25));
+  border-color: var(--border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 3px 10px rgba(61, 88, 139, 0.06);
+}
+
+body[data-palette="liquid-glass"] .event-select,
+body[data-palette="liquid-glass"] .palette-select {
+  background-color: rgba(255, 255, 255, 0.65);
+  color: var(--text);
+}
+
+body[data-palette="liquid-glass"] select option { background: #edf3fb; color: #172b43; }
+body[data-palette="liquid-glass"] .solve-dialog::backdrop { background: rgba(38, 58, 95, 0.22); }
+
+body[data-palette="liquid-glass"] .scramble-visual-panel {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+body[data-palette="liquid-glass"] .scramble-visual-panel scramble-display {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body[data-palette="liquid-glass"] .panel,
+  body[data-palette="liquid-glass"] .settings-menu,
+  body[data-palette="liquid-glass"] .solve-dialog { background: rgba(242, 247, 255, 0.94); }
+  body[data-palette="liquid-glass"] .scramble-visual-panel scramble-display { background: #edf3fb; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  body[data-palette="liquid-glass"] .panel,
+  body[data-palette="liquid-glass"] .settings-menu,
+  body[data-palette="liquid-glass"] .solve-dialog,
+  body[data-palette="liquid-glass"] .scramble-visual-panel scramble-display {
+    background: #edf3fb;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Cartoon: full-viewport paper, ink outlines, and compact offset shadows. */
+body[data-palette="cartoon"] {
+  --bg: #fff3c9;
+  --bg-2: #fff3c9;
+  --panel: #fffdf5;
+  --panel-strong: #fffdf5;
+  --panel-soft: #fff5d9;
+  --border: #29243b;
+  --text: #29243b;
+  --muted: #56506a;
+  --accent: #354cc2;
+  --accent-2: #5269df;
+  --warning: #995200;
+  --danger: #ba2946;
+  --success: #137449;
+  --shadow: 5px 5px 0 #29243b;
+  background-color: #fff3c9;
+  background-image: radial-gradient(circle, rgba(127, 91, 30, 0.16) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+body[data-palette="cartoon"] .page-shell { background: transparent; }
+
+body[data-palette="cartoon"] .panel,
+body[data-palette="cartoon"] .settings-menu,
+body[data-palette="cartoon"] .solve-dialog {
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--border);
+}
+
+body[data-palette="cartoon"] .scramble-panel { background: #e1f3ff; }
+body[data-palette="cartoon"] .timer-panel { background: #fffdf5; }
+body[data-palette="cartoon"] .stats-panel { background: #ece4ff; }
+body[data-palette="cartoon"] .history-panel { background: #e7f6eb; }
+
+body[data-palette="cartoon"] .stat-row,
+body[data-palette="cartoon"] .solve-record-button,
+body[data-palette="cartoon"] .saved-scramble-panel {
+  background: #fffdf5;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 2px 2px 0 rgba(41, 36, 59, 0.24);
+}
+
+body[data-palette="cartoon"] .secondary-button,
+body[data-palette="cartoon"] .ghost-button,
+body[data-palette="cartoon"] .scramble-refresh,
+body[data-palette="cartoon"] .danger-button {
+  border: 2px solid var(--border);
+  border-radius: 9px;
+  box-shadow: 2px 2px 0 var(--border);
+  color: var(--text);
+  background: #ffe48a;
+}
+
+body[data-palette="cartoon"] .danger-button { background: #ffc2c9; }
+body[data-palette="cartoon"] .result-action[data-action="dnf"] { background: #ffc2c9; }
+body[data-palette="cartoon"] .result-action[data-action="plus2"] { background: #ffe48a; }
+body[data-palette="cartoon"] .result-action[data-action="reset"] { background: #c9eddd; }
+
+body[data-palette="cartoon"] button:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+body[data-palette="cartoon"] button:disabled { box-shadow: none; }
+body[data-palette="cartoon"] h1 { text-shadow: 2px 2px 0 #ffe48a; }
+body[data-palette="cartoon"] .event-select,
+body[data-palette="cartoon"] .palette-select {
+  border: 2px solid var(--border);
+  background: #fffdf5;
+  color: var(--text);
+  border-radius: 7px;
+}
+body[data-palette="cartoon"] select option { background: #fffdf5; color: #29243b; }
+body[data-palette="cartoon"] .scramble-visual-panel scramble-display {
+  background: #fffdf5;
+  border-color: var(--border);
+}
+body[data-palette="cartoon"] .solve-dialog::backdrop { background: rgba(41, 36, 59, 0.3); }
+
+@media (max-width: 840px) {
+  body[data-palette="cartoon"] .panel { box-shadow: 2px 2px 0 var(--border); }
 }

@@ -44,6 +44,8 @@ const colorPaletteSelect = document.getElementById('colorPaletteSelect');
 const solveDetails = document.getElementById('solveDetails');
 const solveDetailTime = document.getElementById('solveDetailTime');
 const solveDetailScramble = document.getElementById('solveDetailScramble');
+const copySolveScramble = document.getElementById('copySolveScramble');
+const copyScrambleStatus = document.getElementById('copyScrambleStatus');
 const solveDetailDrawing = document.getElementById('solveDetailDrawing');
 const solveDetailDrawingStatus = document.getElementById('solveDetailDrawingStatus');
 const closeSolveDetailsButton = document.getElementById('closeSolveDetails');
@@ -88,6 +90,8 @@ const VALID_MOVE_REGEX = /^(?:[URFDLB]w?|[2-6][URFDLB]w?|[urfdlb])(?:2|')?$/;
 const VALID_PALETTES = [
   'light',
   'night',
+  'liquid-glass',
+  'cartoon',
   'shell-pink',
   'dessert',
   'purple',
@@ -800,6 +804,8 @@ function showSolveDetails(solveId) {
   }
 
   selectedSolveId = solveId;
+  if (copySolveScramble) copySolveScramble.disabled = !entry.scramble;
+  if (copyScrambleStatus) copyScrambleStatus.textContent = '';
   solveDetailTime.textContent = formatHistoryValue(entry);
   solveDetailScramble.textContent = entry.scramble || 'Scramble was not saved for this solve.';
   if (solveDetailDrawing) {
@@ -1779,6 +1785,50 @@ document.querySelectorAll('.solve-actions .result-action').forEach((button) => {
   });
 });
 
+// Prevent manual copying/cutting; only the explicit scramble-copy action is allowed.
+let scrambleCopyFallbackText = null;
+document.addEventListener('copy', (event) => {
+  event.preventDefault();
+  if (scrambleCopyFallbackText !== null) {
+    event.clipboardData?.setData('text/plain', scrambleCopyFallbackText);
+  }
+});
+document.addEventListener('cut', (event) => event.preventDefault());
+document.addEventListener('selectstart', (event) => event.preventDefault());
+
+copySolveScramble?.addEventListener('click', async () => {
+  const entry = recentSolves.find((solve) => String(solve.id) === String(selectedSolveId));
+  if (!entry?.scramble || state === 'solving') return;
+  const solveId = selectedSolveId;
+  try {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+      await navigator.clipboard.writeText(entry.scramble);
+    } catch {
+      // Support browsers where the asynchronous clipboard API is unavailable.
+      const input = document.createElement('textarea');
+      input.value = entry.scramble;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      input.style.setProperty('user-select', 'text', 'important');
+      input.style.setProperty('-webkit-user-select', 'text', 'important');
+      solveDetails.appendChild(input);
+      try {
+        scrambleCopyFallbackText = entry.scramble;
+        input.select();
+        if (!document.execCommand('copy')) throw new Error('Copy failed');
+      } finally {
+        scrambleCopyFallbackText = null;
+        input.remove();
+        copySolveScramble.focus({ preventScroll: true });
+      }
+    }
+    if (copyScrambleStatus && selectedSolveId === solveId) copyScrambleStatus.textContent = 'Scramble copied.';
+  } catch {
+    if (copyScrambleStatus && selectedSolveId === solveId) copyScrambleStatus.textContent = 'Unable to copy. Please try again.';
+  }
+});
+
 // Modal Solve Detail Actions
 document.querySelectorAll('.solve-detail-actions .result-action').forEach((button) => {
   button.addEventListener('click', () => {
@@ -2108,7 +2158,6 @@ if (manualTimeToggle) {
 /* ==========================================================================
    13. Application Startup Initialization
    ========================================================================== */
-
 applyTheme();
 syncSolveActionAvailability();
 renderStats();
