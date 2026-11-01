@@ -44,6 +44,8 @@ const colorPaletteSelect = document.getElementById('colorPaletteSelect');
 const solveDetails = document.getElementById('solveDetails');
 const solveDetailTime = document.getElementById('solveDetailTime');
 const solveDetailScramble = document.getElementById('solveDetailScramble');
+const solveDetailDrawing = document.getElementById('solveDetailDrawing');
+const solveDetailDrawingStatus = document.getElementById('solveDetailDrawingStatus');
 const closeSolveDetailsButton = document.getElementById('closeSolveDetails');
 
 // Clear History Confirmation Dialog
@@ -134,6 +136,7 @@ let scrambleReady = false;
 let scrambleRequestPromise = null;
 let scrambleRequestId = 0;
 const scrambleQueues = new Map();
+let scrambleWarmupTimer = null;
 
 // Solves History State
 let recentSolves = loadHistory(currentEvent);
@@ -142,6 +145,7 @@ let selectedSolveId = null;
 
 // Cached Cubing.js Scrambler Module Loader
 let cubingScramblerPromise = null;
+let scrambleDrawingFailed = false;
 
 /* ==========================================================================
    3. Scramble Visualizer Dynamic Web Component Loader
@@ -149,6 +153,9 @@ let cubingScramblerPromise = null;
 
 import('https://esm.sh/scramble-display@0.59.1?deps=cubing@0.59.1')
   .then(() => {
+    if (solveDetailDrawingStatus) {
+      solveDetailDrawingStatus.textContent = '';
+    }
     if (scrambleReady) {
       updateScrambleVisualization(currentEvent, scramble.join(' '));
     }
@@ -157,6 +164,10 @@ import('https://esm.sh/scramble-display@0.59.1?deps=cubing@0.59.1')
     }
   })
   .catch((error) => {
+    scrambleDrawingFailed = true;
+    if (solveDetailDrawingStatus && solveDetailDrawing?.childElementCount) {
+      solveDetailDrawingStatus.textContent = 'Scramble drawing is unavailable.';
+    }
     console.error('Unable to load the scramble drawing component.', error);
     if (scrambleVisualStatus) {
       scrambleVisualStatus.textContent = 'Scramble drawing is unavailable.';
@@ -173,6 +184,7 @@ function updateScrambleVisualization(eventCode, scrambleValue) {
     return;
   }
 
+  const startedAt = performance.now();
   if (scrambleVisualization.getAttribute('event') !== eventCode) {
     const nextVisualization = document.createElement('scramble-display');
     nextVisualization.id = 'scrambleVisualization';
@@ -184,6 +196,8 @@ function updateScrambleVisualization(eventCode, scrambleValue) {
   }
 
   scrambleVisualization.setAttribute('scramble', scrambleValue);
+  // Measures the component update only; its internal asynchronous render may finish later.
+  console.debug(`[BTime] ${eventCode} drawing update dispatch: ${(performance.now() - startedAt).toFixed(1)}ms`);
 }
 
 /* ==========================================================================
@@ -398,6 +412,7 @@ async function loadScrambler() {
  * @returns {Promise<string>}
  */
 async function getNewScramble(eventCode) {
+  const startedAt = performance.now();
   const randomScrambleForEvent = await loadScrambler();
   const isCube = CUBE_EVENTS.has(eventCode);
 
@@ -406,10 +421,10 @@ async function getNewScramble(eventCode) {
     const moves = generatedScramble.toString().trim().split(/\s+/);
     const isValid =
           moves.length > 0 &&
-          (eventCode !== '333' || (moves.length >= 19 && moves.length <= 22)) &&
           (isCube ? moves.every((move) => VALID_MOVE_REGEX.test(move)) : true);
 
     if (isValid) {
+      console.debug(`[BTime] ${eventCode} scramble generation: ${Math.round(performance.now() - startedAt)}ms`);
       return moves.join(' ');
     }
   }
@@ -428,9 +443,13 @@ function getScrambleQueue(eventCode) {
  * Proactively fetches scrambles in the background so solves load immediately.
  * @param {string} eventCode
  */
-function prefetchScrambles(eventCode = currentEvent) {
+function prefetchScrambles(eventCode = currentEvent, warmup = false) {
+  // An inactive event gets at most one idle warmup, never a five-item refill.
+  if (eventCode !== currentEvent && !warmup) return;
   const queue = getScrambleQueue(eventCode);
-  if (queue.pending || queue.error || queue.items.length >= SCRAMBLE_PREFETCH_COUNT) {
+  const targetCount = eventCode === currentEvent ? SCRAMBLE_PREFETCH_COUNT : 1;
+  if (queue.pending || queue.error || queue.items.length >= targetCount) {
+    scheduleScrambleWarmup();
     return;
   }
 
@@ -444,10 +463,34 @@ function prefetchScrambles(eventCode = currentEvent) {
     })
     .finally(() => {
       queue.pending = null;
-      if (!queue.error && queue.items.length < SCRAMBLE_PREFETCH_COUNT) {
+      if (eventCode === currentEvent && !queue.error && queue.items.length < SCRAMBLE_PREFETCH_COUNT) {
         prefetchScrambles(eventCode);
       }
+      scheduleScrambleWarmup();
     });
+}
+
+function scheduleScrambleWarmup() {
+  if (scrambleWarmupTimer !== null) return;
+  scrambleWarmupTimer = window.setTimeout(() => {
+    scrambleWarmupTimer = null;
+    const activeQueue = getScrambleQueue(currentEvent);
+    if (document.hidden || state !== 'ready' || activeQueue.error) {
+      scheduleScrambleWarmup();
+      return;
+    }
+    // Active generation/refills always take priority over another idle job.
+    if (activeQueue.items.length < SCRAMBLE_PREFETCH_COUNT ||
+        [...scrambleQueues.values()].some((queue) => queue.pending)) {
+      scheduleScrambleWarmup();
+      return;
+    }
+    const nextEvent = EVENTS.find(({ code }) => {
+      const queue = getScrambleQueue(code);
+      return code !== currentEvent && !queue.items.length && !queue.error;
+    });
+    if (nextEvent) prefetchScrambles(nextEvent.code, true);
+  }, 1500);
 }
 
 /**
@@ -458,6 +501,9 @@ function prefetchScrambles(eventCode = currentEvent) {
 async function getQueuedScramble(eventCode) {
   const queue = getScrambleQueue(eventCode);
   while (!queue.items.length) {
+    if (eventCode !== currentEvent) {
+      throw new Error('Scramble request superseded by an event switch.');
+    }
     if (!queue.pending) {
       prefetchScrambles(eventCode);
     }
@@ -481,6 +527,7 @@ async function getQueuedScramble(eventCode) {
  * @param {string} eventCode
  */
 function generateScramble(eventCode = currentEvent) {
+  const startedAt = performance.now();
   const requestId = ++scrambleRequestId;
   scrambleReady = false;
 
@@ -496,6 +543,7 @@ function generateScramble(eventCode = currentEvent) {
 
       scramble = nextScramble.split(' ');
       scrambleReady = true;
+      console.debug(`[BTime] ${eventCode} scramble wait: ${Math.round(performance.now() - startedAt)}ms`);
       saveScramble(eventCode, nextScramble);
 
       if (scrambleText) {
@@ -753,6 +801,25 @@ function showSolveDetails(solveId) {
   selectedSolveId = solveId;
   solveDetailTime.textContent = formatHistoryValue(entry);
   solveDetailScramble.textContent = entry.scramble || 'Scramble was not saved for this solve.';
+  if (solveDetailDrawing) {
+    // Recreate the component so switching puzzles cannot retain the previous drawing.
+    solveDetailDrawing.replaceChildren();
+    solveDetailDrawing.hidden = !entry.scramble;
+    if (entry.scramble) {
+      const drawing = document.createElement('scramble-display');
+      drawing.setAttribute('event', currentEvent);
+      drawing.setAttribute('visualization', '2D');
+      drawing.setAttribute('scramble', entry.scramble);
+      drawing.setAttribute('role', 'img');
+      drawing.setAttribute('aria-label', `${getEventLabel(currentEvent)} scramble drawing for this solve`);
+      solveDetailDrawing.appendChild(drawing);
+    }
+    if (solveDetailDrawingStatus) {
+      solveDetailDrawingStatus.textContent = !entry.scramble ? ''
+        : scrambleDrawingFailed ? 'Scramble drawing is unavailable.'
+        : customElements.get('scramble-display') ? '' : 'Loading scramble drawing…';
+    }
+  }
   solveDetails.showModal();
 }
 
@@ -1248,8 +1315,47 @@ function clearAllSolves() {
   }
 }
 
-// Global Keyboard Handler (Spacebar Hold-to-Start)
+// Global Keyboard Handler (Spacebar Start, Any Key Stop)
 window.addEventListener('keydown', (event) => {
+  if (timerPanel && state === 'solving') {
+    event.preventDefault();
+    // Holding the start key must not immediately stop the solve.
+    if (event.repeat || (isSpaceKey(event) && isSpaceDown)) {
+      return;
+    }
+
+    if (isSpaceKey(event)) {
+      isSpaceDown = true;
+      justStopped = true;
+    }
+    finishSolve();
+    lastSolveStoppedAt = performance.now();
+    return;
+  }
+
+  const penaltyActions = { '1': 'reset', '2': 'plus2', '3': 'dnf' };
+  const penaltyAction = penaltyActions[event.key];
+  if (event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && penaltyAction) {
+    // Leave typing and unrelated dialogs alone.
+    if (
+      state !== 'ready' ||
+      clearHistoryDialog?.open ||
+      event.target?.closest?.('input:not([readonly]), textarea, [contenteditable="true"]')
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    if (event.repeat) return;
+
+    const solveId = solveDetails?.open ? selectedSolveId : lastSolveId;
+    const entry = recentSolves.find((solve) => String(solve.id) === String(solveId));
+    if (entry && (penaltyAction !== 'reset' || entry.result === '+2' || entry.result === 'dnf')) {
+      applySolveAction(String(entry.id), penaltyAction);
+    }
+    return;
+  }
+
   if (!isSpaceKey(event)) {
     if (event.key === 'Escape' && settingsMenu && !settingsMenu.hidden) {
       closeSettingsMenu(true);
@@ -1292,13 +1398,6 @@ window.addEventListener('keydown', (event) => {
 
   isSpaceDown = true;
 
-  // Stop solve immediately on keydown
-  if (state === 'solving') {
-    finishSolve();
-    lastSolveStoppedAt = performance.now();
-    justStopped = true;
-    return;
-  }
   // During inspection: start solve immediately if holdToStart is disabled, or hold if enabled
   if (state === 'inspecting' || state === 'readyToSolve') {
     if (holdToStartEnabled) {

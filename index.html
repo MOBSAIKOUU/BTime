@@ -5,17 +5,20 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#f3f4f6" />
+    <meta name="robots" content="index, follow">
+
+    
     <title>BTime</title>
     <meta
       name="description"
-      content="BTime is a A sleek, distraction-free web timer featuring cool colors and an intuitive interface designed for maximum focus and efficiency.
-       It is a simple, fast, and responsive timer for speedcubing enthusiasts."
+      content="BTime is a speedcubing timer with multi-event scrambles, scramble drawings, optional 15-second inspection, solve history, Ao5 and Ao12 statistics, and customizable themes."
     />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -110,7 +113,21 @@
           <!-- Scramble Generator Panel -->
           <section class="panel scramble-panel">
             <div class="panel-header">
-              <span class="panel-label">Scramble</span>
+              <div class="event-control">
+                <select id="eventSelect" class="event-select" aria-label="Solve event">
+                  <option value="333">3x3</option>
+                  <option value="222">2x2</option>
+                  <option value="444">4x4</option>
+                  <option value="555">5x5</option>
+                  <option value="666">6x6</option>
+                  <option value="777">7x7</option>
+                  <option value="clock">Clock</option>
+                  <option value="minx">Megaminx</option>
+                  <option value="pyram">Pyraminx</option>
+                  <option value="skewb">Skewb</option>
+                  <option value="sq1">Square-1</option>
+                </select>
+              </div>
               <button
                 id="newScramble"
                 class="scramble-refresh"
@@ -181,20 +198,7 @@
           <div class="history-header">
             <h2>Solves</h2>
             <div class="history-controls">
-              <label class="visually-hidden" for="eventSelect">Solve event</label>
-              <select id="eventSelect" class="event-select" aria-label="Solve event">
-                <option value="333">3x3</option>
-                <option value="222">2x2</option>
-                <option value="444">4x4</option>
-                <option value="555">5x5</option>
-                <option value="666">6x6</option>
-                <option value="777">7x7</option>
-                <option value="clock">Clock</option>
-                <option value="minx">Megaminx</option>
-                <option value="pyram">Pyraminx</option>
-                <option value="skewb">Skewb</option>
-                <option value="sq1">Square-1</option>
-              </select>
+
               <button id="clearHistory" class="ghost-button" type="button">Clear</button>
             </div>
           </div>
@@ -202,6 +206,7 @@
 
           <!-- Visual 2D/3D Scramble Drawing -->
           <section class="scramble-visual-panel" aria-labelledby="scrambleVisualTitle">
+            <h3 id="scrambleVisualTitle" class="visually-hidden">Current scramble drawing</h3>
             <scramble-display
               id="scrambleVisualization"
               event="333"
@@ -236,6 +241,8 @@
       <div class="scramble-detail">
         <h3>Scramble</h3>
         <p id="solveDetailScramble"></p>
+        <div id="solveDetailDrawing" class="solve-detail-drawing" hidden></div>
+        <div id="solveDetailDrawingStatus" class="scramble-visual-status" role="status"></div>
       </div>
     </dialog>
 
