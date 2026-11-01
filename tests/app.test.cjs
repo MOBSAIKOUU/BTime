@@ -192,6 +192,28 @@ test('early release cancels a delayed start; inspection timeout still records DN
   assert.equal(app.run('recentSolves.at(-1).result'), 'dnf');
 });
 
+test('post-solve cooldown does not cancel native releases on dialog or menu buttons', () => {
+  const app = createApp();
+  app.run('lastSolveStoppedAt=performance.now();justStoppedPointer=true');
+  for (const target of ['copySolveScramble', 'closeSolveDetails', 'confirmClearHistory', 'action-dnf']) {
+    let prevented = false;
+    app.window.dispatch('pointerup', {
+      target: app.element(target), pointerType: 'touch',
+      preventDefault() { prevented = true; },
+    });
+    assert.equal(prevented, false, `${target} retains native touch activation`);
+  }
+});
+
+test('touching a timer action does not cancel an in-progress hold', () => {
+  const app = createApp();
+  app.run('holdTimeoutId=123;isHoldReady=false');
+  const button = app.element('action-dnf');
+  button.closest = () => button;
+  app.element('timerPanel').dispatch('pointerup', { target: button, pointerType: 'touch' });
+  assert.equal(app.run('holdTimeoutId'), 123);
+});
+
 test('penalties, revert, and trimmed averages retain their behavior', () => {
   const app = createApp();
   app.run('recordSolve(10000); applySolveAction(String(lastSolveId), "plus2")');

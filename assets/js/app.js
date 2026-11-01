@@ -1888,19 +1888,8 @@ if (timerPanel) {
     { capture: true }
   );
 
-  // Prevent lifting finger after stopping from re-triggering anything
-  window.addEventListener(
-    'pointerup',
-    (event) => {
-      if (justStoppedPointer || performance.now() - lastSolveStoppedAt < 600) {
-        justStoppedPointer = false;
-        if (event.pointerType !== 'mouse') {
-          event.preventDefault();
-        }
-      }
-    },
-    { capture: true }
-  );
+  // The timer's release handler owns its cooldown. Never cancel pointerup globally:
+  // doing so can suppress native taps on dialog/menu buttons in mobile browsers.
 
   timerPanel.addEventListener('pointerdown', (event) => {
     if (shouldIgnorePointer(event)) {
@@ -1961,13 +1950,13 @@ if (timerPanel) {
   });
 
   const handlePointerRelease = (event) => {
+    if (shouldIgnorePointer(event)) {
+      return;
+    }
+
     if (holdTimeoutId !== null) {
       clearTimeout(holdTimeoutId);
       holdTimeoutId = null;
-    }
-
-    if (shouldIgnorePointer(event)) {
-      return;
     }
 
         if (justStoppedPointer || performance.now() - lastSolveStoppedAt < 600) {
