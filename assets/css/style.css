@@ -1031,6 +1031,8 @@ body[data-palette="chessboard"] .timer-state.holding {
 .event-select {
   padding: 0 10px;
   border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
