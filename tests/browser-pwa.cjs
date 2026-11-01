@@ -168,8 +168,9 @@ const timeout = (promise, milliseconds = 20000) => {
   await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 }, sessionId);
   await send('Browser.grantPermissions', { origin, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
   const touchTap = async (selector) => {
-    const point = await evaluate(`(()=>{const button=document.querySelector(${JSON.stringify(selector)});button.scrollIntoView({block:'center'});const r=button.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,disabled:button.disabled}})()`);
+    const point = await evaluate(`(()=>{const button=document.querySelector(${JSON.stringify(selector)});button.scrollIntoView({block:'center'});const r=button.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;return {x,y,disabled:button.disabled,hit:button.contains(document.elementFromPoint(x,y))}})()`);
     assert.equal(point.disabled, false, `${selector} must be enabled`);
+    assert.equal(point.hit, true, `${selector} visual center must hit the button`);
     await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y }] }, sessionId);
     await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }, sessionId);
     await new Promise((resolve) => setTimeout(resolve, 80));
