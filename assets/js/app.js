@@ -1381,8 +1381,26 @@ function clearAllSolves() {
 }
 
 // Global Keyboard Handler (Spacebar Start, Any Key Stop)
-// Ignore control interactions while timing, including touches that would otherwise stop it.
+// A stopping touch must never activate the control beneath the finger.
+let stoppedTouchTarget = null;
+let stoppedTouchAt = -Infinity;
 const blockRunningControlInteraction = (event) => {
+  if (event.type === 'pointerdown' && state === 'solving' && event.pointerType !== 'mouse') {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    stoppedTouchTarget = event.target;
+    stoppedTouchAt = performance.now();
+    finishSolve();
+    lastSolveStoppedAt = performance.now();
+    justStopped = true;
+    justStoppedPointer = true;
+    return;
+  }
+  if (event.type === 'click' && event.target === stoppedTouchTarget && performance.now() - stoppedTouchAt < 700) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return;
+  }
   if (state === 'solving' && event.target?.closest?.('button, select, input:not(#timerDisplay), label')) {
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -1946,31 +1964,12 @@ if (timerPanel) {
     return false;
   };
 
-  // Immediate stop on screen touch down when solving (smartphone / touchscreen only)
-  window.addEventListener(
-    'pointerdown',
-    (event) => {
-      if (state === 'solving') {
-        if (event.pointerType === 'mouse') {
-          return;
-        }
-        if (!event.target.closest('#settingsMenu, .solve-dialog')) {
-          event.preventDefault();
-          event.stopPropagation(); // CRITICAL: Stop event from bubbling to timerPanel
-          finishSolve();
-          lastSolveStoppedAt = performance.now();
-          justStopped = true;
-          justStoppedPointer = true;
-        }
-      }
-    },
-    { capture: true }
-  );
-
   // The timer's release handler owns its cooldown. Never cancel pointerup globally:
   // doing so can suppress native taps on dialog/menu buttons in mobile browsers.
 
-  timerPanel.addEventListener('pointerdown', (event) => {
+  let activeTouchId = null;
+  const handlePointerPress = (event) => {
+    if (activeTouchId !== null || event.isPrimary === false) return;
     if (shouldIgnorePointer(event)) {
       return;
     }
@@ -1990,6 +1989,8 @@ if (timerPanel) {
       return;
     }
 
+    activeTouchId = event.pointerId ?? 0;
+    if (event.pointerId !== undefined) timerPanel.setPointerCapture?.(event.pointerId);
     justStoppedPointer = false;
 
         // When ready: if inspection is enabled, start inspection immediately on tap (no hold delay)
@@ -2026,10 +2027,21 @@ if (timerPanel) {
         return;
       }
     }
+  };
+  timerPanel.addEventListener('pointerdown', handlePointerPress);
+  // Passive mobile surfaces share the timer's existing hold/inspection state machine.
+  document.addEventListener('pointerdown', (event) => {
+    const target = event.target;
+    if (!target?.closest?.('.page-shell') || target.closest('#timerPanel, #settingsMenu, button, select, input, label, a, dialog, .solve-list, [role="button"]')) return;
+    const text = target.closest('.scramble-text');
+    if (text && text.scrollHeight > text.clientHeight) return;
+    if (!window.matchMedia?.('(max-width: 840px), (max-height: 540px) and (orientation: landscape)').matches) return;
+    handlePointerPress(event);
   });
 
-  const handlePointerRelease = (event) => {
-    if (shouldIgnorePointer(event)) {
+  const handlePointerRelease = (event, ownedTouch = false) => {
+    if (activeTouchId !== null && event.pointerId !== undefined && activeTouchId !== event.pointerId) return;
+    if (!ownedTouch && shouldIgnorePointer(event)) {
       return;
     }
 
@@ -2038,6 +2050,7 @@ if (timerPanel) {
       holdTimeoutId = null;
     }
 
+    activeTouchId = null;
         if (justStoppedPointer || performance.now() - lastSolveStoppedAt < 600) {
       justStoppedPointer = false;
       return;
@@ -2091,7 +2104,13 @@ if (timerPanel) {
   };
 
   timerPanel.addEventListener('pointerup', handlePointerRelease);
-  timerPanel.addEventListener('pointercancel', () => {
+  // Safari may retain the original release target despite pointer capture.
+  document.addEventListener('pointerup', (event) => {
+    if (activeTouchId !== null && !event.target?.closest?.('#timerPanel')) handlePointerRelease(event, true);
+  });
+  const cancelPointerHold = (event) => {
+    if (activeTouchId !== null && event.pointerId !== undefined && activeTouchId !== event.pointerId) return;
+    activeTouchId = null;
     if (holdTimeoutId !== null) {
       clearTimeout(holdTimeoutId);
       holdTimeoutId = null;
@@ -2110,6 +2129,10 @@ if (timerPanel) {
     }
     pointerStartedInspection = false;
     justStoppedPointer = false;
+  };
+  timerPanel.addEventListener('pointercancel', cancelPointerHold);
+  document.addEventListener('pointercancel', (event) => {
+    if (activeTouchId !== null && !event.target?.closest?.('#timerPanel')) cancelPointerHold(event);
   });
 }
 

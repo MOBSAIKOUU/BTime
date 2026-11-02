@@ -1465,6 +1465,9 @@ scramble-display {
     letter-spacing: 0.02em;
   }
 
+  .topbar, .timer-panel, .stats-panel, .scramble-visual-panel { touch-action: none; }
+  .scramble-panel { touch-action: none; }
+  .scramble-text { touch-action: pan-y; }
   .timer-panel { min-height: 0; padding: 8px 8px 8px 78px; }
   .timer-state { margin-bottom: 4px; font-size: 0.7rem; }
   .timer-display { font-size: clamp(2.8rem, 9vh, 5.5rem); font-size: clamp(2.8rem, 9dvh, 5.5rem); margin-bottom: 8px; }
@@ -1516,67 +1519,42 @@ scramble-display {
   .solve-dialog { max-height: 88vh; max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain; padding: 16px; }
 }
 
-/* Portrait: give the timer the full middle area and group supporting panels below. */
+/* Portrait: a generous timing surface above a compact session dashboard. */
 @media (max-width: 840px) and (orientation: portrait) {
   .app-layout {
-    grid-template-columns: minmax(0, 1.1fr) minmax(64px, 0.55fr) minmax(0, 1fr);
-    grid-template-rows: minmax(72px, 0.6fr) minmax(140px, 1.4fr) 44px minmax(130px, 0.6fr);
-    column-gap: 6px;
-    row-gap: 6px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(84px, 0.65fr) minmax(150px, 2fr) 58px 44px minmax(76px, 0.65fr);
+    gap: 8px;
   }
-
-  .timer-workspace,
-  .history-panel {
-    display: contents;
-  }
-
+  .timer-workspace, .history-panel { display: contents; }
   .scramble-panel { grid-column: 1 / -1; grid-row: 1; }
-  .timer-panel { grid-column: 1 / -1; grid-row: 2; }
-
+  .timer-panel { grid-column: 1 / -1; grid-row: 2; border-radius: 16px; }
+  .timer-display { font-size: clamp(3.4rem, 15vw, 6rem); }
   .stats-panel {
-    grid-column: 2;
-    grid-row: 3 / 5;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: repeat(5, minmax(0, 1fr));
-    gap: 3px;
-    padding: 4px;
+    grid-column: 1 / -1; grid-row: 3;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 5px; gap: 3px;
   }
-
-  .stat-row { padding: 2px; gap: 2px; }
+  .stat-row { padding: 2px; gap: 3px; }
   .stat-row span { font-size: 0.55rem; }
   .stat-row strong { font-size: 0.75rem; }
-
-  /* One frame around the header and scrollable records, matching adjacent panels. */
   .app-layout::before {
-    content: '';
-    grid-column: 1;
-    grid-row: 3 / 5;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--panel);
-    pointer-events: none;
+    content: ''; grid-column: 2; grid-row: 4 / 6;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--panel); pointer-events: none;
   }
-  .history-header { grid-column: 1; grid-row: 3; position: relative; padding: 4px 6px; }
+  .history-header { grid-column: 2; grid-row: 4; position: relative; padding: 0 6px; }
   .history-header h2 { font-size: 0.8rem; }
-  .history-controls #clearHistory { padding: 0 5px; min-height: 32px; height: 32px; }
+  .history-controls #clearHistory { padding: 0 6px; min-height: 36px; height: 36px; }
   .solve-list {
-    grid-column: 1;
-    grid-row: 4;
-    position: relative;
-    margin: 0 4px 4px;
-    border-radius: 7px;
-    background: transparent;
+    grid-column: 2; grid-row: 5; position: relative;
+    margin: 0 4px 4px; border-radius: 7px; background: transparent;
   }
   .solve-record-button { grid-template-columns: 18px minmax(0, 1fr); }
   .solve-record-button .tag { grid-column: 2; }
-
   .scramble-visual-panel {
-    grid-column: 3;
-    grid-row: 3 / 5;
-    padding: 4px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--panel);
+    grid-column: 1; grid-row: 4 / 6; padding: 6px;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
   }
 }
 

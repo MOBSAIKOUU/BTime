@@ -36,7 +36,7 @@ function createApp(saved = {}, storageBlocked = false) {
       this.listeners.get(type).push(callback);
     }
     dispatch(type, options = {}) {
-      const event = { target: this, preventDefault() {}, stopPropagation() {}, stopImmediatePropagation() {}, ...options };
+      const event = { type, target: this, preventDefault() {}, stopPropagation() {}, stopImmediatePropagation() {}, ...options };
       for (const callback of this.listeners.get(type) || []) callback(event);
     }
     append(...children) { this.children.push(...children); }
@@ -177,6 +177,41 @@ for (const input of ['keyboard', 'touch']) {
     }
   }
 }
+
+test('mobile supporting panels share hold, release, cancellation, and pointer ownership', () => {
+  const app = createApp();
+  app.run("window.matchMedia = () => ({ matches: true }); inspectionEnabled=false; holdToStartEnabled=true");
+  const surface = app.element('statsPanel');
+  surface.closest = (selector) => selector === '.page-shell' ? surface : null;
+  const document = app.run('document');
+  const touch = { target: surface, pointerType: 'touch', pointerId: 5 };
+  document.dispatch('pointerdown', touch);
+  assert.equal(app.run('state'), 'holding');
+  document.dispatch('pointercancel', { ...touch, pointerId: 6 });
+  assert.equal(app.run('state'), 'holding');
+  document.dispatch('pointercancel', touch);
+  assert.equal(app.run('state'), 'ready');
+  document.dispatch('pointerdown', touch);
+  app.holdReady();
+  document.dispatch('pointerup', touch);
+  assert.equal(app.run('state'), 'solving');
+});
+
+test('touching any control stops a solve and suppresses its follow-up click', () => {
+  const app = createApp();
+  app.run('beginSolve()');
+  app.advance(1234);
+  const target = app.element('menuToggle');
+  let prevented = 0;
+  app.window.dispatch('pointerdown', { target, pointerType: 'touch', preventDefault() { prevented++; } });
+  assert.equal(app.run('state'), 'ready');
+  assert.equal(app.run('recentSolves.at(-1).baseTimeMs'), 1234);
+  app.window.dispatch('click', { target, preventDefault() { prevented++; } });
+  assert.equal(prevented, 2);
+  app.advance(701);
+  app.window.dispatch('click', { target, preventDefault() { prevented++; } });
+  assert.equal(prevented, 2);
+});
 
 test('early release cancels a delayed start; inspection timeout still records DNF', () => {
   const app = createApp();
