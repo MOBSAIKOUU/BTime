@@ -1468,10 +1468,20 @@ scramble-display {
   .topbar, .timer-panel, .stats-panel, .scramble-visual-panel { touch-action: none; }
   .scramble-panel { touch-action: none; }
   .scramble-text { touch-action: pan-y; }
-  .timer-panel { min-height: 0; padding: 8px 8px 8px 78px; }
+  .timer-panel { min-height: 0; padding: 8px 8px 52px; }
   .timer-state { margin-bottom: 4px; font-size: 0.7rem; }
   .timer-display { font-size: clamp(2.8rem, 9vh, 5.5rem); font-size: clamp(2.8rem, 9dvh, 5.5rem); margin-bottom: 8px; }
-  .solve-actions { left: 8px; bottom: 8px; width: 56px; height: min(162px, calc(100% - 16px)); gap: 6px; margin: 0; }
+  .solve-actions {
+    left: 50%;
+    bottom: 8px;
+    transform: translateX(-50%);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    width: min(272px, calc(100% - 16px));
+    height: 36px;
+    gap: 6px;
+    margin: 0;
+  }
   .solve-actions .result-action { aspect-ratio: auto; min-width: 0; height: 100%; min-height: 0; padding: 0 4px; font-size: 0.68rem; }
   .palette-select, .event-control .event-select { font-size: 16px; }
 
