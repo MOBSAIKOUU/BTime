@@ -718,6 +718,7 @@ h1 {
 
 .timer-panel {
   position: relative;
+  padding-bottom: 64px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -946,14 +947,15 @@ body[data-palette="chessboard"] .timer-state.holding {
 /* Solve Result Actions (DNF, +2, Revert, Delete) */
 .solve-actions {
   position: absolute;
-  left: 12px;
+  left: 50%;
   bottom: 12px;
+  transform: translateX(-50%);
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
   gap: 6px;
-  width: 56px;
-  height: min(162px, calc(100% - 24px));
+  width: min(320px, calc(100% - 24px));
+  height: 40px;
   margin: 0;
 }
 
@@ -1468,12 +1470,13 @@ scramble-display {
   .topbar, .timer-panel, .stats-panel, .scramble-visual-panel { touch-action: none; }
   .scramble-panel { touch-action: none; }
   .scramble-text { touch-action: pan-y; }
-  .timer-panel { min-height: 0; padding: 8px 8px 52px; }
+  .timer-panel { min-height: 0; padding: 52px 8px 8px; }
   .timer-state { margin-bottom: 4px; font-size: 0.7rem; }
   .timer-display { font-size: clamp(2.8rem, 9vh, 5.5rem); font-size: clamp(2.8rem, 9dvh, 5.5rem); margin-bottom: 8px; }
   .solve-actions {
     left: 50%;
-    bottom: 8px;
+    top: 8px;
+    bottom: auto;
     transform: translateX(-50%);
     grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-rows: minmax(0, 1fr);
