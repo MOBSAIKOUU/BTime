@@ -1,28 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
+
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Content-Security-Policy" content="base-uri 'none'; object-src 'none'; form-action 'none'; frame-src 'none'; script-src-attr 'none'" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#f3f4f6" />
+    <meta name="robots" content="index, follow">
+
+    
     <title>BTime</title>
     <meta
       name="description"
-      content="BTime is a A sleek, distraction-free web timer featuring cool colors and an intuitive interface designed for maximum focus and efficiency.
-       It is a simple, fast, and responsive timer for speedcubing enthusiasts."
+      content="BTime is a speedcubing timer with multi-event scrambles, scramble drawings, optional 15-second inspection, solve history, Ao5 and Ao12 statistics, and customizable themes."
     />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+
+    <link rel="icon" href="assets/Images/Logo/Favicon Assets/favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="assets/Images/Logo/Favicon Assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="canonical" href="https://www.btime.site/" />
     <link rel="stylesheet" href="assets/css/style.css" />
+    
+
   </head>
+
   <body>
     <div class="page-shell">
       <!-- Top Bar: Brand Logo & Settings Menu -->
       <header class="topbar">
         <div class="brand-block">
-          <img class="brand-mark" src="assets/Images/Logo/BtimeLogo-transparent.png" alt="BTime logo" />
+          <img class="brand-mark" src="assets/Images/Logo/BtimeLogo-clean.png" alt="BTime logo" />
           <div>
             <p class="eyebrow">Your Cube Buddy,</p>
             <h1>BTime</h1>
@@ -40,7 +60,6 @@
               aria-controls="settingsMenu"
             >
               <span class="menu-icon" aria-hidden="true">☰</span>
-              <span>Menu</span>
             </button>
 
             <!-- Dropdown Settings Panel -->
@@ -55,7 +74,7 @@
                   <input type="checkbox" id="inspectionToggle" />
                 </label>
                 <label class="setting-row">
-                  <span>Hold and release to start</span>
+                  <span>Hold delay</span>
                   <input type="checkbox" id="holdToStartToggle" />
                 </label>
                 <label class="setting-row">
@@ -72,6 +91,8 @@
                   <select id="colorPaletteSelect" class="palette-select">
                     <option value="light">Default</option>
                     <option value="night">Night</option>
+                    <option value="liquid-glass">Liquid Glass</option>
+                    <option value="cartoon">Playground</option>
                     <option value="shell-pink">Bella pink</option>
                     <option value="dessert">Vanilla cream</option>
                     <option value="purple">Lavender</option>
@@ -83,6 +104,12 @@
                     <option value="halloween">Halloween</option>
                   </select>
                 </label>
+              </section>
+              <section class="settings-category" aria-labelledby="installSettingsTitle">
+                <h3 id="installSettingsTitle" class="settings-category-title">BTime app</h3>
+                <button id="installBTime" class="secondary-button install-button" type="button" hidden>Install BTime</button>
+                <p id="installHint" class="pwa-hint" hidden></p>
+                <p id="offlineStatus" class="pwa-hint" role="status">Preparing offline support…</p>
               </section>
             </div>
           </div>
@@ -96,7 +123,21 @@
           <!-- Scramble Generator Panel -->
           <section class="panel scramble-panel">
             <div class="panel-header">
-              <span class="panel-label">Scramble</span>
+              <div class="event-control">
+                <select id="eventSelect" class="event-select" aria-label="Solve event">
+                  <option value="333">3x3</option>
+                  <option value="222">2x2</option>
+                  <option value="444">4x4</option>
+                  <option value="555">5x5</option>
+                  <option value="666">6x6</option>
+                  <option value="777">7x7</option>
+                  <option value="clock">Clock</option>
+                  <option value="minx">Megaminx</option>
+                  <option value="pyram">Pyraminx</option>
+                  <option value="skewb">Skewb</option>
+                  <option value="sq1">Square-1</option>
+                </select>
+              </div>
               <button
                 id="newScramble"
                 class="scramble-refresh"
@@ -122,6 +163,8 @@
               type="text"
               inputmode="decimal"
               autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
               spellcheck="false"
               value=""
               readonly
@@ -148,11 +191,11 @@
               <strong id="bestAvg5">--</strong>
             </div>
             <div class="stat-row">
-              <span>Average of 5 (Ao5)</span>
+              <span>Ao5</span>
               <strong id="avg5">--</strong>
             </div>
             <div class="stat-row">
-              <span>Average of 12 (Ao12)</span>
+              <span>Ao12</span>
               <strong id="avg12">--</strong>
             </div>
             <div class="stat-row" title="Mean of timed solves in this session; +2 penalties are included and DNFs are excluded.">
@@ -167,20 +210,7 @@
           <div class="history-header">
             <h2>Solves</h2>
             <div class="history-controls">
-              <label class="visually-hidden" for="eventSelect">Solve event</label>
-              <select id="eventSelect" class="event-select" aria-label="Solve event">
-                <option value="333">3x3</option>
-                <option value="222">2x2</option>
-                <option value="444">4x4</option>
-                <option value="555">5x5</option>
-                <option value="666">6x6</option>
-                <option value="777">7x7</option>
-                <option value="clock">Clock</option>
-                <option value="minx">Megaminx</option>
-                <option value="pyram">Pyraminx</option>
-                <option value="skewb">Skewb</option>
-                <option value="sq1">Square-1</option>
-              </select>
+
               <button id="clearHistory" class="ghost-button" type="button">Clear</button>
             </div>
           </div>
@@ -188,6 +218,7 @@
 
           <!-- Visual 2D/3D Scramble Drawing -->
           <section class="scramble-visual-panel" aria-labelledby="scrambleVisualTitle">
+            <h3 id="scrambleVisualTitle" class="visually-hidden">Current scramble drawing</h3>
             <scramble-display
               id="scrambleVisualization"
               event="333"
@@ -201,6 +232,7 @@
           </section>
         </aside>
       </main>
+      <footer class="page-footer">&copy; 2026 Jaaayy.</footer>
     </div>
 
     <!-- Modal: Individual Solve Details & Modifier Actions -->
@@ -221,7 +253,18 @@
       </div>
       <div class="scramble-detail">
         <h3>Scramble</h3>
-        <p id="solveDetailScramble"></p>
+        <div class="saved-scramble-panel">
+          <p id="solveDetailScramble"></p>
+          <button id="copySolveScramble" class="secondary-button" type="button" aria-label="Copy scramble" title="Copy scramble" disabled>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="9" y="9" width="12" height="12" rx="2" />
+              <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+            </svg>
+          </button>
+        </div>
+        <div id="copyScrambleStatus" class="scramble-visual-status" role="status"></div>
+        <div id="solveDetailDrawing" class="solve-detail-drawing" hidden></div>
+        <div id="solveDetailDrawingStatus" class="scramble-visual-status" role="status"></div>
       </div>
     </dialog>
 
@@ -238,6 +281,15 @@
     </dialog>
 
     <!-- Application Script (includes Vercel Web Analytics) -->
+    <!-- Vercel Web Analytics -->
+    <div id="pwaUpdateNotice" class="pwa-update-notice" role="status" hidden>
+      <button id="refreshBTime" type="button">Update available, tap to refresh</button>
+    </div>
+
+    <script defer src="/_vercel/insights/script.js"></script>
+
+    <!-- Application Script -->
     <script type="module" src="/assets/js/app.js"></script>
+    <script type="module" src="/assets/js/pwa.js"></script>
   </body>
 </html>

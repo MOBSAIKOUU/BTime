@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+artifacts/
 
 # OS files
 .DS_Store

@@ -1,0 +1,2 @@
+/* esm.sh - cubing@0.59.1/dist/lib/cubing/chunks/chunk-NX2Q6B7Y */
+function a(n){let t=new WeakMap,o=n,r={postMessage:n.postMessage.bind(n),addEventListener:(i,e)=>{let s=d=>{"handleEvent"in e?e.handleEvent({data:d}):e({data:d})};n.on("message",s),t.set(e,s)},removeEventListener:(i,e)=>{let s=t.get(e);s&&(n.off("message",s),t.delete(e))},nodeWorker:o,terminate:()=>{o.terminate()}};return n.unref(),r}var c=a;export{c as node_adapter_default};

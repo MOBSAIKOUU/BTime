@@ -1,0 +1,3 @@
+/* esm.sh - cubing@0.59.1/dist/lib/cubing/chunks/search-worker-entry */
+import __Process$ from "./9d3493270fc89c07b9dd.mjs";
+import{node_adapter_default as r}from"./621af29ba7372c330589.mjs";import{expose as i}from"./aa5a806fb2aa2076e4f1.mjs";var n=typeof globalThis.Worker>"u"&&typeof globalThis.WorkerNavigator>"u";async function e(){let{parentPort:o}=__Process$.getBuiltinModule("node:worker_threads");return r(o)}import{exposeAPI as t}from"./92e8b7ac70a910de94fc.mjs";import"./621af29ba7372c330589.mjs";t.expose&&(async()=>(await import("./65f567c2ee495b253fa3.mjs"),(globalThis.postMessage?globalThis:await e()).postMessage("comlink-exposed")))();var f=import.meta.url;export{f as WORKER_ENTRY_FILE_URL};
