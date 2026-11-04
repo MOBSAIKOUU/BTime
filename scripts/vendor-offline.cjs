@@ -4,10 +4,19 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const directory = path.resolve(__dirname, '../assets/vendor');
 const roots = {
-  scramble: 'https://esm.sh/cubing@0.59.1/scramble?target=es2022',
-  search: 'https://esm.sh/cubing@0.59.1/search?target=es2022',
   drawing: 'https://esm.sh/scramble-display@0.59.1?deps=cubing@0.59.1&target=es2022',
 };
+// TNoodle is rebuilt separately from its included Java source. Preserve that artifact.
+const previousEntries = JSON.parse(fs.readFileSync(path.join(directory, 'entries.json'), 'utf8'));
+const tnoodleEntry = JSON.parse(fs.readFileSync(path.join(directory, 'inventory.json'), 'utf8'))
+  .find((item) => item.path === previousEntries.tnoodle);
+const tableEntry = JSON.parse(fs.readFileSync(path.join(directory, 'inventory.json'), 'utf8'))
+  .find((item) => item.path === previousEntries.tnoodleTables);
+for (const item of [tnoodleEntry, tableEntry]) {
+  if (!item || !fs.existsSync(path.resolve(__dirname, '..', '.' + item.path))) {
+    throw Error('Build TNoodle with scripts/tnoodle/publish.cjs first.');
+  }
+}
 const resources = new Map();
 function filename(url) {
   const extension = new URL(url).pathname.endsWith('.wasm') ? '.wasm' : '.mjs';
@@ -55,9 +64,11 @@ async function download(url) {
     }
     fs.writeFileSync(path.join(directory, filename(url)), content);
   }
-  const entries = Object.fromEntries(Object.entries(roots).map(([name, url]) => [name, '/assets/vendor/' + filename(url)]));
+  const entries = { ...Object.fromEntries(Object.entries(roots).map(([name, url]) => [name, '/assets/vendor/' + filename(url)])),
+    scramble: '/assets/js/tnoodle-client.mjs', tnoodle: previousEntries.tnoodle, tnoodleTables: previousEntries.tnoodleTables };
   fs.writeFileSync(path.join(directory, 'entries.json'), JSON.stringify(entries, null, 2) + '\n');
   const inventory = [...resources.keys()].map((url) => ({ path: '/assets/vendor/' + filename(url), source: url }));
+  inventory.push(tnoodleEntry, tableEntry);
   fs.writeFileSync(path.join(directory, 'inventory.json'), JSON.stringify(inventory, null, 2) + '\n');
   console.log(JSON.stringify({ files: resources.size, entries, bytes: [...resources.values()].reduce((sum, resource) => sum + Buffer.byteLength(resource.content), 0) }, null, 2));
 })().catch((error) => { console.error(error); process.exitCode = 1; });

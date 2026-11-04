@@ -1,0 +1,38 @@
+[
+  {
+    "name": "lib-scrambles",
+    "version": "0.20.0",
+    "url": "https://repo.maven.apache.org/maven2/org/worldcubeassociation/tnoodle/lib-scrambles/0.20.0/lib-scrambles-0.20.0-sources.jar",
+    "sha256": "674f85458879b3d316524963d4cc3d0d2329790e4641b36b4c147720abc9c4cb"
+  },
+  {
+    "name": "lib-svglite",
+    "version": "0.20.0",
+    "url": "https://repo.maven.apache.org/maven2/org/worldcubeassociation/tnoodle/lib-svglite/0.20.0/lib-svglite-0.20.0-sources.jar",
+    "sha256": "318baa09194c2b6bcdb166fe17d18cca53b7c9385e33c657325d6ae713afedf5"
+  },
+  {
+    "name": "scrambler-min2phase",
+    "version": "0.20.0",
+    "url": "https://repo.maven.apache.org/maven2/org/worldcubeassociation/tnoodle/scrambler-min2phase/0.20.0/scrambler-min2phase-0.20.0-sources.jar",
+    "sha256": "f729dd3ed50ef18b234ede3ab1758261d8df536c72d4e8fce5be22dafd80cd29"
+  },
+  {
+    "name": "scrambler-threephase",
+    "version": "0.20.0",
+    "url": "https://repo.maven.apache.org/maven2/org/worldcubeassociation/tnoodle/scrambler-threephase/0.20.0/scrambler-threephase-0.20.0-sources.jar",
+    "sha256": "53266688a41b2744f768f7f6fb1ca6bd5156b38604afedb763236f9812d62b2c"
+  },
+  {
+    "name": "scrambler-sq12phase",
+    "version": "0.20.0",
+    "url": "https://repo.maven.apache.org/maven2/org/worldcubeassociation/tnoodle/scrambler-sq12phase/0.20.0/scrambler-sq12phase-0.20.0-sources.jar",
+    "sha256": "367d1fd8db231531525ee3d8d54665d99baa2045fa67caf31ff107305b6b31ac"
+  },
+  {
+    "name": "scrambler-fto3phase",
+    "version": "0.20.0",
+    "url": "https://repo.maven.apache.org/maven2/org/worldcubeassociation/tnoodle/scrambler-fto3phase/0.20.0/scrambler-fto3phase-0.20.0-sources.jar",
+    "sha256": "2525c0af10e24100fc8a8705b8543cd1d611c6c8ed97401a89374eb4f94be24a"
+  }
+]

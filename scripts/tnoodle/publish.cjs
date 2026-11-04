@@ -1,0 +1,33 @@
+// After `mvn process-classes`, publish the checked-in browser artifact and its references.
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const root = path.resolve(__dirname, '../..');
+const banner = '/*! TNoodle-LIB 0.20.0 browser build (TeaVM 0.16.0). GPL-3.0. Source: /scripts/tnoodle/; notices: /license/tnoodle-LICENSE.txt, /license/teavm-LICENSE.txt, /license/slf4j-LICENSE.txt. */\n';
+const compiled = fs.readFileSync(path.join(__dirname, 'target/browser/tnoodle.mjs'), 'utf8');
+if (!compiled.includes('generateScramble') || !compiled.includes('export')) throw Error('Missing compiled TNoodle exports');
+const content = banner + compiled;
+const sha256 = crypto.createHash('sha256').update(content).digest('hex');
+const engine = '/assets/vendor/' + sha256.slice(0, 20) + '.mjs';
+const tableContent = fs.readFileSync(path.join(__dirname, 'target/browser/fourbyfour.bin'));
+const tableHash = crypto.createHash('sha256').update(tableContent).digest('hex');
+const tablePath = '/assets/vendor/' + tableHash.slice(0, 20) + '.bin';
+const entriesFile = path.join(root, 'assets/vendor/entries.json');
+const entries = JSON.parse(fs.readFileSync(entriesFile, 'utf8'));
+const previous = entries.tnoodle;
+const inventoryFile = path.join(root, 'assets/vendor/inventory.json');
+const inventory = JSON.parse(fs.readFileSync(inventoryFile, 'utf8')).filter(item => item.path !== previous && item.path !== entries.tnoodleTables);
+inventory.push({ path: engine, source: 'TNoodle-LIB 0.20.0; scripts/tnoodle/upstream.json', sha256 },
+  { path: tablePath, source: 'TNoodle-LIB 0.20.0 precomputed 4x4 tables; scripts/tnoodle/src/main/java/btime/ExportTables.java', sha256: tableHash });
+const workerFile = path.join(root, 'assets/js/tnoodle-worker.mjs');
+const worker = fs.readFileSync(workerFile, 'utf8');
+if (!previous || !entries.tnoodleTables || !worker.includes(previous) || !worker.includes(entries.tnoodleTables)) throw Error('Worker does not match the previous engine entry');
+fs.writeFileSync(path.join(root, engine), content);
+fs.writeFileSync(path.join(root, tablePath), tableContent);
+fs.writeFileSync(workerFile, worker.replace(previous, engine).replace(entries.tnoodleTables, tablePath));
+entries.tnoodle = engine;
+entries.tnoodleTables = tablePath;
+entries.scramble = '/assets/js/tnoodle-client.mjs';
+fs.writeFileSync(entriesFile, JSON.stringify(entries, null, 2) + '\n');
+fs.writeFileSync(inventoryFile, JSON.stringify(inventory, null, 2) + '\n');
+console.log('Published', engine, Buffer.byteLength(content) + tableContent.length, 'bytes including 4x4 tables. Bump CACHE_VERSION before deploying.');

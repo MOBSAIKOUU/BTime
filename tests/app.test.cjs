@@ -89,7 +89,7 @@ function createApp(saved = {}, storageBlocked = false) {
     cancelAnimationFrame: (id) => frames.delete(id),
     loadExternalModule: () => new Promise(() => {}),
   });
-  vm.runInContext(source.replace(/import\('(?:https:|\/assets\/vendor\/)[^']+'\)/g, 'loadExternalModule()'), context);
+  vm.runInContext(source.replace(/import\('(?:https:|\/assets\/)[^']+'\)/g, 'loadExternalModule()'), context);
   return {
     run: (code) => vm.runInContext(code, context), element, window, storage,
     advance(ms) { now += ms; },

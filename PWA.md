@@ -12,12 +12,13 @@ installation is required: deploy the project root as static files over HTTPS.
 - `assets/js/pwa.js`: install prompt, iOS instructions, offline readiness, waiting-worker
   notice, and explicit update acceptance. It observes the existing timer state and
   never reloads a running solve or inspection.
-- `assets/js/app.js`: only the three library import URLs change to local vendored files.
+- `assets/js/app.js`: loads the offline TNoodle worker client and maintains scramble queues.
+- `assets/js/tnoodle-client.mjs` and `tnoodle-worker.mjs`: worker lifecycle and TNoodle generation.
 - `index.html`: root manifest link, menu controls, update notice, and PWA script.
 - `assets/css/style.css`: small theme-aware install/update styles and menu scrolling.
 - `assets/icons/`: 192 and 512 PNGs plus a separate opaque, safe-zone maskable 512 PNG,
   resized from `assets/Images/Logo/BtimeLogo-clean.png`.
-- `assets/vendor/`: 86 local precompiled modules, approximately 2.6 MB uncompressed.
+- `assets/vendor/`: local precompiled drawing modules and the content-hashed TNoodle engine.
   Workers, dynamic puzzle modules, solver code, and embedded WASM are included.
 - `scripts/vendor-offline.cjs`: optional maintenance downloader; not a build step.
 - `vercel.json`: MIME/cache headers and existing security headers. The live Vercel
@@ -26,6 +27,13 @@ installation is required: deploy the project root as static files over HTTPS.
 - `tests/browser-pwa.cjs`: optional headless Chromium offline integration check.
 - `tests/app.test.cjs`: existing timing tests updated to stub local library imports.
 - `license/`: upstream attribution and redistribution notices for bundled modules.
+
+## TNoodle engine
+
+Scrambles use TNoodle-LIB 0.20.0 compiled to JavaScript and executed in a dedicated
+worker. All eleven events work after an offline reload. Source, browser adaptations,
+licenses and rebuild instructions are in [scripts/tnoodle/README.md](scripts/tnoodle/README.md).
+The drawing component still uses Cubing.js; it does not generate the app scrambles.
 
 ## Offline behavior
 

@@ -95,7 +95,6 @@ const timeout = (promise, milliseconds = 20000) => {
   console.log('Service worker ready', ready.caches);
   const result = await evaluate(`(async()=>{
     const entries=await (await fetch('/assets/vendor/entries.json')).json();
-    const {setSearchDebug}=await import(entries.search);setSearchDebug({logPerf:false});
     const {randomScrambleForEvent}=await import(entries.scramble);
     return (await randomScrambleForEvent('333')).toString();
   })()`);

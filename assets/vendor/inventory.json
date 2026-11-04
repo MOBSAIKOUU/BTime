@@ -4,44 +4,12 @@
     "source": "https://esm.sh/scramble-display@0.59.1?deps=cubing@0.59.1&target=es2022"
   },
   {
-    "path": "/assets/vendor/9829f1d814e7ab3c04a8.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/search?target=es2022"
-  },
-  {
-    "path": "/assets/vendor/838ac984e44e3339009f.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/scramble?target=es2022"
-  },
-  {
-    "path": "/assets/vendor/92e8b7ac70a910de94fc.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-7GUL3OBQ.mjs"
-  },
-  {
     "path": "/assets/vendor/394a90fc5d16352bddd1.mjs",
     "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-7D7ZUWUK.mjs"
   },
   {
-    "path": "/assets/vendor/2f516a66ebd1765936d3.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-2HSEQ2FC.mjs"
-  },
-  {
-    "path": "/assets/vendor/621af29ba7372c330589.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-NX2Q6B7Y.mjs"
-  },
-  {
-    "path": "/assets/vendor/69278bda016a4f62f0f2.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-OJI4YUWF.mjs"
-  },
-  {
-    "path": "/assets/vendor/8fb22ad4e2a4ee1a708e.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/search.mjs"
-  },
-  {
     "path": "/assets/vendor/2ed0aeb0abfa0f374088.mjs",
     "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-WIZJQ7QS.mjs"
-  },
-  {
-    "path": "/assets/vendor/89a64143ddf0b4923b52.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/scramble.mjs"
   },
   {
     "path": "/assets/vendor/ea37851fac95c2c40c2f.mjs",
@@ -64,32 +32,8 @@
     "source": "https://esm.sh/scramble-display@0.59.1/X-ZGN1YmluZ0AwLjU5LjE/es2022/scramble-display.mjs"
   },
   {
-    "path": "/assets/vendor/9d3493270fc89c07b9dd.mjs",
-    "source": "https://esm.sh/node/process.mjs"
-  },
-  {
     "path": "/assets/vendor/e1065bc452c72d7531c5.mjs",
     "source": "https://esm.sh/cubing@0.59.1/es2022/twisty.mjs"
-  },
-  {
-    "path": "/assets/vendor/2322c7a9283049842b80.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-worker-entry.mjs"
-  },
-  {
-    "path": "/assets/vendor/e70d928bf601a11d9459.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-worker-entry.js"
-  },
-  {
-    "path": "/assets/vendor/9b47b987b2ce50b73b4d.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-3x3x3-B2L4IN34.mjs"
-  },
-  {
-    "path": "/assets/vendor/372f209ee1a675c1cb65.mjs",
-    "source": "https://esm.sh/random-uint-below@v3.3.0?target=es2022"
-  },
-  {
-    "path": "/assets/vendor/aa5a806fb2aa2076e4f1.mjs",
-    "source": "https://esm.sh/comlink@%5E4.4.1?target=es2022"
   },
   {
     "path": "/assets/vendor/39be9e7d46ea852ad389.mjs",
@@ -120,32 +64,12 @@
     "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/twisty-dynamic-3d-SIRF3JVR.mjs"
   },
   {
-    "path": "/assets/vendor/4482af8fc17462a76e11.mjs",
-    "source": "https://esm.sh/node/events.mjs"
-  },
-  {
     "path": "/assets/vendor/0e074e8cebd5b749fdcd.mjs",
     "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/puzzles-dynamic-unofficial-P3TW433I.mjs"
   },
   {
     "path": "/assets/vendor/24fb09aac45f984d67d9.mjs",
     "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/chunk-UD4LT3FY.mjs"
-  },
-  {
-    "path": "/assets/vendor/65f567c2ee495b253fa3.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/inside-NS3PIQ5Z.mjs"
-  },
-  {
-    "path": "/assets/vendor/54186365b6107d9be397.mjs",
-    "source": "https://esm.sh/node/tty.mjs"
-  },
-  {
-    "path": "/assets/vendor/1cb29b3215295144d8d6.mjs",
-    "source": "https://esm.sh/random-uint-below@3.3.0/es2022/random-uint-below.mjs"
-  },
-  {
-    "path": "/assets/vendor/2c30f1ff53ca97114048.mjs",
-    "source": "https://esm.sh/comlink@4.4.2/es2022/comlink.mjs"
   },
   {
     "path": "/assets/vendor/e0e42015fc967aac5d73.mjs",
@@ -212,10 +136,6 @@
     "source": "https://esm.sh/three@%5E0.170.0/src/objects/Group?target=es2022"
   },
   {
-    "path": "/assets/vendor/5a6b2a422712fc8f3fd5.mjs",
-    "source": "https://esm.sh/node/async_hooks.mjs"
-  },
-  {
     "path": "/assets/vendor/9f35988f58be7d295ce4.mjs",
     "source": "https://esm.sh/three@%5E0.170.0/src/math/Spherical?target=es2022"
   },
@@ -230,34 +150,6 @@
   {
     "path": "/assets/vendor/0281c5150b162f7c7542.mjs",
     "source": "https://esm.sh/three@%5E0.170.0/src/renderers/WebGLRenderer?target=es2022"
-  },
-  {
-    "path": "/assets/vendor/a5b873c81d9be7a12ced.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/twsearch-SXB7BAMF.mjs"
-  },
-  {
-    "path": "/assets/vendor/a4ebabb82eda24bcb7b9.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-fto-HZREG6ZH.mjs"
-  },
-  {
-    "path": "/assets/vendor/3102126e2996e593115c.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-4x4x4-GNM5XEZR.mjs"
-  },
-  {
-    "path": "/assets/vendor/bec7f8054f78c22b291d.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-sgs-side-events-SYC27DSG.mjs"
-  },
-  {
-    "path": "/assets/vendor/0dea11482baa920b98c4.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-sgs-unofficial-QGGV4PCJ.mjs"
-  },
-  {
-    "path": "/assets/vendor/b117b6e81939673492ec.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-master_tetraminx-GIS7T5B7.mjs"
-  },
-  {
-    "path": "/assets/vendor/4be03f18520ec80cd6cb.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/search-dynamic-solve-kilominx-GCNVEBDJ.mjs"
   },
   {
     "path": "/assets/vendor/4e49d9202ee01feedda1.mjs",
@@ -336,11 +228,17 @@
     "source": "https://esm.sh/three@0.170.0/es2022/src/scenes/Scene.mjs"
   },
   {
-    "path": "/assets/vendor/526a9d4dce0b07aff917.mjs",
-    "source": "https://esm.sh/cubing@0.59.1/es2022/dist/lib/cubing/chunks/twsearch_wasm_bg-2J7XXRGI-WOU3FVAE.mjs"
-  },
-  {
     "path": "/assets/vendor/ad1a0cadd1fd3ea99625.mjs",
     "source": "https://esm.sh/three@0.170.0/es2022/src/renderers/WebGLRenderer.mjs"
+  },
+  {
+    "path": "/assets/vendor/8d3399e01ff941cfa06d.mjs",
+    "source": "TNoodle-LIB 0.20.0; scripts/tnoodle/upstream.json",
+    "sha256": "8d3399e01ff941cfa06dee70aa2d92b3b57a31638b162c0dbbf63bdc1e6c1845"
+  },
+  {
+    "path": "/assets/vendor/3b70acdf152807e89d1c.bin",
+    "source": "TNoodle-LIB 0.20.0 precomputed 4x4 tables; scripts/tnoodle/src/main/java/btime/ExportTables.java",
+    "sha256": "3b70acdf152807e89d1c05f60f1a831b720fd9829295dbad1c591c09094bfbcc"
   }
 ]

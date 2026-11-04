@@ -1,12 +1,13 @@
 /* Bump this version whenever HTML, CSS, JavaScript, or vendor assets change. */
 const CACHE_PREFIX = 'btime-';
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const SHELL_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-shell`;
 const STATIC_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-static`;
 const FONT_CACHE = `${CACHE_PREFIX}fonts-v1`;
 const APP_SHELL = [
   '/', '/index.html', '/manifest.webmanifest', '/assets/css/style.css',
   '/assets/js/app.js', '/assets/js/pwa.js',
+  '/assets/js/tnoodle-client.mjs', '/assets/js/tnoodle-worker.mjs',
   '/assets/Images/Logo/BtimeLogo-clean.png',
   '/assets/Images/Logo/Favicon%20Assets/favicon.ico',
   '/assets/Images/Logo/Favicon%20Assets/apple-touch-icon.png',
@@ -20,7 +21,7 @@ self.addEventListener('install', (event) => {
     if (!inventoryResponse.ok) throw new Error('Offline dependency inventory unavailable');
     const inventory = await inventoryResponse.json();
     if (!Array.isArray(inventory) || !inventory.length || inventory.some((entry) =>
-      typeof entry.path !== 'string' || !/^\/assets\/vendor\/[a-f0-9]{20}\.(mjs|wasm)$/.test(entry.path))) {
+      typeof entry.path !== 'string' || !/^\/assets\/vendor\/[a-f0-9]{20}\.(mjs|wasm|bin)$/.test(entry.path))) {
       throw new Error('Invalid offline dependency inventory');
     }
     const cache = await caches.open(SHELL_CACHE);

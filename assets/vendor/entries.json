@@ -1,5 +1,6 @@
 {
-  "scramble": "/assets/vendor/838ac984e44e3339009f.mjs",
-  "search": "/assets/vendor/9829f1d814e7ab3c04a8.mjs",
-  "drawing": "/assets/vendor/2a3049222214d6d1997b.mjs"
+  "drawing": "/assets/vendor/2a3049222214d6d1997b.mjs",
+  "scramble": "/assets/js/tnoodle-client.mjs",
+  "tnoodle": "/assets/vendor/8d3399e01ff941cfa06d.mjs",
+  "tnoodleTables": "/assets/vendor/3b70acdf152807e89d1c.bin"
 }

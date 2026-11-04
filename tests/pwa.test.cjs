@@ -76,6 +76,7 @@ test('vendored module and worker references are local and included in the precac
   const inventory = JSON.parse(fs.readFileSync(path.join(root, 'assets/vendor/inventory.json')));
   const files = new Set(inventory.map((item) => path.basename(item.path)));
   for (const item of inventory) {
+    if (!item.path.endsWith('.mjs')) continue;
     const source = fs.readFileSync(path.join(root, item.path), 'utf8');
     for (const match of source.matchAll(/(?:from\s*|import\s*\(?\s*)["']([^"']+)["']/g)) {
       if (match[1].startsWith('node:')) continue;
@@ -95,6 +96,8 @@ test('installation precaches the complete local app and vendor graph', async () 
   const bucket = worker.buckets.get(shellCache);
   assert.ok(bucket.has(origin + '/index.html'));
   assert.ok(bucket.has(origin + '/assets/js/pwa.js'));
+  assert.ok(bucket.has(origin + '/assets/js/tnoodle-client.mjs'));
+  assert.ok(bucket.has(origin + '/assets/js/tnoodle-worker.mjs'));
   const inventory = JSON.parse(fs.readFileSync(path.join(root, 'assets/vendor/inventory.json')));
   for (const item of inventory) assert.ok(bucket.has(origin + item.path));
   assert.equal(worker.skipped(), false);

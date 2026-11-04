@@ -1,6 +1,6 @@
 /**
  * @file BTime - Rubik's Cube Speedcubing Timer Application
- * @description Provides random-state scramble generation, 15s WCA inspection,
+ * @description Provides offline TNoodle scramble generation, 15s WCA inspection,
  * spacebar/touch timing, manual time entry, Ao5/Ao12 session statistics,
  * solve penalty management (DNF/+2), and multi-event support.
  */
@@ -152,8 +152,8 @@ let lastSolveId = null;
 let selectedSolveId = null;
 const runningControlStates = new Map();
 
-// Cached Cubing.js Scrambler Module Loader
-let cubingScramblerPromise = null;
+// Cached offline TNoodle worker client
+let tnoodleScramblerPromise = null;
 let scrambleDrawingFailed = false;
 
 /* ==========================================================================
@@ -373,24 +373,20 @@ function applyTheme() {
    ========================================================================== */
 
 /**
- * Asynchronously loads the Cubing.js scramble engine once and caches it.
+ * Asynchronously loads the offline TNoodle worker client once and caches it.
  * @returns {Promise<Function>} randomScrambleForEvent function
  */
 async function loadScrambler() {
-  if (!cubingScramblerPromise) {
-    cubingScramblerPromise = Promise.all([
-      import('/assets/vendor/9829f1d814e7ab3c04a8.mjs'),
-      import('/assets/vendor/838ac984e44e3339009f.mjs'),
-    ]).then(([{ setSearchDebug }, { randomScrambleForEvent }]) => {
-      setSearchDebug({ logPerf: false });
-      return randomScrambleForEvent;
-    });
+  if (!tnoodleScramblerPromise) {
+    tnoodleScramblerPromise = import('/assets/js/tnoodle-client.mjs')
+      .then(({ randomScrambleForEvent }) => randomScrambleForEvent)
+      .catch((error) => { tnoodleScramblerPromise = null; throw error; });
   }
-  return cubingScramblerPromise;
+  return tnoodleScramblerPromise;
 }
 
 /**
- * Generates a valid random-state scramble sequence for the given WCA event.
+ * Generates a valid TNoodle scramble sequence for the given WCA event.
  * @param {string} eventCode
  * @returns {Promise<string>}
  */
@@ -541,7 +537,7 @@ function generateScramble(eventCode = currentEvent) {
         if (scrambleText) {
           scrambleText.textContent = 'Scramble generation failed. Select New scramble to retry.';
         }
-        console.error(`Unable to generate a ${eventCode} random-state scramble.`, error);
+        console.error(`Unable to generate a ${eventCode} TNoodle scramble.`, error);
       }
       return false;
     });
