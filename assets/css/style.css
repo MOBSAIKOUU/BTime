@@ -428,6 +428,11 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Let the body paint the entire canvas, including iOS safe areas. */
+html {
+  background: transparent;
+}
+
 body {
   min-height: 100vh;
   min-height: 100dvh;
@@ -462,7 +467,7 @@ button {
   padding-bottom: max(clamp(14px, 2.2vw, 36px), env(safe-area-inset-bottom));
   padding-left: max(clamp(14px, 2.2vw, 36px), env(safe-area-inset-left));
   padding-right: max(clamp(14px, 2.2vw, 36px), env(safe-area-inset-right));
-  background: var(--bg);
+  background: transparent;
   display: flex;
   flex-direction: column;
 }
@@ -1392,25 +1397,22 @@ scramble-display {
    12. Responsive Breakpoints
    -------------------------------------------------------------------------- */
 
-/* Keep the application in the visible viewport, including browser chrome changes. */
+/* Fill the visible viewport; allow natural growth for long scrambles. */
 @media (max-width: 840px), (max-height: 540px) and (orientation: landscape) {
   html, body {
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
-    overflow: clip;
-    overscroll-behavior: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: clip;
+    overscroll-behavior-y: none;
   }
 
-  /* Keep the root in normal flow: a fixed body can offset hit testing in iOS PWAs.
-     Clipping prevents focus-driven document scrolling without moving touch targets. */
-  body { position: relative; width: 100%; height: 100vh; height: 100dvh; }
+  /* Normal flow preserves iOS hit testing and keeps long content reachable. */
+  body { position: relative; width: 100%; }
 
   .page-shell {
-    height: 100vh;
-    height: 100dvh;
-    min-height: 0;
-    overflow: hidden;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: 8px;
     padding-top: max(8px, env(safe-area-inset-top));
     padding-bottom: max(8px, env(safe-area-inset-bottom));
@@ -1442,7 +1444,7 @@ scramble-display {
   }
 
   .app-layout {
-    flex: 1 1 0;
+    flex: 1 0 auto;
     min-height: 0;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) minmax(128px, 0.48fr);
@@ -1451,7 +1453,7 @@ scramble-display {
 
   .timer-workspace {
     min-height: 0;
-    grid-template-rows: minmax(72px, 0.7fr) minmax(120px, 1.3fr) auto;
+    grid-template-rows: auto minmax(120px, 1fr) auto;
     gap: 8px;
   }
 
@@ -1460,7 +1462,7 @@ scramble-display {
   .scramble-panel {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
     align-content: start;
     padding: 8px 10px;
   }
@@ -1476,18 +1478,16 @@ scramble-display {
     grid-column: 1 / -1;
     grid-row: 2;
     align-self: center;
-    max-height: 100%;
+    max-height: none;
     min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    overflow: visible;
     font-size: clamp(0.78rem, 2.8vw, 1rem);
     line-height: 1.5;
     letter-spacing: 0.02em;
   }
 
   .topbar, .timer-panel, .stats-panel, .scramble-visual-panel { touch-action: none; }
-  .scramble-panel { touch-action: none; }
-  .scramble-text { touch-action: pan-y; }
+  .scramble-panel { touch-action: pan-y; }
   .timer-panel { min-height: 0; padding: 52px 8px 8px; }
   .timer-state { margin-bottom: 4px; font-size: 0.7rem; }
   .timer-display { font-size: clamp(2.8rem, 9vh, 5.5rem); font-size: clamp(2.8rem, 9dvh, 5.5rem); margin-bottom: 8px; }
@@ -1554,7 +1554,7 @@ scramble-display {
 @media (max-width: 840px) and (orientation: portrait) {
   .app-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: minmax(84px, 0.65fr) minmax(150px, 2fr) 58px 44px minmax(76px, 0.65fr);
+    grid-template-rows: auto minmax(150px, 2fr) 58px 44px minmax(76px, 0.65fr);
     gap: 8px;
   }
   .timer-workspace, .history-panel { display: contents; }
@@ -1597,7 +1597,7 @@ scramble-display {
   h1 { font-size: 1.1rem; }
   .topbar-actions .menu-button { min-height: 36px; height: 36px; }
   .app-layout { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 6px; }
-  .timer-workspace { grid-template-rows: minmax(60px, 0.7fr) minmax(100px, 1fr) auto; gap: 5px; }
+  .timer-workspace { grid-template-rows: auto minmax(100px, 1fr) auto; gap: 5px; }
   .timer-display { font-size: clamp(2.2rem, 12dvh, 4rem); margin-bottom: 4px; }
   .timer-state { margin-bottom: 2px; font-size: 0.62rem; }
   .solve-actions .result-action { min-height: 0; height: 100%; }
