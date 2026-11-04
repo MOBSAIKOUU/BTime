@@ -39,8 +39,11 @@ Keep older hashed assets available for already-open clients during releases.
 
 ## Runtime
 
-`assets/js/tnoodle-client.mjs` manages a dedicated module worker and correlates
-responses with requests. `tnoodle-worker.mjs` calls TNoodle and verifies that its
+`assets/js/tnoodle-client.mjs` manages up to two module workers and correlates
+responses with requests. The active worker serves the selected puzzle; the background
+worker warms one spare scramble per inactive event after the active queue fills to five.
+Switching to an event promotes its warmed worker when possible. These scramble queues
+are in memory for the current page session. `tnoodle-worker.mjs` calls TNoodle and verifies that its
 output parses to a nonsolved puzzle state. The existing app queue prefetches
 scrambles; calculations never run on the timer's main thread. Large puzzle tables,
 especially 4x4, can take several seconds to initialize on first use. The build
@@ -59,6 +62,7 @@ node --test tests/app.test.cjs tests/pwa.test.cjs tests/tnoodle-client.test.cjs
 node scripts/serve.cjs
 # In another terminal, with Playwright/WebKit installed:
 node tests/tnoodle-browser.cjs
+node tests/scramble-prefetch-browser.cjs
 ```
 
 Set `BTIME_PLAYWRIGHT_PATH` if Playwright is installed outside this project.

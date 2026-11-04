@@ -323,3 +323,56 @@ test('security policy disables embedding and unsafe inline handlers without bloc
   assert.match(headers['Content-Security-Policy'], /script-src-attr 'none'/);
   assert.doesNotMatch(headers['Content-Security-Policy'], /(?:default|worker)-src/);
 });
+
+function deferredScrambles(app) {
+  app.run(`scrambleQueues.clear(); scrambleRequestPromise = null; scrambleRequestEvent = null;
+    scrambleReady = false; window.generations = []; window.resolveScrambles = [];
+    getNewScramble = (event, background) => {
+      window.generations.push({ event, background });
+      return new Promise(resolve => window.resolveScrambles.push(resolve));
+    };`);
+}
+
+test('repeated refreshes share a pending scramble instead of consuming discarded results', async () => {
+  const app = createApp();
+  deferredScrambles(app);
+  const first = app.run('generateScramble()');
+  const repeated = app.run('generateScramble()');
+  assert.equal(first, repeated);
+  assert.equal(app.run('window.generations.length'), 1);
+  app.run('window.resolveScrambles.shift()("R U2")');
+  assert.equal(await first, true);
+  assert.equal(app.element('scrambleText').textContent, 'R U2');
+  // Only one refill follows consumption; another click did not discard that scramble.
+  assert.equal(app.run('window.generations.length'), 2);
+});
+
+test('restoring an event without a saved scramble preserves its in-flight request', async () => {
+  const app = createApp();
+  deferredScrambles(app);
+  const first = app.run('generateScramble()');
+  const restored = app.run('restoreScramble()');
+  assert.equal(first, restored);
+  app.run('window.resolveScrambles.shift()("F R2")');
+  assert.equal(await restored, true);
+});
+
+test('inactive events receive one background scramble while the active event fills five', async () => {
+  const app = createApp();
+  deferredScrambles(app);
+  app.run('prefetchScrambles("444", true)');
+  assert.equal(app.run('window.generations[0].background'), true);
+  app.run('window.resolveScrambles.shift()("Rw U2")');
+  await app.run('getScrambleQueue("444").pending');
+  app.run('prefetchScrambles("444", true)');
+  assert.equal(app.run('getScrambleQueue("444").items.length'), 1);
+  assert.equal(app.run('window.generations.length'), 1);
+  app.run('prefetchScrambles("333")');
+  for (let index = 0; index < 5; index++) {
+    assert.equal(app.run('window.generations[window.generations.length - 1].background'), false);
+    app.run('window.resolveScrambles.shift()("R U2")');
+    await app.run('getScrambleQueue("333").pending');
+  }
+  assert.equal(app.run('getScrambleQueue("333").items.length'), 5);
+  assert.equal(app.run('getScrambleQueue("333").pending'), null);
+});

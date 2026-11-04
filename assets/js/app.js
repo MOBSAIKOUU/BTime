@@ -143,6 +143,7 @@ let scramble = [];
 let scrambleReady = false;
 let scrambleRequestPromise = null;
 let scrambleRequestId = 0;
+let scrambleRequestEvent = null;
 const scrambleQueues = new Map();
 let scrambleWarmupTimer = null;
 
@@ -379,7 +380,10 @@ function applyTheme() {
 async function loadScrambler() {
   if (!tnoodleScramblerPromise) {
     tnoodleScramblerPromise = import('/assets/js/tnoodle-client.mjs')
-      .then(({ randomScrambleForEvent }) => randomScrambleForEvent)
+      .then(({ randomScrambleForEvent, setActiveEvent }) => (eventCode, options) => {
+        setActiveEvent(currentEvent);
+        return randomScrambleForEvent(eventCode, options);
+      })
       .catch((error) => { tnoodleScramblerPromise = null; throw error; });
   }
   return tnoodleScramblerPromise;
@@ -390,13 +394,13 @@ async function loadScrambler() {
  * @param {string} eventCode
  * @returns {Promise<string>}
  */
-async function getNewScramble(eventCode) {
+async function getNewScramble(eventCode, background = false) {
   const startedAt = performance.now();
   const randomScrambleForEvent = await loadScrambler();
   const isCube = CUBE_EVENTS.has(eventCode);
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    const generatedScramble = await randomScrambleForEvent(eventCode);
+    const generatedScramble = await randomScrambleForEvent(eventCode, { background });
     const moves = generatedScramble.toString().trim().split(/\s+/);
     const isValid =
           moves.length > 0 &&
@@ -432,13 +436,15 @@ function prefetchScrambles(eventCode = currentEvent, warmup = false) {
     return;
   }
 
-  queue.pending = getNewScramble(eventCode)
+  queue.pending = getNewScramble(eventCode, eventCode !== currentEvent)
     .then((nextScramble) => {
       queue.items.push(nextScramble);
     })
     .catch((error) => {
-      queue.error = error;
-      console.error(`Unable to prefetch a ${eventCode} scramble.`, error);
+      if (error.name !== 'AbortError') {
+        queue.error = error;
+        console.error(`Unable to prefetch a ${eventCode} scramble.`, error);
+      }
     })
     .finally(() => {
       queue.pending = null;
@@ -506,6 +512,11 @@ async function getQueuedScramble(eventCode) {
  * @param {string} eventCode
  */
 function generateScramble(eventCode = currentEvent) {
+  // Repeated refresh taps share an outstanding request instead of discarding its result.
+  if (!scrambleReady && scrambleRequestPromise && scrambleRequestEvent === eventCode) {
+    return scrambleRequestPromise;
+  }
+  scrambleRequestEvent = eventCode;
   const startedAt = performance.now();
   const requestId = ++scrambleRequestId;
   scrambleReady = false;
@@ -551,13 +562,14 @@ function generateScramble(eventCode = currentEvent) {
  */
 function restoreScramble(eventCode = currentEvent) {
   prefetchScrambles(eventCode);
-  const requestId = ++scrambleRequestId;
   const savedScramble = loadSavedScramble(eventCode);
 
   if (!savedScramble) {
     return generateScramble(eventCode);
   }
 
+  const requestId = ++scrambleRequestId;
+  scrambleRequestEvent = eventCode;
   scramble = savedScramble.split(/\s+/);
   scrambleReady = true;
   scrambleRequestPromise = Promise.resolve(true);
