@@ -1527,7 +1527,8 @@ scramble-display {
   .history-header h2 { font-size: 0.9rem; }
   .history-controls { width: auto; flex: 0 0 auto; }
   .history-controls #clearHistory { flex: 0 0 auto; width: auto; height: 36px; min-height: 36px; padding: 0 8px; font-size: 0.72rem; }
-  .solve-list { grid-column: 1; grid-row: 2; max-height: none; gap: 5px; overscroll-behavior: contain; scrollbar-gutter: auto; }
+  /* Bound saved solves so their intrinsic height cannot stretch the timer grid. */
+  .solve-list { grid-column: 1; grid-row: 2; max-height: clamp(76px, 14dvh, 120px); gap: 5px; overscroll-behavior: contain; scrollbar-gutter: auto; }
   .solve-record-button { grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px; min-height: 40px; padding: 6px; }
   .solve-record-button .index, .solve-record-button .tag { font-size: 0.62rem; letter-spacing: 0; }
   .solve-record-button .time { font-size: 0.9rem; }
@@ -1554,7 +1555,8 @@ scramble-display {
 @media (max-width: 840px) and (orientation: portrait) {
   .app-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto minmax(150px, 2fr) 58px 44px minmax(76px, 0.65fr);
+    /* Only the timer takes remaining space; the history row has a viewport-sized cap. */
+    grid-template-rows: auto minmax(150px, 1fr) 58px 44px clamp(76px, 14dvh, 120px);
     gap: 8px;
   }
   .timer-workspace, .history-panel { display: contents; }
@@ -1579,6 +1581,7 @@ scramble-display {
   .history-controls #clearHistory { padding: 0 6px; min-height: 36px; height: 36px; }
   .solve-list {
     grid-column: 2; grid-row: 5; position: relative;
+    max-height: none; /* The bounded grid row controls scrolling in portrait. */
     margin: 0 4px 4px; border-radius: 7px; background: transparent;
   }
   .solve-record-button { grid-template-columns: 18px minmax(0, 1fr); }
