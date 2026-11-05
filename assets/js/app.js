@@ -56,6 +56,13 @@ const clearHistoryMessage = document.getElementById('clearHistoryMessage');
 const cancelClearHistoryButton = document.getElementById('cancelClearHistory');
 const confirmClearHistoryButton = document.getElementById('confirmClearHistory');
 
+// Alt+Z Delete Confirmation Dialog
+const deleteSolveDialog = document.getElementById('deleteSolveDialog');
+const deleteSolveMessage = document.getElementById('deleteSolveMessage');
+const cancelDeleteSolveButton = document.getElementById('cancelDeleteSolve');
+const confirmDeleteSolveButton = document.getElementById('confirmDeleteSolve');
+let pendingDeleteSolve = null;
+
 // LocalStorage Keys
 const STORAGE_KEY = 'bcube-timer-history';
 const EVENT_STORAGE_KEY = 'bcube-timer-event';
@@ -69,6 +76,7 @@ const INSPECTION_SECONDS = 15;
 const INSPECTION_GRACE_SECONDS = 1;
 const SCRAMBLE_PREFETCH_COUNT = 5;
 const REQUIRED_HOLD_MS = 300;
+const MIN_START_PRESS_MS = 100;
 const MAX_HISTORY_ENTRIES = 50;
 const MAX_SCRAMBLE_LENGTH = 10000;
 const MAX_STORAGE_LENGTH = 1000000;
@@ -1330,7 +1338,7 @@ function isSpaceKey(event) {
 }
 
 // Shared delayed-start feedback for keyboard and touch, including optional haptics.
-function prepareDelayedStart(vibrate = false) {
+function prepareDelayedStart(vibrate = false, delayMs = REQUIRED_HOLD_MS) {
   const inspecting = state === 'inspecting' || state === 'readyToSolve';
   isHoldReady = false;
   if (holdTimeoutId !== null) clearTimeout(holdTimeoutId);
@@ -1357,20 +1365,21 @@ function prepareDelayedStart(vibrate = false) {
     if (vibrate && navigator.vibrate) {
       try { navigator.vibrate(40); } catch { /* Haptics are optional. */ }
     }
-  }, REQUIRED_HOLD_MS);
+  }, delayMs);
 }
 
-// With the hold delay disabled, arm immediately but still wait for release.
-function armImmediateRelease() {
-  if (state === 'ready') {
-    cancelAnimation();
-    setTimerState('holding');
-    updateDisplay('0.00');
-  }
-  isHoldReady = true;
-  timerState.textContent = 'Release to start';
-  timerDisplay.classList.remove('holding-wait');
-  timerDisplay.classList.add('holding-ready');
+// Even with hold delay off, ignore accidental presses shorter than 100 ms.
+function prepareQuickStart() {
+  prepareDelayedStart(false, MIN_START_PRESS_MS);
+}
+
+function requestDeleteSolve(entry) {
+  if (!deleteSolveDialog || !deleteSolveMessage || deleteSolveDialog.open) return;
+  // Capture the exact solve and event; confirmation must not retarget another result.
+  pendingDeleteSolve = { id: String(entry.id), eventCode: currentEvent };
+  deleteSolveMessage.textContent = `Delete ${formatHistoryValue(entry)} from your ${getEventLabel(currentEvent)} session?`;
+  deleteSolveDialog.showModal();
+  cancelDeleteSolveButton?.focus({ preventScroll: true });
 }
 
 // Clear All Solves Handler
@@ -1435,9 +1444,16 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
+  // Let the modal own Enter, Space and Escape while confirmation is open.
+  if (deleteSolveDialog?.open) return;
+
   const penaltyActions = { '1': 'reset', '2': 'plus2', '3': 'dnf' };
-  const penaltyAction = penaltyActions[event.key];
-  if (event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && penaltyAction) {
+  const deleteShortcut = event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey &&
+    (event.code === 'KeyZ' || event.key?.toLowerCase() === 'z');
+  const shortcutAction = deleteShortcut ? 'delete'
+    : event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey
+      ? penaltyActions[event.key] : null;
+  if (shortcutAction) {
     // Leave typing and unrelated dialogs alone.
     if (
       state !== 'ready' ||
@@ -1452,9 +1468,13 @@ window.addEventListener('keydown', (event) => {
 
     const solveId = solveDetails?.open ? selectedSolveId : lastSolveId;
     const entry = recentSolves.find((solve) => String(solve.id) === String(solveId));
-    if (entry && (penaltyAction !== 'reset' || entry.result === '+2' || entry.result === 'dnf')) {
-      applySolveAction(String(entry.id), penaltyAction);
-      focusTimerAfterAction();
+    if (entry && (shortcutAction !== 'reset' || entry.result === '+2' || entry.result === 'dnf')) {
+      if (shortcutAction === 'delete') {
+        requestDeleteSolve(entry);
+      } else {
+        applySolveAction(String(entry.id), shortcutAction);
+        focusTimerAfterAction();
+      }
     }
     return;
   }
@@ -1508,7 +1528,7 @@ window.addEventListener('keydown', (event) => {
 
       return;
     } else {
-      armImmediateRelease();
+      prepareQuickStart();
       return;
     }
   }
@@ -1527,7 +1547,7 @@ window.addEventListener('keydown', (event) => {
 
       return;
     } else {
-      armImmediateRelease();
+      prepareQuickStart();
       return;
     }
   }
@@ -1717,6 +1737,32 @@ function bindConfirmationAction(button, action) {
     event.stopPropagation();
     if (button.disabled || performance.now() - lastTouchActivation < 700) return;
     action();
+  });
+}
+
+// Alt+Z asks for confirmation; the existing Delete buttons keep their handlers.
+if (deleteSolveDialog) {
+  bindConfirmationAction(cancelDeleteSolveButton, () => {
+    if (deleteSolveDialog.open) {
+      pendingDeleteSolve = null;
+      deleteSolveDialog.close();
+    }
+  });
+  bindConfirmationAction(confirmDeleteSolveButton, () => {
+    if (!deleteSolveDialog.open) return;
+    const target = pendingDeleteSolve;
+    deleteSolveDialog.close();
+    if (target && state === 'ready' && target.eventCode === currentEvent) {
+      applySolveAction(target.id, 'delete');
+      focusTimerAfterAction();
+    }
+  });
+  deleteSolveDialog.addEventListener('close', () => {
+    // A queued close event can arrive after the user has reopened this dialog.
+    if (deleteSolveDialog.open) return;
+    pendingDeleteSolve = null;
+    if (solveDetails?.open) closeSolveDetailsButton?.focus({ preventScroll: true });
+    else timerPanel?.focus({ preventScroll: true });
   });
 }
 
@@ -2016,7 +2062,7 @@ if (timerPanel) {
         event.preventDefault();
         return;
       } else {
-        armImmediateRelease();
+        prepareQuickStart();
         event.preventDefault();
         return;
       }
@@ -2030,7 +2076,7 @@ if (timerPanel) {
         event.preventDefault();
         return;
       } else {
-        armImmediateRelease();
+        prepareQuickStart();
         event.preventDefault();
         return;
       }

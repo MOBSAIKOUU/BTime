@@ -176,7 +176,7 @@
               <button class="result-action secondary-button" data-action="dnf" type="button" disabled>DNF</button>
               <button class="result-action secondary-button" data-action="plus2" type="button" disabled>+2</button>
               <button class="result-action secondary-button" data-action="reset" type="button" disabled>Revert</button>
-              <button class="result-action danger-button" data-action="delete" type="button" disabled>Delete</button>
+              <button class="result-action danger-button" data-action="delete" type="button" title="Delete solve (Alt+Z)" aria-keyshortcuts="Alt+Z" disabled>Delete</button>
             </div>
           </section>
 
@@ -249,7 +249,7 @@
         <button class="result-action secondary-button" data-action="dnf" type="button">DNF</button>
         <button class="result-action secondary-button" data-action="plus2" type="button">+2</button>
         <button class="result-action secondary-button" data-action="reset" type="button">Revert</button>
-        <button class="result-action danger-button" data-action="delete" type="button">Delete</button>
+        <button class="result-action danger-button" data-action="delete" type="button" title="Delete solve (Alt+Z)" aria-keyshortcuts="Alt+Z">Delete</button>
       </div>
       <div class="scramble-detail">
         <h3>Scramble</h3>
@@ -265,6 +265,18 @@
         <div id="copyScrambleStatus" class="scramble-visual-status" role="status"></div>
         <div id="solveDetailDrawing" class="solve-detail-drawing" hidden></div>
         <div id="solveDetailDrawingStatus" class="scramble-visual-status" role="status"></div>
+      </div>
+    </dialog>
+
+    <!-- Modal: Confirm Alt+Z Delete -->
+    <dialog id="deleteSolveDialog" class="solve-dialog confirm-dialog" aria-labelledby="deleteSolveTitle" aria-describedby="deleteSolveMessage">
+      <div class="dialog-header">
+        <h2 id="deleteSolveTitle">Delete this solve?</h2>
+      </div>
+      <p id="deleteSolveMessage" class="confirm-message"></p>
+      <div class="confirm-actions">
+        <button id="cancelDeleteSolve" class="secondary-button" type="button" autofocus>Cancel</button>
+        <button id="confirmDeleteSolve" class="danger-button" type="button">Delete</button>
       </div>
     </dialog>
 

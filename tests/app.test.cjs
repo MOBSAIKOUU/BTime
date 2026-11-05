@@ -73,7 +73,7 @@ function createApp(saved = {}, storageBlocked = false) {
   document.querySelectorAll = (selector) => selector === '.solve-actions .result-action' ? actions
     : selector.startsWith('button, select, input') ? [...elements.values()] : [];
   const window = new Element();
-  const schedule = (callback, delay) => { const id = ++nextId; timers.set(id, { callback, delay }); return id; };
+  const schedule = (callback, delay) => { const id = ++nextId; timers.set(id, { callback, delay, due: now + delay }); return id; };
   window.setTimeout = schedule;
   window.clearTimeout = (id) => timers.delete(id);
   const context = vm.createContext({
@@ -94,9 +94,15 @@ function createApp(saved = {}, storageBlocked = false) {
     run: (code) => vm.runInContext(code, context), element, window, storage,
     advance(ms) { now += ms; },
     frame() { const callbacks = [...frames.values()]; frames.clear(); callbacks.forEach((callback) => callback()); },
-    holdReady() {
-      const entry = [...timers.entries()].find(([, timer]) => timer.delay === 300);
-      assert.ok(entry, 'hold timeout scheduled');
+    tick(ms) {
+      now += ms;
+      for (const [id, timer] of [...timers]) {
+        if (timer.due <= now) { timers.delete(id); timer.callback(); }
+      }
+    },
+    holdReady(delay = 300) {
+      const entry = [...timers.entries()].find(([, timer]) => timer.delay === delay);
+      assert.ok(entry, delay + 'ms start timeout scheduled');
       timers.delete(entry[0]); entry[1].callback();
     },
   };
@@ -166,7 +172,7 @@ for (const input of ['keyboard', 'touch']) {
         if (inspection) { press(); release(); assert.equal(app.run('state'), 'inspecting'); }
         press();
         assert.notEqual(app.run('state'), 'solving');
-        if (delayed) app.holdReady();
+        app.holdReady(delayed ? 300 : 100);
         release();
         assert.equal(app.run('state'), 'solving');
         app.advance(1234);
@@ -375,4 +381,138 @@ test('inactive events receive one background scramble while the active event fil
   }
   assert.equal(app.run('getScrambleQueue("333").items.length'), 5);
   assert.equal(app.run('getScrambleQueue("333").pending'), null);
+});
+
+for (const input of ['keyboard', 'touch']) {
+  for (const inspection of [false, true]) {
+    test(`${input}: hold-off rejects 99ms presses and starts on release after 100ms, inspection=${inspection}`, () => {
+      const app = createApp();
+      app.run(`holdToStartEnabled=false;inspectionEnabled=${inspection}`);
+      const target = app.element('timerPanel');
+      const press = () => input === 'keyboard'
+        ? app.window.dispatch('keydown', { key: ' ', code: 'Space', target })
+        : target.dispatch('pointerdown', { pointerType: 'touch' });
+      const release = () => input === 'keyboard'
+        ? app.window.dispatch('keyup', { key: ' ', code: 'Space', target })
+        : target.dispatch('pointerup', { pointerType: 'touch' });
+      if (inspection) { press(); release(); }
+      press(); app.tick(99); release();
+      assert.equal(app.run('state'), inspection ? 'inspecting' : 'ready');
+      assert.equal(app.run('holdTimeoutId'), null);
+      press(); app.tick(100);
+      assert.notEqual(app.run('state'), 'solving', 'Timer waits for release');
+      release(); assert.equal(app.run('state'), 'solving');
+      app.advance(1234);
+      app.window.dispatch('keydown', { key: 'a', code: 'KeyA', target });
+      assert.equal(app.run('recentSolves.at(-1).baseTimeMs'), 1234);
+      // Preserve the existing touch cooldown, then check the next solve's quick-tap guard.
+      app.advance(601);
+      if (inspection) { press(); release(); }
+      press(); app.tick(99); release();
+      assert.equal(app.run('state'), inspection ? 'inspecting' : 'ready');
+      press(); app.tick(100); release();
+      assert.equal(app.run('state'), 'solving');
+    });
+  }
+}
+
+test('Alt+Z deletes the current solve and persists the same change as Delete', () => {
+  const app = createApp();
+  app.run('recordSolve(10000);recordSolve(12000)');
+  app.window.dispatch('keydown', { key: 'z', code: 'KeyZ', altKey: true, target: app.element('timerPanel') });
+  assert.equal(app.element('deleteSolveDialog').open, true);
+  assert.equal(app.run('recentSolves.length'), 2, 'Confirmation does not delete immediately');
+  assert.match(app.element('deleteSolveMessage').textContent, /12\.00/);
+  app.element('confirmDeleteSolve').dispatch('click');
+  assert.equal(app.run('recentSolves.length'), 1);
+  assert.equal(app.run('recentSolves[0].baseTimeMs'), 10000);
+  assert.equal(app.run('lastSolveId'), null);
+  assert.equal(JSON.parse(app.storage.get('bcube-timer-history')).length, 1);
+  assert.equal(app.run('document.activeElement'), app.element('timerPanel'));
+  app.window.dispatch('keydown', { key: 'z', code: 'KeyZ', altKey: true, repeat: true, target: app.element('timerPanel') });
+  assert.equal(app.run('recentSolves.length'), 1);
+});
+
+test('Alt+Z deletes the selected solve when its details are open', () => {
+  const app = createApp();
+  app.run('recordSolve(10000);recordSolve(12000);showSolveDetails(String(recentSolves[0].id))');
+  app.window.dispatch('keydown', { key: 'z', code: 'KeyZ', altKey: true, target: app.element('solveDetails') });
+  assert.equal(app.run('recentSolves.length'), 2);
+  assert.equal(app.element('deleteSolveDialog').open, true);
+  app.element('confirmDeleteSolve').dispatch('click');
+  assert.equal(app.run('recentSolves.length'), 1);
+  assert.equal(app.run('recentSolves[0].baseTimeMs'), 12000);
+  assert.equal(app.element('solveDetails').open, false);
+});
+
+test('delete shortcut ignores editing, confirmation dialogs, repeats and extra modifiers', () => {
+  for (const scenario of ['editing', 'confirmation', 'inspection', 'repeat', 'ctrl', 'shift', 'meta', 'no-alt']) {
+    const app = createApp();
+    app.run('recordSolve(12000)');
+    const target = app.element('timerPanel');
+    const event = { key: 'z', code: 'KeyZ', altKey: true, target };
+    if (scenario === 'editing') target.closest = () => target;
+    if (scenario === 'confirmation') app.element('clearHistoryDialog').open = true;
+    if (scenario === 'inspection') app.run('state="inspecting"');
+    if (scenario === 'repeat') event.repeat = true;
+    if (scenario === 'ctrl') event.ctrlKey = true;
+    if (scenario === 'shift') event.shiftKey = true;
+    if (scenario === 'meta') event.metaKey = true;
+    if (scenario === 'no-alt') event.altKey = false;
+    app.window.dispatch('keydown', event);
+    assert.equal(app.run('recentSolves.length'), 1, scenario);
+  }
+});
+
+test('Ctrl+1/2/3 penalty shortcuts retain their behavior alongside Alt+Z', () => {
+  const app = createApp();
+  app.run('recordSolve(12000)');
+  for (const [key, result] of [['2', '+2'], ['1', 'ok'], ['3', 'dnf']]) {
+    app.window.dispatch('keydown', { key, ctrlKey: true, target: app.element('timerPanel') });
+    assert.equal(app.run('recentSolves[0].result'), result);
+  }
+});
+
+test('Alt+Z confirmation supports Cancel and dismissal without changing saved solves', () => {
+  for (const cancel of ['button', 'dismiss']) {
+    const app = createApp();
+    app.run('recordSolve(12000)');
+    const saved = app.storage.get('bcube-timer-history');
+    app.window.dispatch('keydown', { key: 'z', code: 'KeyZ', altKey: true, target: app.element('timerPanel') });
+    assert.equal(app.run('document.activeElement'), app.element('cancelDeleteSolve'));
+    if (cancel === 'button') app.element('cancelDeleteSolve').dispatch('click');
+    else app.element('deleteSolveDialog').close();
+    assert.equal(app.run('recentSolves.length'), 1);
+    assert.equal(app.storage.get('bcube-timer-history'), saved);
+    assert.equal(app.run('pendingDeleteSolve'), null);
+  }
+});
+
+test('delete confirmation owns keyboard input and does not retarget an event', () => {
+  const app = createApp();
+  app.run('recordSolve(12000)');
+  const target = app.element('timerPanel');
+  app.window.dispatch('keydown', { key: 'z', code: 'KeyZ', altKey: true, target });
+  for (const event of [{ key: ' ', code: 'Space' }, { key: 'd', altKey: true }, { key: '3', ctrlKey: true }, { key: 'z', code: 'KeyZ', altKey: true, repeat: true }]) {
+    app.window.dispatch('keydown', { target, ...event });
+  }
+  assert.equal(app.run('state'), 'ready');
+  assert.equal(app.element('clearHistoryDialog').open, false);
+  assert.equal(app.run('recentSolves[0].result'), 'ok');
+  app.run('currentEvent="222"');
+  app.element('confirmDeleteSolve').dispatch('click');
+  assert.equal(app.run('recentSolves.length'), 1);
+});
+
+test('a delayed close event cannot clear a reopened delete confirmation', () => {
+  const app = createApp();
+  app.run('recordSolve(12000)');
+  const shortcut = { key: 'z', code: 'KeyZ', altKey: true, target: app.element('timerPanel') };
+  app.window.dispatch('keydown', shortcut);
+  app.element('cancelDeleteSolve').dispatch('click');
+  app.window.dispatch('keydown', shortcut);
+  app.element('deleteSolveDialog').dispatch('close');
+  assert.notEqual(app.run('pendingDeleteSolve'), null);
+  app.element('confirmDeleteSolve').dispatch('click');
+  assert.equal(app.run('recentSolves.length'), 0);
 });

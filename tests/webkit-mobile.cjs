@@ -94,8 +94,19 @@ const origin = process.env.BTIME_TEST_ORIGIN || 'http://127.0.0.1:4173';
     await tap('#menuToggle');
     for (const surface of ['.stats-panel', '.scramble-visual-panel', '.timer-panel']) {
       await page.waitForTimeout(750);
-      await tap(surface);
-      console.log('After surface tap', surface, await page.locator('#timerState').evaluate(e=>e.className));
+      // Playwright's WebKit tap is instantaneous; model the required 100ms press.
+      // Control buttons and the stopping touch below still use native taps.
+      await page.locator(surface).evaluate(async element => {
+        const touch = type => {
+          const event = new Event(type, { bubbles: true, cancelable: true });
+          Object.defineProperties(event, { pointerType: { value: 'touch' }, isPrimary: { value: true } });
+          element.dispatchEvent(event);
+        };
+        touch('pointerdown');
+        await new Promise(resolve => setTimeout(resolve, 120));
+        touch('pointerup');
+      });
+      console.log('After surface press', surface, await page.locator('#timerState').evaluate(e=>e.className));
       await page.waitForFunction(() => document.getElementById('timerState').classList.contains('solving'), null, { timeout: 5000 });
       // A disabled action must still be a valid stopping surface.
       const stop = page.locator('#solveActions [data-action="plus2"]');
@@ -103,7 +114,7 @@ const origin = process.env.BTIME_TEST_ORIGIN || 'http://127.0.0.1:4173';
       await page.touchscreen.tap(rect.x + rect.width / 2, rect.y + rect.height / 2);
       await page.waitForFunction(() => document.getElementById('timerState').classList.contains('ready'));
       assert.equal(await page.locator('#settingsMenu').isVisible(), false);
-      console.log(`Native start from ${surface}, stop on disabled action passed`);
+      console.log(`100ms start from ${surface}, stop on disabled action passed`);
     }
     console.log('WebKit native button taps and viewport checks passed');
   } finally {
