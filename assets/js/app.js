@@ -1379,7 +1379,7 @@ function requestDeleteSolve(entry) {
   pendingDeleteSolve = { id: String(entry.id), eventCode: currentEvent };
   deleteSolveMessage.textContent = `Delete ${formatHistoryValue(entry)} from your ${getEventLabel(currentEvent)} session?`;
   deleteSolveDialog.showModal();
-  cancelDeleteSolveButton?.focus({ preventScroll: true });
+  confirmDeleteSolveButton?.focus({ preventScroll: true });
 }
 
 // Clear All Solves Handler
