@@ -31,6 +31,16 @@ const bestAvg5El = document.getElementById('bestAvg5');
 const avg5El = document.getElementById('avg5');
 const avg12El = document.getElementById('avg12');
 const meanTimeEl = document.getElementById('meanTime');
+const statisticButtons = Object.fromEntries(['bestSingle', 'bestAvg5', 'avg5', 'avg12']
+  .map(kind => [kind, document.getElementById('stat-' + kind)]));
+let statisticTargets = {};
+const averageDetails = document.getElementById('averageDetails');
+const averageDetailsTitle = document.getElementById('averageDetailsTitle');
+const averageDetailsText = document.getElementById('averageDetailsText');
+const closeAverageDetailsButton = document.getElementById('closeAverageDetails');
+const copyAverageDetailsButton = document.getElementById('copyAverageDetails');
+const copyAverageStatus = document.getElementById('copyAverageStatus');
+let averageDetailsTrigger = null;
 
 // Settings Menu & Toggles
 const menuToggle = document.getElementById('menuToggle');
@@ -637,80 +647,90 @@ function getSolveValue(entry) {
 }
 
 /**
- * Calculates a standard WCA trimmed average for a window of solves.
- * Drops the fastest and slowest times. Allows at most one DNF (treated as slowest).
- * @param {Array<object>} solves
- * @param {number} solveCount - Size of the average (e.g. 5 or 12)
- * @returns {{ value: number|null, isDnf: boolean }}
+ * Use the same window and exclusions for both the capsule and its breakdown.
+ * Ties drop exactly two distinct solves: the first fastest and last slowest.
  */
 function getTrimmedAverage(solves, solveCount) {
   if (solves.length < solveCount) {
-    return { value: null, isDnf: false };
+    return { value: null, isDnf: false, solves: [], excludedIndices: [] };
   }
-
   const windowSolves = solves.slice(-solveCount);
-  const dnfCount = windowSolves.filter((solve) => solve.result === 'dnf').length;
-
-  // More than 1 DNF in an average window results in an overall DNF average
-  if (dnfCount > 1) {
-    return { value: null, isDnf: true };
-  }
-
-  const times = windowSolves
-    .filter((solve) => solve.result !== 'dnf')
-    .map(getSolveValue)
-    .filter((value) => value !== null && Number.isFinite(value))
-    .sort((a, b) => a - b);
-
-  // If there's 1 DNF, it counts as the single worst time; drop 1 best time and average the rest.
-  // Otherwise, drop both the single fastest and single slowest times.
-  const countedTimes = dnfCount === 1 ? times.slice(1) : times.slice(1, -1);
-
+  const ranked = windowSolves.map((solve, index) => ({
+    index, value: getSolveValue(solve) ?? Infinity,
+  })).sort((a, b) => (a.value - b.value) || (a.index - b.index));
+  const excludedIndices = [ranked[0].index, ranked[ranked.length - 1].index];
+  const counted = ranked.slice(1, -1);
+  const isDnf = counted.some(solve => !Number.isFinite(solve.value));
   return {
-    value: countedTimes.reduce((sum, value) => sum + value, 0) / countedTimes.length,
-    isDnf: false,
+    value: isDnf ? null : counted.reduce((sum, solve) => sum + solve.value, 0) / counted.length,
+    isDnf, solves: windowSolves, excludedIndices,
   };
 }
 
-/**
- * Recalculates and renders Best Single, Best Ao5, Current Ao5, Current Ao12, and Session Mean.
- */
-function renderStats() {
-  if (!bestTimeEl || !avg5El || !bestAvg5El || !avg12El) {
-    return;
+function getBestAverage(solves, solveCount) {
+  let best = null;
+  for (let end = solveCount; end <= solves.length; end += 1) {
+    const average = getTrimmedAverage(solves.slice(end - solveCount, end), solveCount);
+    if (!average.isDnf && average.value !== null && (!best || average.value < best.value)) best = average;
   }
+  return best;
+}
 
-  // Filter valid numeric times across the session
-  const validTimes = recentSolves
-    .filter((solve) => solve.result !== 'dnf')
-    .map(getSolveValue)
-    .filter((value) => value !== null && Number.isFinite(value));
+function syncStatisticButtons() {
+  for (const [kind, button] of Object.entries(statisticButtons)) {
+    if (button) button.disabled = state !== 'ready' || !statisticTargets[kind];
+  }
+}
 
-  const bestSingle = validTimes.length ? Math.min(...validTimes) : null;
-  const meanTime = validTimes.length
-    ? validTimes.reduce((sum, value) => sum + value, 0) / validTimes.length
-    : null;
-
+function renderStats() {
+  if (!bestTimeEl || !avg5El || !bestAvg5El || !avg12El) return;
+  const validSolves = recentSolves.filter(solve => Number.isFinite(getSolveValue(solve)));
+  const bestSingle = validSolves.reduce((best, solve) =>
+    !best || getSolveValue(solve) < getSolveValue(best) ? solve : best, null);
+  const meanTime = validSolves.length
+    ? validSolves.reduce((sum, solve) => sum + getSolveValue(solve), 0) / validSolves.length : null;
+  const bestAvg5 = getBestAverage(recentSolves, 5);
   const currentAvg5 = getTrimmedAverage(recentSolves, 5);
   const currentAvg12 = getTrimmedAverage(recentSolves, 12);
-
-  // Compute all-time best Ao5 in this session
-  let bestAvg5 = null;
-  for (let end = 5; end <= recentSolves.length; end += 1) {
-    const windowAvg5 = getTrimmedAverage(recentSolves.slice(end - 5, end), 5);
-    if (!windowAvg5.isDnf && windowAvg5.value !== null) {
-      bestAvg5 = bestAvg5 === null ? windowAvg5.value : Math.min(bestAvg5, windowAvg5.value);
-    }
-  }
-
-  bestTimeEl.textContent = formatMetric(bestSingle);
-  bestAvg5El.textContent = formatMetric(bestAvg5);
+  statisticTargets = {
+    bestSingle, bestAvg5,
+    avg5: currentAvg5.solves.length ? currentAvg5 : null,
+    avg12: currentAvg12.solves.length ? currentAvg12 : null,
+  };
+  bestTimeEl.textContent = formatMetric(bestSingle ? getSolveValue(bestSingle) : null);
+  bestAvg5El.textContent = formatMetric(bestAvg5?.value);
   avg5El.textContent = currentAvg5.isDnf ? 'DNF' : formatMetric(currentAvg5.value);
   avg12El.textContent = currentAvg12.isDnf ? 'DNF' : formatMetric(currentAvg12.value);
+  if (meanTimeEl) meanTimeEl.textContent = formatMetric(meanTime);
+  syncStatisticButtons();
+}
 
-  if (meanTimeEl) {
-    meanTimeEl.textContent = formatMetric(meanTime);
+function formatAverageBreakdown(kind, average) {
+  const label = kind === 'bestAvg5' ? 'bao5' : kind === 'avg12' ? 'ao12' : 'ao5';
+  const result = average.isDnf ? 'DNF' : formatMetric(average.value);
+  const lines = average.solves.map((solve, index) => {
+    const time = formatHistoryValue(solve);
+    const markedTime = average.excludedIndices.includes(index) ? '(' + time + ')' : time;
+    return markedTime + ' - ' + (solve.scramble || 'Scramble was not saved for this solve.');
+  });
+  return [label + ': ' + result, 'Scramble Generated by TNoodle', ...lines].join('\n');
+}
+
+function showStatisticDetails(kind) {
+  if (state !== 'ready' || averageDetails?.open || solveDetails?.open) return;
+  const target = statisticTargets[kind];
+  if (!target) return;
+  if (kind === 'bestSingle') {
+    showSolveDetails(String(target.id));
+    return;
   }
+  if (!averageDetails || !averageDetailsText) return;
+  const label = kind === 'bestAvg5' ? 'Best Ao5' : kind === 'avg12' ? 'Ao12' : 'Ao5';
+  averageDetailsTitle.textContent = label + ' · ' + getEventLabel(currentEvent);
+  averageDetailsText.textContent = formatAverageBreakdown(kind, target);
+  if (copyAverageStatus) copyAverageStatus.textContent = '';
+  averageDetailsTrigger = statisticButtons[kind];
+  averageDetails.showModal();
 }
 
 function formatHistoryValue(entry) {
@@ -971,6 +991,7 @@ function setTimerState(nextState) {
   }
 
   syncRunningControls();
+  syncStatisticButtons();
   syncManualTimeEntry();
 
   timerState.textContent = labels[nextState] || 'Ready';
@@ -1445,7 +1466,7 @@ window.addEventListener('keydown', (event) => {
   }
 
   // Let the modal own Enter, Space and Escape while confirmation is open.
-  if (deleteSolveDialog?.open) return;
+  if (deleteSolveDialog?.open || averageDetails?.open) return;
 
   const penaltyActions = { '1': 'reset', '2': 'plus2', '3': 'dnf' };
   const deleteShortcut = event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey &&
@@ -1803,6 +1824,20 @@ if (confirmClearHistoryButton && clearHistoryDialog) {
   });
 }
 
+// Native buttons support both touch and keyboard activation.
+for (const [kind, button] of Object.entries(statisticButtons)) {
+  button?.addEventListener('click', () => showStatisticDetails(kind));
+}
+closeAverageDetailsButton?.addEventListener('click', () => averageDetails?.close());
+averageDetails?.addEventListener('close', () => {
+  if (averageDetails.open) return;
+  if (averageDetailsTrigger && !averageDetailsTrigger.disabled) averageDetailsTrigger.focus({ preventScroll: true });
+  averageDetailsTrigger = null;
+});
+averageDetails?.addEventListener('click', event => {
+  if (event.target === averageDetails) averageDetails.close();
+});
+
 // Solve History List Item Click -> Opens Details Modal
 if (solveList) {
   solveList.addEventListener('click', (event) => {
@@ -1918,39 +1953,54 @@ document.addEventListener('copy', (event) => {
 document.addEventListener('cut', (event) => event.preventDefault());
 document.addEventListener('selectstart', (event) => event.preventDefault());
 
+async function copyText(text, container, trigger) {
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Keep fallback selection inside the active modal for Safari and older browsers.
+    const input = document.createElement('textarea');
+    input.value = text;
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    input.style.top = '0';
+    input.style.left = '0';
+    input.readOnly = true;
+    input.style.setProperty('user-select', 'text', 'important');
+    input.style.setProperty('-webkit-user-select', 'text', 'important');
+    container.appendChild(input);
+    try {
+      scrambleCopyFallbackText = text;
+      input.select();
+      if (!document.execCommand('copy')) throw new Error('Copy failed');
+    } finally {
+      scrambleCopyFallbackText = null;
+      input.remove();
+      trigger.focus({ preventScroll: true });
+    }
+  }
+}
+
 copySolveScramble?.addEventListener('click', async () => {
   const entry = recentSolves.find((solve) => String(solve.id) === String(selectedSolveId));
   if (!entry?.scramble || state === 'solving') return;
   const solveId = selectedSolveId;
   try {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
-      await navigator.clipboard.writeText(entry.scramble);
-    } catch {
-      // Support browsers where the asynchronous clipboard API is unavailable.
-      const input = document.createElement('textarea');
-      input.value = entry.scramble;
-      input.style.position = 'fixed';
-      input.style.opacity = '0';
-      input.style.top = '0';
-      input.style.left = '0';
-      input.readOnly = true;
-      input.style.setProperty('user-select', 'text', 'important');
-      input.style.setProperty('-webkit-user-select', 'text', 'important');
-      solveDetails.appendChild(input);
-      try {
-        scrambleCopyFallbackText = entry.scramble;
-        input.select();
-        if (!document.execCommand('copy')) throw new Error('Copy failed');
-      } finally {
-        scrambleCopyFallbackText = null;
-        input.remove();
-        copySolveScramble.focus({ preventScroll: true });
-      }
-    }
+    await copyText(entry.scramble, solveDetails, copySolveScramble);
     if (copyScrambleStatus && selectedSolveId === solveId) copyScrambleStatus.textContent = 'Scramble copied.';
   } catch {
     if (copyScrambleStatus && selectedSolveId === solveId) copyScrambleStatus.textContent = 'Unable to copy. Please try again.';
+  }
+});
+
+copyAverageDetailsButton?.addEventListener('click', async () => {
+  if (!averageDetails?.open) return;
+  const text = averageDetailsText.textContent;
+  try {
+    await copyText(text, averageDetails, copyAverageDetailsButton);
+    if (averageDetails.open && averageDetailsText.textContent === text) copyAverageStatus.textContent = 'Average copied.';
+  } catch {
+    if (averageDetails.open && averageDetailsText.textContent === text) copyAverageStatus.textContent = 'Unable to copy. Please try again.';
   }
 });
 

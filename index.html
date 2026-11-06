@@ -182,22 +182,22 @@
 
           <!-- Session Statistics Panel -->
           <aside class="panel stats-panel">
-            <div class="stat-row">
+            <button id="stat-bestSingle" class="stat-row stat-button" type="button" aria-haspopup="dialog" aria-controls="solveDetails" disabled>
               <span>Best single</span>
               <strong id="bestTime">--</strong>
-            </div>
-            <div class="stat-row">
+            </button>
+            <button id="stat-bestAvg5" class="stat-row stat-button" type="button" aria-haspopup="dialog" aria-controls="averageDetails" disabled>
               <span>Best Ao5</span>
               <strong id="bestAvg5">--</strong>
-            </div>
-            <div class="stat-row">
+            </button>
+            <button id="stat-avg5" class="stat-row stat-button" type="button" aria-haspopup="dialog" aria-controls="averageDetails" disabled>
               <span>Ao5</span>
               <strong id="avg5">--</strong>
-            </div>
-            <div class="stat-row">
+            </button>
+            <button id="stat-avg12" class="stat-row stat-button" type="button" aria-haspopup="dialog" aria-controls="averageDetails" disabled>
               <span>Ao12</span>
               <strong id="avg12">--</strong>
-            </div>
+            </button>
             <div class="stat-row" title="Mean of timed solves in this session; +2 penalties are included and DNFs are excluded.">
               <span>Mean</span>
               <strong id="meanTime">--</strong>
@@ -266,6 +266,24 @@
         <div id="solveDetailDrawing" class="solve-detail-drawing" hidden></div>
         <div id="solveDetailDrawingStatus" class="scramble-visual-status" role="status"></div>
       </div>
+    </dialog>
+
+    <!-- Modal: Average Details -->
+    <dialog id="averageDetails" class="solve-dialog" aria-labelledby="averageDetailsTitle">
+      <div class="dialog-header">
+        <h2 id="averageDetailsTitle">Average details</h2>
+        <button id="closeAverageDetails" class="dialog-close" type="button" aria-label="Close average details">&times;</button>
+      </div>
+      <div class="saved-scramble-panel average-scramble-panel">
+        <pre id="averageDetailsText" class="average-breakdown"></pre>
+        <button id="copyAverageDetails" class="secondary-button" type="button" aria-label="Copy average" title="Copy average">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="9" y="9" width="12" height="12" rx="2" />
+              <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+            </svg>
+        </button>
+      </div>
+      <p id="copyAverageStatus" class="scramble-visual-status" role="status"></p>
     </dialog>
 
     <!-- Modal: Confirm Alt+Z Delete -->
