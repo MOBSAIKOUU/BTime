@@ -49,6 +49,7 @@ const inspectionToggle = document.getElementById('inspectionToggle');
 const holdToStartToggle = document.getElementById('holdToStartToggle');
 const manualTimeToggle = document.getElementById('manualTimeToggle');
 const colorPaletteSelect = document.getElementById('colorPaletteSelect');
+const paletteEditionTag = document.getElementById('paletteEditionTag');
 
 // Solve Details Dialog Elements
 const solveDetails = document.getElementById('solveDetails');
@@ -123,6 +124,7 @@ const VALID_PALETTES = [
   'shibuya',
   'christmas',
   'halloween',
+  'jims-pride',
 ];
 
 /* ==========================================================================
@@ -385,6 +387,7 @@ function applyTheme() {
     ['night', 'oilspill', 'sunrise', 'shibuya', 'halloween'].includes(colorPalette));
   document.body.dataset.palette = colorPalette;
   if (colorPaletteSelect) colorPaletteSelect.value = colorPalette;
+  if (paletteEditionTag) paletteEditionTag.hidden = colorPalette !== 'jims-pride';
 }
 
 /* ==========================================================================

@@ -1814,6 +1814,67 @@ body[data-palette="cartoon"] .solve-dialog::backdrop { background: rgba(41, 36, 
   body[data-palette="cartoon"] .panel { box-shadow: 2px 2px 0 var(--border); }
 }
 
+/* Jim's Pride: limited-edition rainbow accents with clear timing surfaces. */
+body[data-palette="jims-pride"] {
+  --bg: #fff1f3;
+  --bg-2: #f4edff;
+  --panel: #ffffff;
+  --panel-strong: #fffdfd;
+  --panel-soft: #f9f7ff;
+  --border: #ded7ee;
+  --text: #271f3d;
+  --muted: #665976;
+  --accent: #6741c3;
+  --accent-2: #bd2868;
+  --warning: #9a5a08;
+  --danger: #bd2449;
+  --success: #177047;
+  --shadow: 0 18px 48px rgba(93, 56, 125, 0.12);
+  --pride-rainbow: linear-gradient(100deg, #c82649 0%, #b85710 20%, #8b7000 38%, #177047 55%, #245ecc 76%, #8736bb 100%);
+  background: linear-gradient(130deg, #fff1f3 0%, #fff4e8 20%, #fffce6 38%, #edf9f0 56%, #eaf3ff 76%, #f4edff 100%);
+}
+
+body[data-palette="jims-pride"] .panel,
+body[data-palette="jims-pride"] .settings-menu,
+body[data-palette="jims-pride"] .solve-dialog {
+  border-color: transparent;
+  background: linear-gradient(var(--panel-strong), var(--panel-strong)) padding-box,
+    var(--pride-rainbow) border-box;
+}
+
+body[data-palette="jims-pride"] h1 {
+  color: #6741c3;
+  background: var(--pride-rainbow);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body[data-palette="jims-pride"] .stat-row:nth-child(1) { background: #fff0f3; border-color: #f3b6c4; }
+body[data-palette="jims-pride"] .stat-row:nth-child(2) { background: #fff5e7; border-color: #edc68e; }
+body[data-palette="jims-pride"] .stat-row:nth-child(3) { background: #edf8ef; border-color: #afd6bc; }
+body[data-palette="jims-pride"] .stat-row:nth-child(4) { background: #edf4ff; border-color: #b9cdef; }
+body[data-palette="jims-pride"] .stat-row:nth-child(5) { background: #f6efff; border-color: #d6bcef; }
+body[data-palette="jims-pride"] .stat-button:enabled:hover { border-color: var(--accent); }
+body[data-palette="jims-pride"] select option { background: #fffdfd; color: #271f3d; }
+
+.palette-edition-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(#fffdfd, #fffdfd) padding-box,
+    var(--pride-rainbow) border-box;
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.palette-edition-tag[hidden] { display: none; }
+
 /* Install controls and a compact update notice, independent of the timer layout. */
 .install-button { margin-top: 10px; }
 .pwa-hint { margin: 8px 0 0; color: var(--muted); font-size: 0.75rem; line-height: 1.45; }
