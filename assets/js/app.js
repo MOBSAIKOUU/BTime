@@ -118,6 +118,7 @@ const VALID_PALETTES = [
   'shell-pink',
   'dessert',
   'purple',
+  'purple-mango',
   'chessboard',
   'oilspill',
   'sunrise',
@@ -384,10 +385,13 @@ function saveManualTimeEntryPreference() {
 
 function applyTheme() {
   document.body.classList.toggle('dark-mode',
-    ['night', 'oilspill', 'sunrise', 'shibuya', 'halloween'].includes(colorPalette));
+    ['night', 'oilspill', 'sunrise', 'shibuya', 'halloween', 'purple-mango'].includes(colorPalette));
   document.body.dataset.palette = colorPalette;
   if (colorPaletteSelect) colorPaletteSelect.value = colorPalette;
-  if (paletteEditionTag) paletteEditionTag.hidden = colorPalette !== 'jims-pride';
+  if (paletteEditionTag) {
+    paletteEditionTag.hidden = !['jims-pride', 'purple-mango'].includes(colorPalette);
+    paletteEditionTag.textContent = colorPalette === 'purple-mango' ? "Kyu's Signature" : 'Limited Edition';
+  }
 }
 
 /* ==========================================================================

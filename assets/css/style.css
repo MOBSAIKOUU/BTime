@@ -115,6 +115,50 @@ body[data-palette="purple"] {
   --shadow: 0 24px 60px rgba(76, 29, 149, 0.12);
 }
 
+/* Purple Mango: charcoal surfaces with muted violet and lavender accents. */
+body[data-palette="purple-mango"] {
+  color-scheme: dark;
+  --font-color: #8170af;
+  --background-color: #46425c;
+  --board-color: #313131;
+  --button-color: #343434;
+  --link-color: #a584b6;
+  --logo-color: #a482bb;
+  --logo-background: #313131;
+  --bg: var(--background-color);
+  --bg-2: var(--background-color);
+  --panel: var(--board-color);
+  --panel-strong: var(--board-color);
+  --panel-soft: var(--button-color);
+  --border: #8170af;
+  --text: var(--font-color);
+  --muted: var(--font-color);
+  --accent: var(--link-color);
+  --accent-2: var(--link-color);
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --success: #4ade80;
+  --shadow: 0 24px 60px #00000040;
+}
+
+body[data-palette="purple-mango"] .primary-button {
+  background: var(--button-color);
+  color: var(--font-color);
+  border-color: var(--border);
+  box-shadow: 0 12px 26px #8170af2e;
+}
+
+body[data-palette="purple-mango"] .brand-block {
+  background: var(--background-color);
+}
+
+body[data-palette="purple-mango"] .palette-edition-tag {
+  background: var(--button-color);
+  border-color: #8170af;
+  color: var(--link-color);
+  text-transform: none;
+}
+
 /* Chessboard Monochromatic Palette */
 body[data-palette="chessboard"] {
   --bg: #000000;
