@@ -11,7 +11,7 @@ let reloading = false;
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const timerBusy = () => !document.getElementById('timerState')?.classList.contains('ready');
+const timerBusy = () => !document.getElementById('timerState')?.classList.contains('ready') || document.body.dataset.historySaving === 'true';
 
 function showInstallOptions() {
   installButton.hidden = standalone() || (!installPrompt && !isIOS);
@@ -47,9 +47,11 @@ function showWaitingUpdate() {
   updateNotice.hidden = !registration?.waiting;
   updateButton.disabled = timerBusy() || requestedUpdate;
 }
-new MutationObserver(showWaitingUpdate).observe(document.getElementById('timerState'), {
+const updateStateObserver = new MutationObserver(showWaitingUpdate);
+updateStateObserver.observe(document.getElementById('timerState'), {
   attributes: true, attributeFilter: ['class'],
 });
+updateStateObserver.observe(document.body, { attributes: true, attributeFilter: ['data-history-saving'] });
 updateButton.addEventListener('click', () => {
   if (timerBusy() || !registration?.waiting || requestedUpdate) return;
   requestedUpdate = true;

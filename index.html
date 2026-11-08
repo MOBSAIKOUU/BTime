@@ -78,6 +78,10 @@
                   <input type="checkbox" id="holdToStartToggle" />
                 </label>
                 <label class="setting-row">
+                  <span>Hide time while solving</span>
+                  <input type="checkbox" id="hideTimeToggle" />
+                </label>
+                <label class="setting-row">
                   <span>Manual time entry</span>
                   <input type="checkbox" id="manualTimeToggle" />
                 </label>
@@ -216,8 +220,16 @@
 
               <button id="clearHistory" class="ghost-button" type="button">Clear</button>
             </div>
+            <p id="historyStorageStatus" class="history-storage-status" role="status" hidden></p>
+            <button id="retryHistory" class="history-retry" type="button" hidden>Retry saving history</button>
           </div>
           <ol id="solveList" class="solve-list"></ol>
+          <nav id="historyPagination" class="history-pagination" aria-label="Solve history pages" hidden>
+            <button id="newerHistory" type="button" aria-label="Show newer solves">Newer</button>
+            <span id="historyRange" aria-live="polite"></span>
+            <button id="olderHistory" type="button" aria-label="Show older solves">Older</button>
+          </nav>
+
 
           <!-- Visual 2D/3D Scramble Drawing -->
           <section class="scramble-visual-panel" aria-labelledby="scrambleVisualTitle">

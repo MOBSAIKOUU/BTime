@@ -24,6 +24,12 @@ const solveActions = document.getElementById('solveActions');
 const solveList = document.getElementById('solveList');
 const eventSelect = document.getElementById('eventSelect');
 const clearHistoryButton = document.getElementById('clearHistory');
+const historyPagination = document.getElementById('historyPagination');
+const historyRange = document.getElementById('historyRange');
+const olderHistoryButton = document.getElementById('olderHistory');
+const newerHistoryButton = document.getElementById('newerHistory');
+const historyStorageStatus = document.getElementById('historyStorageStatus');
+const retryHistoryButton = document.getElementById('retryHistory');
 
 // Statistics Elements
 const bestTimeEl = document.getElementById('bestTime');
@@ -48,6 +54,7 @@ const settingsMenu = document.getElementById('settingsMenu');
 const inspectionToggle = document.getElementById('inspectionToggle');
 const holdToStartToggle = document.getElementById('holdToStartToggle');
 const manualTimeToggle = document.getElementById('manualTimeToggle');
+const hideTimeToggle = document.getElementById('hideTimeToggle');
 const colorPaletteSelect = document.getElementById('colorPaletteSelect');
 const paletteEditionTag = document.getElementById('paletteEditionTag');
 
@@ -81,6 +88,7 @@ const INSPECTION_STORAGE_KEY = 'bcube-timer-inspection';
 const THEME_STORAGE_KEY = 'bcube-timer-theme';
 const HOLD_TO_START_STORAGE_KEY = 'bcube-timer-hold-to-start';
 const MANUAL_TIME_STORAGE_KEY = 'bcube-timer-manual-time';
+const HIDE_TIME_STORAGE_KEY = 'bcube-timer-hide-time';
 
 // Timing & Scramble Parameters
 const INSPECTION_SECONDS = 15;
@@ -88,7 +96,7 @@ const INSPECTION_GRACE_SECONDS = 1;
 const SCRAMBLE_PREFETCH_COUNT = 5;
 const REQUIRED_HOLD_MS = 300;
 const MIN_START_PRESS_MS = 100;
-const MAX_HISTORY_ENTRIES = 50;
+const HISTORY_PAGE_SIZE = 50; // Display limit only; persisted history has no fixed cap.
 const MAX_SCRAMBLE_LENGTH = 10000;
 const MAX_STORAGE_LENGTH = 1000000;
 const VALID_RESULTS = new Set(['ok', '+2', 'dnf']);
@@ -141,6 +149,7 @@ let inspectionEnabled = loadInspectionPreference();
 let colorPalette = loadThemePreference();
 let holdToStartEnabled = loadHoldToStartPreference();
 let manualTimeEntryEnabled = loadManualTimeEntryPreference();
+let hideTimeWhileSolving = loadHideTimePreference();
 
 // Input & Timing Flags
 let manualTimeDraftActive = false;
@@ -168,8 +177,27 @@ let scrambleRequestEvent = null;
 const scrambleQueues = new Map();
 let scrambleWarmupTimer = null;
 
-// Solves History State
-let recentSolves = loadHistory(currentEvent);
+// Only the latest page, an optional older page, and indexed aggregate stats stay in memory.
+const usesIndexedHistory = typeof indexedDB !== 'undefined';
+let historyStore = null;
+let historySnapshot = null;
+let historyLoading = usesIndexedHistory;
+let historyStatsPending = false;
+let historyInitialization = null;
+let historyFlushPromise = null;
+let historyNeedsRefresh = false;
+let historyRevision = 0;
+let historyBefore = null;
+let historyPageSolves = null;
+let historyFallbackOffset = 0;
+let historyPageLoading = false;
+let historyRenderedSignature = null;
+let lastSolveRecord = null;
+const historyNewerAnchors = [];
+const pendingHistoryOperations = [];
+const migratedHistoryEvents = new Set();
+const historyChannel = usesIndexedHistory && typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('btime-history') : null;
+let recentSolves = usesIndexedHistory ? [] : loadHistory(currentEvent);
 let lastSolveId = null;
 let selectedSolveId = null;
 const runningControlStates = new Map();
@@ -319,7 +347,7 @@ function normalizeSolve(entry, eventCode) {
 function normalizeHistory(entries, eventCode) {
   if (!Array.isArray(entries)) return [];
   const ids = new Set();
-  return entries.slice(-MAX_HISTORY_ENTRIES).map((entry) => normalizeSolve(entry, eventCode))
+  return entries.map((entry) => normalizeSolve(entry, eventCode))
     .filter((entry) => {
       if (!entry) return false;
       if (ids.has(entry.id)) entry.id = generateSolveId();
@@ -329,11 +357,190 @@ function normalizeHistory(entries, eventCode) {
 }
 
 function loadHistory(eventCode) {
-  return normalizeHistory(readStoredJson(eventStorageKey(eventCode)), eventCode);
+  try {
+    // The size guard for preferences must not truncate existing solve archives.
+    const value = localStorage.getItem(eventStorageKey(eventCode));
+    return normalizeHistory(value ? JSON.parse(value) : [], eventCode);
+  } catch { return []; }
 }
 
-function saveHistory() {
-  writeStoredValue(eventStorageKey(currentEvent), JSON.stringify(normalizeHistory(recentSolves, currentEvent)));
+function syncHistorySaveState() {
+  document.body.dataset.historySaving = String(historyLoading || pendingHistoryOperations.length > 0);
+}
+
+function historyMessage(message = '', retry = false) {
+  if (historyStorageStatus) { historyStorageStatus.textContent = message; historyStorageStatus.hidden = !message; }
+  if (retryHistoryButton) retryHistoryButton.hidden = !retry;
+}
+
+function resetHistoryPage() {
+  historyBefore = null;
+  historyPageSolves = null;
+  historyFallbackOffset = 0;
+  historyNewerAnchors.length = 0;
+}
+
+function findSolve(id) {
+  const matches = solve => String(solve?.id) === String(id);
+  return recentSolves.find(matches) || historyPageSolves?.find(matches) ||
+    (matches(lastSolveRecord) ? lastSolveRecord : null) ||
+    (matches(historySnapshot?.bestSingle) ? historySnapshot.bestSingle : null) ||
+    historySnapshot?.bestAvg5?.solves.find(matches);
+}
+
+async function migrateHistoryEvent(eventCode) {
+  if (migratedHistoryEvents.has(eventCode)) return;
+  await historyStore.migrate(eventCode, loadHistory(eventCode));
+  migratedHistoryEvents.add(eventCode);
+}
+
+async function refreshStoredHistory(eventCode = currentEvent) {
+  const revision = historyRevision;
+  const before = historyBefore;
+  await migrateHistoryEvent(eventCode);
+  const snapshot = await historyStore.snapshot(eventCode, before);
+  if (eventCode !== currentEvent || revision !== historyRevision || pendingHistoryOperations.length) return;
+  if (before !== null && !snapshot.page.length && snapshot.count) {
+    resetHistoryPage();
+    return refreshStoredHistory(eventCode);
+  }
+  historySnapshot = snapshot;
+  recentSolves = snapshot.latest;
+  historyPageSolves = before === null ? null : snapshot.page;
+  historyStatsPending = false;
+  renderStats();
+  renderHistory();
+  syncSolveActionAvailability();
+}
+
+async function initializeHistory() {
+  if (historyInitialization) return historyInitialization;
+  historyMessage();
+  historyInitialization = (async () => {
+    try {
+      const { openHistoryStore } = await import('/assets/js/history-store.js');
+      historyStore = await openHistoryStore();
+      await refreshStoredHistory();
+      historyLoading = false;
+      syncHistorySaveState();
+      historyMessage();
+      syncStatisticButtons();
+      renderHistory();
+      return true;
+    } catch (error) {
+      historyLoading = false;
+      syncHistorySaveState();
+      historyMessage('History storage is unavailable. New solves stay in this tab until Retry succeeds.', true);
+      console.error('Unable to load solve history.', error);
+      return false;
+    }
+  })();
+  return historyInitialization;
+}
+
+function flushHistoryOperations() {
+  if (historyFlushPromise) return historyFlushPromise;
+  historyFlushPromise = (async () => {
+    try {
+      if (!historyStore && !(await initializeHistory())) return;
+      do {
+        while (pendingHistoryOperations.length) {
+          const operation = pendingHistoryOperations[0];
+          try {
+            await migrateHistoryEvent(operation.eventCode);
+            if (operation.type === 'append') await historyStore.append(operation.eventCode, operation.entry);
+            else if (operation.type === 'change') await historyStore.change(operation.eventCode, operation.id, operation.action);
+            else if (operation.type === 'clear') {
+              await historyStore.clear(operation.eventCode);
+              writeStoredValue(eventStorageKey(operation.eventCode), '[]');
+            }
+          } catch (error) {
+            // An explicit Clear supersedes unsaved changes for this event, even if
+            // the in-flight write fails because storage is full.
+            if (!pendingHistoryOperations.includes(operation)) continue;
+            throw error;
+          }
+          const index = pendingHistoryOperations.indexOf(operation);
+          if (index !== -1) pendingHistoryOperations.splice(index, 1);
+          historyChannel?.postMessage({ eventCode: operation.eventCode });
+        }
+        historyNeedsRefresh = false;
+        await refreshStoredHistory();
+      } while (pendingHistoryOperations.length || historyNeedsRefresh);
+      historyMessage();
+    } catch (error) {
+      historyMessage('Could not save history. Keep this tab open and Retry after freeing browser storage.', true);
+      console.error('Unable to save solve history.', error);
+    } finally { historyFlushPromise = null; syncHistorySaveState(); }
+  })();
+  return historyFlushPromise;
+}
+
+function saveHistory(operation) {
+  if (!usesIndexedHistory) {
+    try { localStorage.setItem(eventStorageKey(currentEvent), JSON.stringify(normalizeHistory(recentSolves, currentEvent))); }
+    catch { historyMessage('Could not save history. Keep this tab open and free browser storage.', true); }
+    return;
+  }
+  if (!operation) return;
+  historyRevision += 1;
+  if (operation.type === 'clear') {
+    for (let index = pendingHistoryOperations.length - 1; index >= 0; index -= 1) {
+      if (pendingHistoryOperations[index].eventCode === currentEvent) pendingHistoryOperations.splice(index, 1);
+    }
+  }
+  pendingHistoryOperations.push({ ...operation, eventCode: currentEvent,
+    ...(operation.entry ? { entry: { ...operation.entry } } : {}) });
+  syncHistorySaveState();
+  void flushHistoryOperations();
+}
+
+function appendToVisibleHistory(entry) {
+  resetHistoryPage();
+  recentSolves.push(entry);
+  if (usesIndexedHistory) recentSolves = recentSolves.slice(-HISTORY_PAGE_SIZE);
+  lastSolveId = entry.id;
+  lastSolveRecord = entry;
+  if (historySnapshot) {
+    const value = getSolveValue(entry);
+    historySnapshot.count += 1;
+    if (value !== null) { historySnapshot.validCount += 1; historySnapshot.total += value; }
+    if (value !== null && (!historySnapshot.bestSingle || value < getSolveValue(historySnapshot.bestSingle))) historySnapshot.bestSingle = entry;
+    const latestAverage = getTrimmedAverage(recentSolves, 5);
+    if (latestAverage.value !== null && !latestAverage.isDnf &&
+        (!historySnapshot.bestAvg5 || latestAverage.value < historySnapshot.bestAvg5.value)) historySnapshot.bestAvg5 = latestAverage;
+    historySnapshot.latest = recentSolves;
+    historySnapshot.avg5 = latestAverage;
+    historySnapshot.avg12 = getTrimmedAverage(recentSolves, 12);
+    historySnapshot.pageOffset = 0;
+    historySnapshot.hasOlder = historySnapshot.count > HISTORY_PAGE_SIZE;
+  }
+  saveHistory({ type: 'append', entry });
+}
+
+async function browseHistory(older) {
+  if (historyLoading || historyPageLoading || state !== 'ready') return;
+  if (!usesIndexedHistory) {
+    historyFallbackOffset = Math.max(0, historyFallbackOffset + (older ? HISTORY_PAGE_SIZE : -HISTORY_PAGE_SIZE));
+    renderHistory();
+    return;
+  }
+  if (!historyStore || pendingHistoryOperations.length) return;
+  const page = historyPageSolves || recentSolves;
+  if (older) {
+    if (!historySnapshot?.hasOlder || !page.length) return;
+    historyNewerAnchors.push(historyBefore);
+    historyBefore = page[0].sequence;
+  } else {
+    if (!historyNewerAnchors.length) return;
+    historyBefore = historyNewerAnchors.pop();
+  }
+  historyRevision += 1;
+  historyPageLoading = true;
+  renderHistory();
+  try { await refreshStoredHistory(); }
+  catch (error) { historyMessage('Could not load older solves. Please Retry.', true); }
+  finally { historyPageLoading = false; renderHistory(); }
 }
 
 function loadInspectionPreference() {
@@ -381,6 +588,14 @@ function loadManualTimeEntryPreference() {
 
 function saveManualTimeEntryPreference() {
   writeStoredValue(MANUAL_TIME_STORAGE_KEY, JSON.stringify(manualTimeEntryEnabled));
+}
+
+function loadHideTimePreference() {
+  return readBooleanPreference(HIDE_TIME_STORAGE_KEY, false);
+}
+
+function saveHideTimePreference() {
+  writeStoredValue(HIDE_TIME_STORAGE_KEY, JSON.stringify(hideTimeWhileSolving));
 }
 
 function applyTheme() {
@@ -616,9 +831,10 @@ function restoreScramble(eventCode = currentEvent) {
  * @returns {string}
  */
 function formatTime(ms) {
-  const totalSeconds = ms / 1000;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
+  // Round before splitting so 59.995 seconds carries into the next minute.
+  const hundredths = Math.round(ms / 10);
+  const minutes = Math.floor(hundredths / 6000);
+  const seconds = (hundredths % 6000) / 100;
 
   if (minutes > 0) {
     return `${minutes}:${seconds.toFixed(2).padStart(5, '0')}`;
@@ -685,20 +901,20 @@ function getBestAverage(solves, solveCount) {
 
 function syncStatisticButtons() {
   for (const [kind, button] of Object.entries(statisticButtons)) {
-    if (button) button.disabled = state !== 'ready' || !statisticTargets[kind];
+    if (button) button.disabled = state !== 'ready' || historyLoading || historyStatsPending || !statisticTargets[kind];
   }
 }
 
 function renderStats() {
   if (!bestTimeEl || !avg5El || !bestAvg5El || !avg12El) return;
   const validSolves = recentSolves.filter(solve => Number.isFinite(getSolveValue(solve)));
-  const bestSingle = validSolves.reduce((best, solve) =>
+  const bestSingle = historySnapshot ? historySnapshot.bestSingle : validSolves.reduce((best, solve) =>
     !best || getSolveValue(solve) < getSolveValue(best) ? solve : best, null);
-  const meanTime = validSolves.length
+  const meanTime = historySnapshot ? (historySnapshot.validCount ? historySnapshot.total / historySnapshot.validCount : null) : validSolves.length
     ? validSolves.reduce((sum, solve) => sum + getSolveValue(solve), 0) / validSolves.length : null;
-  const bestAvg5 = getBestAverage(recentSolves, 5);
-  const currentAvg5 = getTrimmedAverage(recentSolves, 5);
-  const currentAvg12 = getTrimmedAverage(recentSolves, 12);
+  const bestAvg5 = historySnapshot ? historySnapshot.bestAvg5 : getBestAverage(recentSolves, 5);
+  const currentAvg5 = historySnapshot ? historySnapshot.avg5 : getTrimmedAverage(recentSolves, 5);
+  const currentAvg12 = historySnapshot ? historySnapshot.avg12 : getTrimmedAverage(recentSolves, 12);
   statisticTargets = {
     bestSingle, bestAvg5,
     avg5: currentAvg5.solves.length ? currentAvg5 : null,
@@ -724,7 +940,7 @@ function formatAverageBreakdown(kind, average) {
 }
 
 function showStatisticDetails(kind) {
-  if (state !== 'ready' || averageDetails?.open || solveDetails?.open) return;
+  if (state !== 'ready' || historyLoading || historyStatsPending || averageDetails?.open || solveDetails?.open) return;
   const target = statisticTargets[kind];
   if (!target) return;
   if (kind === 'bestSingle') {
@@ -761,17 +977,33 @@ function renderHistory() {
     return;
   }
 
+  const total = historySnapshot ? historySnapshot.count : recentSolves.length;
+  const offset = usesIndexedHistory ? historySnapshot?.pageOffset || 0 : historyFallbackOffset;
+  const visible = usesIndexedHistory ? historyPageSolves || recentSolves
+    : recentSolves.slice(Math.max(0, recentSolves.length - offset - HISTORY_PAGE_SIZE), recentSolves.length - offset);
+  if (clearHistoryButton) clearHistoryButton.disabled = historyLoading || state === 'solving';
+  if (historyPagination) historyPagination.hidden = total <= HISTORY_PAGE_SIZE;
+  if (historyRange) historyRange.textContent = total ? (total - offset - visible.length + 1) + '–' + (total - offset) + ' of ' + total : '';
+  const busy = historyLoading || historyPageLoading || state !== 'ready' || pendingHistoryOperations.length > 0;
+  if (olderHistoryButton) olderHistoryButton.disabled = busy || (usesIndexedHistory ? !historySnapshot?.hasOlder : offset + HISTORY_PAGE_SIZE >= total);
+  if (newerHistoryButton) newerHistoryButton.disabled = busy || (usesIndexedHistory ? !historyNewerAnchors.length : offset === 0);
+
+  // A committed snapshot usually matches the optimistic rows. Preserve their DOM
+  // nodes so an asynchronous save cannot detach a button under a tapping finger.
+  const signature = JSON.stringify([total, offset, historyLoading, visible.map(solve => [solve.id, solve.baseTimeMs, solve.result, solve.tag])]);
+  if (signature === historyRenderedSignature) return;
+  historyRenderedSignature = signature;
   solveList.replaceChildren();
 
-  if (!recentSolves.length) {
+  if (!visible.length) {
     const emptyItem = document.createElement('li');
     emptyItem.className = 'solve-empty';
-    emptyItem.textContent = 'No solves yet in this session.';
+    emptyItem.textContent = historyLoading ? 'Loading saved solves...' : 'No solves yet in this session.';
     solveList.appendChild(emptyItem);
     return;
   }
 
-  [...recentSolves].reverse().forEach((entry, index) => {
+  [...visible].reverse().forEach((entry, index) => {
     const item = document.createElement('li');
     item.className = 'solve-item';
 
@@ -782,7 +1014,7 @@ function renderHistory() {
 
     const indexLabel = document.createElement('span');
     indexLabel.className = 'index';
-    indexLabel.textContent = String(recentSolves.length - index);
+    indexLabel.textContent = String(total - offset - index);
 
     const timeLabel = document.createElement('span');
     timeLabel.className = 'time';
@@ -819,7 +1051,7 @@ function showSolveDetails(solveId) {
     return;
   }
 
-  const entry = recentSolves.find((solve) => String(solve.id) === solveId);
+  const entry = findSolve(solveId);
   if (!entry) {
     return;
   }
@@ -857,15 +1089,12 @@ function showSolveDetails(solveId) {
  * @param {'dnf' | 'plus2' | 'reset' | 'delete'} action
  */
 function applySolveAction(solveId, action) {
-  const targetIndex = recentSolves.findIndex((solve) => String(solve.id) === solveId);
-  if (targetIndex === -1) {
-    return;
-  }
-
-  const entry = recentSolves[targetIndex];
+  const entry = findSolve(solveId);
+  if (!entry) return;
 
   if (action === 'delete') {
-    recentSolves.splice(targetIndex, 1);
+    recentSolves = recentSolves.filter(solve => String(solve.id) !== solveId);
+    if (historyPageSolves) historyPageSolves = historyPageSolves.filter(solve => String(solve.id) !== solveId);
   } else if (action === 'dnf') {
     entry.result = 'dnf';
     entry.timeMs = null;
@@ -884,7 +1113,8 @@ function applySolveAction(solveId, action) {
     syncSolveActionAvailability();
   }
 
-  saveHistory();
+  if (usesIndexedHistory) historyStatsPending = true;
+  saveHistory({ type: 'change', id: solveId, action });
   renderStats();
   renderHistory();
 
@@ -1073,6 +1303,7 @@ function cancelInspectionGracePeriod() {
  * Initiates the 15-second WCA inspection countdown.
  */
 function beginInspection() {
+  if (historyLoading) return;
   if (!timerPanel || !timerDisplay) {
     return;
   }
@@ -1131,6 +1362,7 @@ function beginInspection() {
  * Starts the live solving timer.
  */
 function beginSolve() {
+  if (historyLoading) return;
   cancelInspectionGracePeriod();
   if (!timerPanel || !timerDisplay) {
     return;
@@ -1139,6 +1371,12 @@ function beginSolve() {
   cancelAnimation();
   setTimerState('solving');
   solveStartTimestamp = performance.now();
+
+  if (hideTimeWhileSolving) {
+    updateDisplay('...');
+    return; // Timing uses the start timestamp; no live display frames are needed.
+  }
+  updateDisplay(formatTime(0));
 
   const tick = () => {
     const elapsed = performance.now() - solveStartTimestamp;
@@ -1150,26 +1388,12 @@ function beginSolve() {
 }
 
 function recordInspectionDnf() {
+  if (historyLoading) return;
   cancelAnimation();
-  const solveEntry = {
-    id: generateSolveId(),
-    baseTimeMs: 0,
-    timeMs: null,
-    result: 'dnf',
-    tag: getEventLabel(currentEvent),
-    scramble: scramble.join(' '),
-  };
-
-  recentSolves.push(solveEntry);
-  lastSolveId = solveEntry.id;
-  recentSolves = recentSolves.slice(-MAX_HISTORY_ENTRIES);
-  saveHistory();
-  renderStats();
-  renderHistory();
+  recordSolve(0, 'dnf');
   setTimerState('ready');
   updateDisplay('DNF');
   syncSolveActionAvailability();
-  generateScramble();
   solveStartTimestamp = null;
   inspectionStartTimestamp = null;
 }
@@ -1201,10 +1425,7 @@ function recordSolve(finalTime, result = 'ok') {
     scramble: scrambleUsed,
   };
 
-  recentSolves.push(solveEntry);
-  lastSolveId = solveEntry.id;
-  recentSolves = recentSolves.slice(-MAX_HISTORY_ENTRIES);
-  saveHistory();
+  appendToVisibleHistory(solveEntry);
   renderStats();
   renderHistory();
   generateScramble();
@@ -1215,7 +1436,8 @@ function recordSolve(finalTime, result = 'ok') {
    ========================================================================== */
 
 /**
- * Parses user-entered manual time strings (e.g. "12.34", "1234", "dnf", "12.34+2").
+ * Parses decimal seconds, compact minutes/seconds/hundredths ("12000" = "1:20.00"),
+ * explicit minute times ("1:20.00"), and optional +2/DNF results.
  * @param {string} value
  * @returns {{ timeMs: number, result: string } | null}
  */
@@ -1226,14 +1448,25 @@ function parseManualTime(value) {
     return { timeMs: 0, result: 'dnf' };
   }
 
-  const match = enteredTime.match(/^(\d+(?:\.\d+)?)(\+2)?$/);
+  const match = enteredTime.match(/^(\d+(?::\d{1,2})?(?:\.\d+)?)(\+2)?$/);
   if (!match) {
     return null;
   }
 
-  const parsedNumber = Number(match[1]);
-  const seconds = match[1].includes('.') ? parsedNumber : parsedNumber / 100;
-  const timeMs = Math.round(seconds * 1000);
+  const numericTime = match[1];
+  let timeMs;
+  if (numericTime.includes(':')) {
+    const [minutes, seconds] = numericTime.split(':').map(Number);
+    if (seconds >= 60) return null;
+    timeMs = Math.round((minutes * 60 + seconds) * 1000);
+  } else if (numericTime.includes('.')) {
+    timeMs = Math.round(Number(numericTime) * 1000);
+  } else {
+    // The final four digits are SScc; any preceding digits are minutes.
+    const digits = Number(numericTime);
+    if (!Number.isSafeInteger(digits)) return null;
+    timeMs = Math.floor(digits / 10000) * 60000 + (digits % 10000) * 10;
+  }
 
   if (!Number.isSafeInteger(timeMs) || timeMs <= 0 || timeMs > Number.MAX_SAFE_INTEGER - 2000) {
     return null;
@@ -1243,7 +1476,7 @@ function parseManualTime(value) {
 }
 
 function recordManualTime(resultOverride = null) {
-  if (!timerDisplay || !manualTimeEntryEnabled || state !== 'ready') {
+  if (!timerDisplay || !manualTimeEntryEnabled || state !== 'ready' || historyLoading) {
     return;
   }
 
@@ -1367,6 +1600,7 @@ function isSpaceKey(event) {
 
 // Shared delayed-start feedback for keyboard and touch, including optional haptics.
 function prepareDelayedStart(vibrate = false, delayMs = REQUIRED_HOLD_MS) {
+  if (historyLoading) return;
   const inspecting = state === 'inspecting' || state === 'readyToSolve';
   isHoldReady = false;
   if (holdTimeoutId !== null) clearTimeout(holdTimeoutId);
@@ -1495,7 +1729,7 @@ window.addEventListener('keydown', (event) => {
     if (event.repeat) return;
 
     const solveId = solveDetails?.open ? selectedSolveId : lastSolveId;
-    const entry = recentSolves.find((solve) => String(solve.id) === String(solveId));
+    const entry = findSolve(solveId);
     if (entry && (shortcutAction !== 'reset' || entry.result === '+2' || entry.result === 'dnf')) {
       if (shortcutAction === 'delete') {
         requestDeleteSolve(entry);
@@ -1633,7 +1867,7 @@ window.addEventListener('keyup', (event) => {
 
     if (state === 'holding') {
       setTimerState('ready');
-      const lastSolve = recentSolves.find((s) => String(s.id) === String(lastSolveId));
+      const lastSolve = findSolve(lastSolveId);
       if (lastSolve && Number.isFinite(lastSolve.baseTimeMs)) {
         updateDisplay(formatTime(lastSolve.baseTimeMs));
       } else {
@@ -1698,8 +1932,25 @@ if (eventSelect) {
     currentEvent = selectedEvent.code;
     syncEventSelectorWidth();
     saveEventPreference();
-    recentSolves = loadHistory(currentEvent);
+    historyRevision += 1;
+    resetHistoryPage();
+    historySnapshot = null;
+    historyStatsPending = false;
+    historyLoading = usesIndexedHistory;
+    syncHistorySaveState();
+    recentSolves = usesIndexedHistory ? [] : loadHistory(currentEvent);
+    lastSolveRecord = null;
     lastSolveId = null;
+    if (usesIndexedHistory) {
+      const eventCode = currentEvent;
+      void initializeHistory().then(async ready => {
+        if (!ready) return;
+        try { await flushHistoryOperations(); }
+        finally {
+          if (eventCode === currentEvent) { historyLoading = false; syncHistorySaveState(); syncStatisticButtons(); renderHistory(); }
+        }
+      });
+    }
     resetSession();
     restoreScramble(currentEvent);
     renderStats();
@@ -1819,10 +2070,15 @@ if (cancelClearHistoryButton && clearHistoryDialog) {
 if (confirmClearHistoryButton && clearHistoryDialog) {
   bindConfirmationAction(confirmClearHistoryButton, () => {
     if (!clearHistoryDialog.open || state === 'solving') return;
+    if (historyLoading) return;
     recentSolves = [];
     lastSolveId = null;
+    lastSolveRecord = null;
+    resetHistoryPage();
+    if (historySnapshot) historySnapshot = { count: 0, validCount: 0, total: 0, latest: [],
+      bestSingle: null, bestAvg5: null, avg5: getTrimmedAverage([], 5), avg12: getTrimmedAverage([], 12), hasOlder: false, pageOffset: 0 };
     resetSession();
-    saveHistory();
+    saveHistory({ type: 'clear' });
     renderStats();
     renderHistory();
     clearHistoryDialog.close();
@@ -1830,6 +2086,30 @@ if (confirmClearHistoryButton && clearHistoryDialog) {
     timerPanel?.focus({ preventScroll: true });
   });
 }
+
+historyChannel?.addEventListener('message', event => {
+  if (event.data?.eventCode === currentEvent && !historyLoading && state === 'ready') {
+    historyNeedsRefresh = true;
+    void flushHistoryOperations();
+  }
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && historyStore && !historyLoading && state === 'ready') {
+    historyNeedsRefresh = true;
+    void flushHistoryOperations();
+  }
+});
+olderHistoryButton?.addEventListener('click', () => void browseHistory(true));
+newerHistoryButton?.addEventListener('click', () => void browseHistory(false));
+retryHistoryButton?.addEventListener('click', () => {
+  if (!usesIndexedHistory) { saveHistory(); return; }
+  if (historyFlushPromise) return;
+  historyStore?.close();
+  historyStore = null;
+  historyInitialization = null;
+  migratedHistoryEvents.clear();
+  void flushHistoryOperations();
+});
 
 // Native buttons support both touch and keyboard activation.
 for (const [kind, button] of Object.entries(statisticButtons)) {
@@ -1989,7 +2269,7 @@ async function copyText(text, container, trigger) {
 }
 
 copySolveScramble?.addEventListener('click', async () => {
-  const entry = recentSolves.find((solve) => String(solve.id) === String(selectedSolveId));
+  const entry = findSolve(selectedSolveId);
   if (!entry?.scramble || state === 'solving') return;
   const solveId = selectedSolveId;
   try {
@@ -2197,7 +2477,7 @@ if (timerPanel) {
 
       if (state === 'holding') {
         setTimerState('ready');
-        const lastSolve = recentSolves.find((s) => String(s.id) === String(lastSolveId));
+        const lastSolve = findSolve(lastSolveId);
         if (lastSolve && Number.isFinite(lastSolve.baseTimeMs)) {
           updateDisplay(formatTime(lastSolve.baseTimeMs));
         } else {
@@ -2231,7 +2511,7 @@ if (timerPanel) {
 
     if (state === 'holding') {
       setTimerState('ready');
-      const lastSolve = recentSolves.find((s) => String(s.id) === String(lastSolveId));
+      const lastSolve = findSolve(lastSolveId);
       if (lastSolve && Number.isFinite(lastSolve.baseTimeMs)) {
         updateDisplay(formatTime(lastSolve.baseTimeMs));
       } else {
@@ -2277,6 +2557,15 @@ if (holdToStartToggle) {
   });
 }
 
+// Hide Live Solve Time Toggle
+if (hideTimeToggle) {
+  hideTimeToggle.checked = hideTimeWhileSolving;
+  hideTimeToggle.addEventListener('change', () => {
+    hideTimeWhileSolving = hideTimeToggle.checked;
+    saveHideTimePreference();
+  });
+}
+
 // Manual Time Entry Toggle
 if (manualTimeToggle) {
   manualTimeToggle.checked = manualTimeEntryEnabled;
@@ -2300,4 +2589,9 @@ renderHistory();
 if (timerPanel) {
   resetSession();
   restoreScramble(currentEvent);
+}
+
+syncHistorySaveState();
+if (usesIndexedHistory) {
+  void initializeHistory().then(ready => { if (ready) void flushHistoryOperations(); });
 }

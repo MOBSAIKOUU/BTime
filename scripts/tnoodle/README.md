@@ -10,6 +10,17 @@ original Maven source archives, versions and SHA-256 checksums. The module is
 GPL-3.0; upstream license texts are in `../../license/`. TeaVM's runtime is Apache-2.0
 and SLF4J's no-op logging implementation is MIT licensed.
 
+## Source scope
+
+Only sources needed to compile BTime's eleven puzzle events, the browser bridge,
+and the 4x4 table exporter are retained. Unused FTO solvers, blindfold/fewest-moves
+variants, the random-turn 4x4 variant, the reflection-based registry, the Java
+scramble cache, image-info helper, and the upstream test runner are omitted.
+SVG support remains because the retained puzzle classes reference it when compiling.
+
+`target/` is disposable Maven output and is ignored by Git. It can be removed
+after publishing the generated browser assets; a rebuild recreates it.
+
 ## Browser adaptations
 
 - `Puzzle.getSecureRandom()` uses `new SecureRandom()`. TeaVM implements it using

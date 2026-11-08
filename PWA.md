@@ -50,7 +50,7 @@ when unavailable. Analytics is not cached and may fail harmlessly offline.
 
 HTML uses the network first and falls back to the installed `/index.html` offline.
 Static files use the cache first. API/payment endpoints and arbitrary cross-origin
-requests are not cached. Saved solves and preferences remain in localStorage;
+requests are not cached. Saved solves live in IndexedDB; preferences remain in localStorage;
 service-worker updates do not clear them.
 
 ## Hosting
@@ -179,3 +179,18 @@ and home-screen launch still require real devices.
   never treat an offline CSS cache or localStorage flag as proof of purchase.
 - Bundled third-party source has upstream licenses. Keep the included notices and
   source when redistributing. See `license/OFFLINE-DEPENDENCIES.md`.
+
+## Scalable solve history
+
+- There is no fixed solve-count cap. Browser quota and available device storage still apply.
+- `assets/js/history-store.js` stores solves individually in the `btime-history` IndexedDB database.
+- Per-event totals and indexes provide Best Single, Best Ao5, current Ao5/Ao12, and Mean without rescanning the archive.
+- Appending a solve updates one rolling Ao5 window. Editing/deleting a solve updates at most five affected windows.
+- Only the newest 50 records, one optional older page, and the current best-result breakdowns remain in UI memory.
+- Newer/Older buttons use sequence cursors, so older solves stay accessible without building an unbounded DOM.
+- Existing localStorage records migrate once per event in an atomic transaction. The old data remains as a backup; a committed event marker prevents duplicate migration, including after Clear.
+- Failed writes stay queued in the tab and expose a Retry action; history is never silently pruned to recover space.
+- Browsers without IndexedDB use basic localStorage persistence, without a solve cap, with reduced scalability.
+- PWA update activation waits until queued history saves finish.
+- Service-worker cache changes do not delete the database. Clearing browser site data does remove saved solves.
+- Optional regression check: `node tests/history-browser.cjs` with the same Playwright environment variables as the other browser checks. It compares indexed statistics to an independent oracle, tests migration, edits/deletes, concurrency, quota-failure retries, and measures the solve UI path against a 20,000-record archive.

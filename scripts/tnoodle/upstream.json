@@ -28,11 +28,5 @@
     "version": "0.20.0",
     "url": "https://repo.maven.apache.org/maven2/org/worldcubeassociation/tnoodle/scrambler-sq12phase/0.20.0/scrambler-sq12phase-0.20.0-sources.jar",
     "sha256": "367d1fd8db231531525ee3d8d54665d99baa2045fa67caf31ff107305b6b31ac"
-  },
-  {
-    "name": "scrambler-fto3phase",
-    "version": "0.20.0",
-    "url": "https://repo.maven.apache.org/maven2/org/worldcubeassociation/tnoodle/scrambler-fto3phase/0.20.0/scrambler-fto3phase-0.20.0-sources.jar",
-    "sha256": "2525c0af10e24100fc8a8705b8543cd1d611c6c8ed97401a89374eb4f94be24a"
   }
 ]

@@ -132,19 +132,19 @@ test('preserves valid/legacy solves and derives penalty times from the base time
   assert.equal(app.run('normalizeSolve({id:1,timeMs:"12340",scramble:"R U"}, "333").baseTimeMs'), 12340);
   assert.equal(app.run('normalizeSolve({baseTimeMs:10000,timeMs:999,result:"+2"}, "333").timeMs'), 12000);
   assert.equal(app.run('normalizeSolve({result:"dnf"}, "333").timeMs'), null);
-  assert.equal(app.run('normalizeHistory(Array.from({length:60}, (_,i)=>({id:i,baseTimeMs:i})), "333")[0].id'), '10');
+  assert.equal(app.run('normalizeHistory(Array.from({length:60}, (_,i)=>({id:i,baseTimeMs:i})), "333")[0].id'), '0');
   assert.equal(app.run('new Set(normalizeHistory([{id:"a",baseTimeMs:1},{id:"a",baseTimeMs:2}], "333").map(s=>s.id)).size'), 2);
 });
 
-test('booleans use strict defaults, and history saves the newest fifty records', () => {
+test('booleans use strict defaults, and basic storage preserves every solve', () => {
   const app = createApp({ 'bcube-timer-inspection': '"false"', 'bcube-timer-hold-to-start': '{}' });
   assert.equal(app.run('inspectionEnabled'), true);
   assert.equal(app.run('holdToStartEnabled'), false);
   app.run('recentSolves = Array.from({length:60}, (_,i)=>({id:String(i),baseTimeMs:i,result:"ok"})); saveHistory()');
   const saved = JSON.parse(app.storage.get('bcube-timer-history'));
-  assert.equal(saved.length, 50);
-  assert.equal(saved[0].id, '10');
-  assert.equal(saved[49].id, '59');
+  assert.equal(saved.length, 60);
+  assert.equal(saved[0].id, '0');
+  assert.equal(saved[59].id, '59');
 });
 
 test('manual time entry handles ordinary times/penalties and rejects invalid numbers', () => {
@@ -155,6 +155,101 @@ test('manual time entry handles ordinary times/penalties and rejects invalid num
   for (const value of ['-1', 'Infinity', '<script>', '9'.repeat(64), '0']) {
     assert.equal(app.run(`parseManualTime(${JSON.stringify(value)})`), null);
   }
+});
+
+test('manual entries interpret compact minutes and explicit minute notation', () => {
+  const app = createApp();
+  for (const [input, expected] of [
+    ['900', 9000], ['1234', 12340], ['12000', 80000], ['12345', 83450],
+    ['10000', 60000], ['123456', 754560], ['0012000', 80000],
+    ['1:20', 80000], ['1:20.0', 80000], ['1:20.00', 80000],
+    ['12:34.56', 754560], ['120.00', 120000], ['6000', 60000],
+  ]) {
+    const parsed = app.run('parseManualTime(' + JSON.stringify(input) + ')');
+    assert.equal(parsed.timeMs, expected, input);
+    assert.equal(parsed.result, 'ok', input);
+  }
+  assert.equal(app.run('parseManualTime("12000+2").timeMs'), 80000);
+  assert.equal(app.run('parseManualTime("1:20.00+2").result'), '+2');
+  for (const input of ['1:60', '1:60.00', '1:20:00', '1:', ':20', '0:00', '1:-20']) {
+    assert.equal(app.run('parseManualTime(' + JSON.stringify(input) + ')'), null, input);
+  }
+});
+
+test('manual submission saves compact minute times and applies penalties to the base time', () => {
+  const app = createApp({ 'bcube-timer-manual-time': 'true' });
+  const input = app.element('timerDisplay');
+  for (const [value, timeMs, result] of [['900', 9000, 'ok'], ['12000', 80000, 'ok'], ['12000+2', 80000, '+2']]) {
+    input.value = value;
+    input.dispatch('input');
+    input.dispatch('keydown', { key: 'Enter' });
+    assert.equal(app.run('recentSolves.at(-1).baseTimeMs'), timeMs);
+    assert.equal(app.run('recentSolves.at(-1).result'), result);
+    assert.equal(input.value, '', 'ready for the next manual entry');
+  }
+  assert.equal(app.run('formatHistoryValue(recentSolves.at(-1))'), '1:22.00 +2');
+});
+
+test('time display carries rounded hundredths into the next minute', () => {
+  const app = createApp();
+  for (const [timeMs, display] of [[9000, '9.00'], [80000, '1:20.00'], [59994, '59.99'],
+    [59995, '1:00.00'], [60000, '1:00.00'], [119999, '2:00.00']]) {
+    assert.equal(app.run('formatTime(' + timeMs + ')'), display);
+  }
+});
+
+test('hide-time preference defaults off and survives toggling and reloading', () => {
+  const app = createApp();
+  assert.equal(app.run('hideTimeWhileSolving'), false);
+  const toggle = app.element('hideTimeToggle');
+  assert.equal(toggle.checked, false);
+  toggle.checked = true;
+  toggle.dispatch('change');
+  assert.equal(app.run('hideTimeWhileSolving'), true);
+  assert.equal(app.storage.get('bcube-timer-hide-time'), 'true');
+  const restored = createApp(Object.fromEntries(app.storage));
+  assert.equal(restored.element('hideTimeToggle').checked, true);
+  restored.element('hideTimeToggle').checked = false;
+  restored.element('hideTimeToggle').dispatch('change');
+  assert.equal(restored.storage.get('bcube-timer-hide-time'), 'false');
+  assert.equal(createApp({}, true).run('hideTimeWhileSolving'), false);
+});
+
+for (const input of ['keyboard', 'touch']) {
+  test(input + ': hidden solve time keeps inspection visible and reveals the correct result on stop', () => {
+    const app = createApp({ 'bcube-timer-hide-time': 'true' });
+    app.run('beginInspection()');
+    app.advance(1000);
+    app.frame();
+    assert.equal(app.element('timerDisplay').value, '14');
+    const target = app.element('timerPanel');
+    if (input === 'keyboard') app.window.dispatch('keydown', { key: ' ', code: 'Space', target });
+    else target.dispatch('pointerdown', { pointerType: 'touch' });
+    app.holdReady(100);
+    if (input === 'keyboard') app.window.dispatch('keyup', { key: ' ', code: 'Space', target });
+    else target.dispatch('pointerup', { pointerType: 'touch' });
+    assert.equal(app.run('state'), 'solving');
+    assert.equal(app.element('timerDisplay').value, '...');
+    app.advance(81234);
+    app.frame();
+    assert.equal(app.element('timerDisplay').value, '...', 'elapsed digits stay hidden');
+    if (input === 'keyboard') app.window.dispatch('keydown', { key: 'a', code: 'KeyA', target });
+    else target.dispatch('pointerdown', { pointerType: 'touch' });
+    assert.equal(app.run('state'), 'ready');
+    assert.equal(app.run('recentSolves.at(-1).baseTimeMs'), 81234);
+    assert.equal(app.element('timerDisplay').value, '1:21.23');
+    app.run('resetSession()');
+    assert.equal(app.element('timerDisplay').value, '0.00');
+  });
+}
+
+test('live solve time remains visible when hiding is disabled', () => {
+  const app = createApp();
+  app.run('beginSolve()');
+  assert.equal(app.element('timerDisplay').value, '0.00');
+  app.advance(81234);
+  app.frame();
+  assert.equal(app.element('timerDisplay').value, '1:21.23');
 });
 
 for (const input of ['keyboard', 'touch']) {
@@ -546,14 +641,14 @@ test('current Ao5 and Ao12 export their chronological windows and exact exclusio
   app.element('stat-avg5').dispatch('click');
   assert.equal(app.element('averageDetails').open, true);
   assert.equal(app.element('averageDetailsText').textContent, [
-    'ao5: 7.00', 'Scramble Generated by TNoodle', '(4.00) - R U2', '6.00 - R U',
+    'Average of 5: 7.00', 'BTime — Scrambles Powered by TNoodle', '(4.00) - R U2', '6.00 - R U',
     '5.00 - R U2', '10.00 - R U', '(11.00) - R U2',
   ].join('\n'));
   assert.equal(app.element('avg5').textContent, '7.00');
   app.element('closeAverageDetails').dispatch('click');
   app.element('stat-avg12').dispatch('click');
   const lines = app.element('averageDetailsText').textContent.split('\n');
-  assert.equal(lines[0], 'ao12: 6.50');
+  assert.equal(lines[0], 'Average of 12: 6.50');
   assert.equal(lines.length, 14);
   assert.equal(lines[2], '(30.00) - R U');
   assert.equal(lines[3], '(1.00) - R U2');
@@ -564,13 +659,13 @@ test('Best Ao5 opens its winning window, retains earliest ties, and tracks edits
   const app = createApp();
   seedStats(app, [10, 11, 12, 13, 14, 50, 51, 52, 53, 54]);
   app.element('stat-bestAvg5').dispatch('click');
-  assert.match(app.element('averageDetailsText').textContent, /^bao5: 12.00\n/);
+  assert.match(app.element('averageDetailsText').textContent, /^Average of 5: 12.00\n/);
   assert.equal(app.element('averageDetailsText').textContent.includes('50.00'), false);
   app.element('averageDetails').close();
   app.run('applySolveAction("1", "plus2"); applySolveAction("2", "delete")');
   assert.equal(app.element('bestAvg5').textContent, '13.33');
   app.element('stat-bestAvg5').dispatch('click');
-  assert.match(app.element('averageDetailsText').textContent, /^bao5: 13.33\n/);
+  assert.match(app.element('averageDetailsText').textContent, /^Average of 5: 13.33\n/);
   assert.match(app.element('averageDetailsText').textContent, /13.00 \+2/);
   app.element('averageDetails').close();
   seedStats(app, [10, 10, 10, 10, 10, 10]);
@@ -584,7 +679,7 @@ test('averages trim two distinct ties and handle +2, one DNF, and multiple DNFs'
   app.run('applySolveAction("0","plus2"); applySolveAction("4","dnf")');
   app.element('stat-avg5').dispatch('click');
   const lines = app.element('averageDetailsText').textContent.split('\n');
-  assert.equal(lines[0], 'ao5: 10.67');
+  assert.equal(lines[0], 'Average of 5: 10.67');
   assert.equal(lines[2], '12.00 +2 - R U');
   assert.equal(lines[3], '(10.00) - R U2');
   assert.equal(lines[6], '(DNF) - R U');
@@ -594,7 +689,7 @@ test('averages trim two distinct ties and handle +2, one DNF, and multiple DNFs'
   assert.equal(app.element('stat-avg5').disabled, false);
   assert.equal(app.element('stat-bestAvg5').disabled, true);
   app.element('stat-avg5').dispatch('click');
-  assert.match(app.element('averageDetailsText').textContent, /^ao5: DNF\n/);
+  assert.match(app.element('averageDetailsText').textContent, /^Average of 5: DNF\n/);
 });
 
 test('stats follow event changes and recover availability after a timed solve or clear', () => {
@@ -653,4 +748,13 @@ test('average copy supports the Clipboard API, fallback, and failure feedback', 
   app.element('copyAverageDetails').dispatch('click');
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(app.element('copyAverageStatus').textContent, 'Unable to copy. Please try again.');
+});
+
+
+test('unchanged history refreshes preserve record buttons during asynchronous saves', () => {
+  const app = createApp();
+  app.run('recordSolve(12000)');
+  const item = app.element('solveList').children[0];
+  app.run('renderHistory(); renderStats(); renderHistory()');
+  assert.equal(app.element('solveList').children[0], item);
 });

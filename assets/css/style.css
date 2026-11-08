@@ -1634,7 +1634,7 @@ scramble-display {
   .app-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     /* Only the timer takes remaining space; the history row has a viewport-sized cap. */
-    grid-template-rows: auto minmax(150px, 1fr) 58px 44px clamp(76px, 14dvh, 120px);
+    grid-template-rows: auto minmax(150px, 1fr) 58px var(--history-header-height, 44px) clamp(76px, 14dvh, 120px);
     gap: 8px;
   }
   .timer-workspace, .history-panel { display: contents; }
@@ -1964,4 +1964,49 @@ body[data-palette="jims-pride"] select option { background: #fffdfd; color: #271
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+/* Keep the number of history rows bounded while retaining the complete archive. */
+.history-header { flex-wrap: wrap; row-gap: 4px; }
+.history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  min-width: 0;
+  gap: 6px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.history-pagination[hidden], .history-storage-status[hidden], .history-retry[hidden] { display: none; }
+.history-pagination button, .history-retry {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: var(--panel-soft);
+  color: var(--text);
+  cursor: pointer;
+}
+.history-pagination span { min-width: 0; overflow-wrap: anywhere; text-align: center; }
+.history-pagination button:disabled { opacity: 0.45; cursor: default; }
+.history-pagination button:focus-visible, .history-retry:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.history-storage-status { flex: 1 0 100%; margin: 6px 0; color: var(--muted); font-size: 0.7rem; }
+@media (max-width: 840px), (max-height: 540px) and (orientation: landscape) {
+  .history-panel:has(.history-pagination:not([hidden])) { grid-template-rows: auto minmax(0, 1fr) auto; }
+  .history-pagination { grid-column: 1; grid-row: 3; margin: 0; }
+}
+@media (max-width: 840px) and (orientation: portrait) {
+  .app-layout:has(.history-storage-status:not([hidden])) { --history-header-height: minmax(44px, auto); }
+  .app-layout:has(.history-pagination:not([hidden])) {
+    grid-template-rows: auto minmax(150px, 1fr) 58px var(--history-header-height, 44px) clamp(76px, 14dvh, 120px) auto;
+  }
+  .app-layout:has(.history-pagination:not([hidden]))::before,
+  .app-layout:has(.history-pagination:not([hidden])) .scramble-visual-panel { grid-row: 4 / 7; }
+  .history-pagination { grid-column: 2; grid-row: 6; position: relative; margin: 0 4px 4px; gap: 3px; font-size: 0.55rem; }
+  .history-pagination button { padding: 4px; font-size: 0.6rem; }
+}
+@media (max-height: 540px) and (orientation: landscape) {
+  .history-panel:has(.history-pagination:not([hidden])) { grid-template-rows: auto minmax(0, 1fr) auto minmax(80px, 0.9fr); }
+  .history-panel:has(.history-pagination:not([hidden])) .scramble-visual-panel { grid-row: 4; }
 }

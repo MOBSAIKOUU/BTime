@@ -156,6 +156,10 @@ const timeout = (promise, milliseconds = 20000) => {
   assert.equal(await evaluate('document.getElementById("refreshBTime").disabled'), true);
   await evaluate(`const toggle=document.getElementById('inspectionToggle');toggle.checked=false;toggle.dispatchEvent(new Event('change'));`);
   assert.equal(await evaluate('document.getElementById("refreshBTime").disabled'), false);
+  await evaluate(`document.body.dataset.historySaving='true';`);
+  assert.equal(await evaluate('document.getElementById("refreshBTime").disabled'), true);
+  await evaluate(`document.body.dataset.historySaving='false';`);
+  assert.equal(await evaluate('document.getElementById("refreshBTime").disabled'), false);
   const updatedLoad = new Promise((resolve) => { loaded = resolve; });
   await evaluate('document.getElementById("refreshBTime").click()');
   await timeout(updatedLoad);
@@ -203,7 +207,7 @@ const timeout = (promise, milliseconds = 20000) => {
   await touchTap('#clearHistory');
   await touchTap('#confirmClearHistory');
   assert.equal(await evaluate('document.getElementById("clearHistoryDialog").open'), false);
-  assert.equal(await evaluate('localStorage.getItem("bcube-timer-history")'), '[]');
+  assert.equal(await evaluate(`(async()=>{const {openHistoryStore}=await import('/assets/js/history-store.js');const store=await openHistoryStore();try{return (await store.snapshot('333')).count}finally{store.close()}})()`), 0);
   console.log('Native mobile Clear dialog: Cancel and Clear records passed');
   const manifest = await send('Page.getAppManifest', {}, sessionId);
   assert.equal(manifest.errors.length, 0);
