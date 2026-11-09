@@ -133,7 +133,7 @@ const VALID_PALETTES = [
   'shibuya',
   'christmas',
   'halloween',
-  'jims-pride',
+  'milk-stick',
 ];
 
 /* ==========================================================================
@@ -604,8 +604,12 @@ function applyTheme() {
   document.body.dataset.palette = colorPalette;
   if (colorPaletteSelect) colorPaletteSelect.value = colorPalette;
   if (paletteEditionTag) {
-    paletteEditionTag.hidden = !['jims-pride', 'purple-mango'].includes(colorPalette);
-    paletteEditionTag.textContent = colorPalette === 'purple-mango' ? "Kyu's Signature" : 'Limited Edition';
+    const editionLabels = {
+      'purple-mango': "Kyu's Signature",
+      'milk-stick': "Trish's Signature",
+    };
+    paletteEditionTag.hidden = !editionLabels[colorPalette];
+    paletteEditionTag.textContent = editionLabels[colorPalette] || '';
   }
 }
 
