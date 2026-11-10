@@ -12,6 +12,8 @@ const cases = [
   { name: 'Safari portrait', width: 390, height: 664 },
   { name: 'Android portrait', width: 412, height: 915 },
   { name: 'Desktop', width: 1280, height: 800, desktop: true },
+  { name: 'Short desktop', width: 1024, height: 600, desktop: true },
+  { name: 'Narrow standalone', width: 320, height: 568, top: 20, standalone: true },
   { name: 'Standalone native status-bar viewport', width: 393, height: 790, standalone: true },
   { name: 'Standalone without notch', width: 375, height: 667, top: 20, standalone: true },
   { name: 'Standalone notch', width: 390, height: 844, top: 47, bottom: 34, standalone: true },
@@ -41,7 +43,10 @@ const cases = [
           Object.defineProperty(navigator, 'standalone', { configurable: true, value: standalone });
           localStorage.setItem('bcube-timer-scramble-333', "R U F2 L2 D B2 R2 U' F2");
           localStorage.setItem('bcube-timer-scramble-222', "R U F2 R' U2 F R2 U' F2");
-          localStorage.setItem('bcube-timer-scramble-777', Array.from({ length: 100 }, (_, i) => ['Lw2', 'B2', 'U', '3Uw', "Rw'", '3Dw2'][i % 6]).join(' '));
+          for (const [eventCode, length] of [['444', 40], ['555', 60], ['666', 80], ['777', 100]]) {
+            const moves = eventCode === '666' || eventCode === '777' ? ['Lw2', 'B2', 'U', '3Uw', "Rw'", '3Dw2'] : ['Rw2', 'U2', "Fw'", 'Lw2', 'D2', 'Bw'];
+            localStorage.setItem('bcube-timer-scramble-' + eventCode, Array.from({ length }, (_, i) => moves[i % moves.length]).join(' '));
+          }
         }, !!scenario.standalone);
         const page = await context.newPage();
         const errors = []; page.on('pageerror', error => errors.push(error.message));
@@ -52,8 +57,10 @@ const cases = [
             const box = document.querySelector(selector).getBoundingClientRect();
             return { top: box.top, bottom: box.bottom, left: box.left, right: box.right };
           };
-          return { shell: rect('.page-shell'), header: rect('.topbar'), menuButton: rect('#menuToggle'), logo: rect('.brand-mark'),
+          return { event: document.querySelector('#eventSelect').value, shell: rect('.page-shell'), header: rect('.topbar'), menuButton: rect('#menuToggle'), logo: rect('.brand-mark'),
             timer: rect('#timerPanel'), digits: rect('#timerDisplay'), footer: rect('.page-footer'),
+            scramble: rect('.scramble-panel'), text: rect('#scrambleText'), stats: rect('.stats-panel'), actions: rect('#solveActions'),
+            textHeight: document.querySelector('#scrambleText').clientHeight, textScrollHeight: document.querySelector('#scrambleText').scrollHeight,
             padding: parseFloat(getComputedStyle(document.querySelector('.page-shell')).paddingTop),
             headerPosition: getComputedStyle(document.querySelector('.topbar')).position,
             width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight, scrollY };
@@ -63,9 +70,9 @@ const cases = [
           const gap = scenario.height <= 540 && scenario.width > scenario.height ? 4
             : scenario.width <= 840 ? 8 : Math.max(14, Math.min(36, scenario.width * 0.022));
           assert.ok(Math.abs(layout.padding - (scenario.standalone ? gap : insets.top + gap)) < 0.1, scenario.name + ': inset plus normal spacing');
-          assert.ok(Math.abs(layout.header.top - (insets.top + gap)) < 1, scenario.name + ': header follows shell padding once: ' + JSON.stringify(layout));
+          assert.ok(Math.abs(layout.header.top + (scenario.standalone ? 0 : layout.scrollY) - (insets.top + gap)) < 1, scenario.name + ': header follows shell padding once: ' + JSON.stringify(layout));
           for (const box of [layout.header, layout.menuButton, layout.logo]) {
-            assert.ok(box.top >= insets.top && box.left >= insets.left && box.right <= scenario.width - insets.right,
+            assert.ok(box.top + (scenario.standalone ? 0 : layout.scrollY) >= insets.top && box.left >= insets.left && box.right <= scenario.width - insets.right,
               scenario.name + ': header content stays in safe area');
           }
           if (scenario.standalone) {
@@ -73,10 +80,14 @@ const cases = [
             assert.ok(Math.abs(layout.shell.bottom - (scenario.height - insets.bottom)) < 1, 'Container ends at the safe-area edge');
           }
           assert.notEqual(layout.headerPosition, 'fixed'); assert.notEqual(layout.headerPosition, 'absolute');
-          assert.ok(layout.digits.top >= layout.timer.top && layout.digits.bottom <= layout.timer.bottom, scenario.name + ': timer fits');
+          assert.ok(layout.digits.top >= layout.timer.top && layout.digits.bottom <= layout.timer.bottom, scenario.name + ': timer fits: ' + JSON.stringify(layout));
+          assert.ok(layout.text.top >= layout.scramble.top && layout.text.bottom <= layout.scramble.bottom + 1, scenario.name + ': all scramble text stays inside its panel: ' + JSON.stringify(layout));
+          assert.ok(layout.textScrollHeight <= layout.textHeight + 1, scenario.name + ': no internal scramble scrolling');
+          assert.ok(layout.scramble.bottom <= layout.timer.top && layout.timer.bottom <= layout.stats.top, scenario.name + ': scramble, timer and stats do not overlap: ' + JSON.stringify(layout));
+          assert.ok(layout.actions.top >= layout.timer.top && layout.actions.bottom <= layout.timer.bottom, scenario.name + ': timer controls stay inside timer');
           assert.ok(layout.width <= scenario.width + 1, scenario.name + ': no horizontal overflow');
           assert.ok(layout.footer.bottom <= Math.max(scenario.height, layout.height) - insets.bottom + 1, scenario.name + ': footer clears home indicator');
-          assert.equal(layout.scrollY, 0);
+          if (scenario.standalone) assert.equal(layout.scrollY, 0);
         };
         await check();
         await page.locator('#menuToggle').click();
@@ -94,11 +105,13 @@ const cases = [
           await page.reload({ waitUntil: 'domcontentloaded' });
           await page.waitForFunction(() => document.body.dataset.historySaving === 'false');
           await check(); // Include same-URL reloads and their previous scroll position.
-          for (const eventCode of ['777', '222', '333']) {
-            await page.selectOption('#eventSelect', eventCode);
-            await page.waitForFunction(() => document.body.dataset.historySaving === 'false');
-            await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-            await check();
+        }
+        for (const eventCode of ['222', '333', '444', '555', '666', '777', '333']) {
+          await page.selectOption('#eventSelect', eventCode);
+          await page.waitForFunction(() => document.body.dataset.historySaving === 'false');
+          await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          await check();
+          if (scenario.standalone) {
             const workspace = await page.evaluate(() => {
               const main = document.querySelector('.app-layout');
               main.scrollTop = main.scrollHeight;
