@@ -22,16 +22,7 @@ new MutationObserver(syncChromeColor).observe(document.body, {
 });
 syncChromeColor();
 
-// Keep installed iOS launches from restoring a document scroll offset above the header.
-if (isIOS && standalone()) {
-  document.documentElement.classList.add('ios-standalone');
-  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-  const resetDocumentScroll = () => requestAnimationFrame(() => window.scrollTo(0, 0));
-  window.addEventListener('pageshow', resetDocumentScroll);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') resetDocumentScroll();
-  });
-}
+if (isIOS && standalone()) document.documentElement.classList.add('ios-standalone');
 
 const timerBusy = () => !document.getElementById('timerState')?.classList.contains('ready') || document.body.dataset.historySaving === 'true';
 

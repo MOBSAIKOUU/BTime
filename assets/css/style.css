@@ -1696,41 +1696,11 @@ scramble-display {
   .scramble-visual-panel { grid-column: 1; grid-row: 3; border-left: 0; border-top: 1px solid var(--border); padding: 5px 0 0; }
 }
 
-/* Installed iOS apps keep the document at the viewport origin. Only the main
-   workspace scrolls when a long scramble or a small viewport needs more room. */
-html.ios-standalone,
+/* Give the iOS PWA an opaque canvas beneath palette background images.
+   Keep the existing page flow; no separate scrolling workspace. */
 html.ios-standalone body {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-html.ios-standalone body { position: relative; }
-html.ios-standalone .page-shell {
-  position: absolute;
-  inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
-  width: auto;
-  height: auto;
-  min-height: 0;
-  padding: clamp(14px, 2.2vw, 36px);
-  overflow: hidden;
-}
-@media (max-width: 840px), (max-height: 540px) and (orientation: landscape) {
-  html.ios-standalone .page-shell { padding: 8px; }
-}
-@media (max-height: 540px) and (orientation: landscape) {
-  html.ios-standalone .page-shell { padding-top: 4px; padding-bottom: 4px; }
-}
-html.ios-standalone .topbar { flex-shrink: 0; }
-html.ios-standalone .timer-workspace {
-  min-height: min-content;
-  grid-template-rows: max-content minmax(min-content, 1fr) auto;
-}
-html.ios-standalone .app-layout {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  background-color: var(--bg);
+  transition: color 0.2s ease;
 }
 
 /* Subtle glass on the drawing itself; retain the existing panel dimensions. */

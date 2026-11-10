@@ -63,21 +63,25 @@ const cases = [
             textHeight: document.querySelector('#scrambleText').clientHeight, textScrollHeight: document.querySelector('#scrambleText').scrollHeight,
             padding: parseFloat(getComputedStyle(document.querySelector('.page-shell')).paddingTop),
             headerPosition: getComputedStyle(document.querySelector('.topbar')).position,
+            bodyColor: getComputedStyle(document.body).backgroundColor, canvasColor: getComputedStyle(document.documentElement).backgroundColor,
+            workspaceOverflow: getComputedStyle(document.querySelector('.app-layout')).overflowY,
             width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight, scrollY };
         });
         const check = async () => {
           const layout = await measure();
           const gap = scenario.height <= 540 && scenario.width > scenario.height ? 4
             : scenario.width <= 840 ? 8 : Math.max(14, Math.min(36, scenario.width * 0.022));
-          assert.ok(Math.abs(layout.padding - (scenario.standalone ? gap : insets.top + gap)) < 0.1, scenario.name + ': inset plus normal spacing');
-          assert.ok(Math.abs(layout.header.top + (scenario.standalone ? 0 : layout.scrollY) - (insets.top + gap)) < 1, scenario.name + ': header follows shell padding once: ' + JSON.stringify(layout));
+          assert.ok(Math.abs(layout.padding - (insets.top + gap)) < 0.1, scenario.name + ': inset plus normal spacing');
+          assert.ok(Math.abs(layout.header.top + layout.scrollY - (insets.top + gap)) < 1, scenario.name + ': header follows shell padding once: ' + JSON.stringify(layout));
           for (const box of [layout.header, layout.menuButton, layout.logo]) {
-            assert.ok(box.top + (scenario.standalone ? 0 : layout.scrollY) >= insets.top && box.left >= insets.left && box.right <= scenario.width - insets.right,
+            assert.ok(box.top + layout.scrollY >= insets.top && box.left >= insets.left && box.right <= scenario.width - insets.right,
               scenario.name + ': header content stays in safe area');
           }
           if (scenario.standalone) {
-            assert.ok(Math.abs(layout.shell.top - insets.top) < 1, 'Container starts at the safe-area edge');
-            assert.ok(Math.abs(layout.shell.bottom - (scenario.height - insets.bottom)) < 1, 'Container ends at the safe-area edge');
+            assert.notEqual(layout.bodyColor, 'rgba(0, 0, 0, 0)', 'Installed PWA canvas must be opaque');
+            assert.equal(layout.bodyColor, layout.canvasColor, 'Body and outer canvas match');
+            assert.notEqual(layout.workspaceOverflow, 'auto', 'No added workspace scrollbar');
+            assert.notEqual(layout.workspaceOverflow, 'scroll', 'No added workspace scrollbar');
           }
           assert.notEqual(layout.headerPosition, 'fixed'); assert.notEqual(layout.headerPosition, 'absolute');
           assert.ok(layout.digits.top >= layout.timer.top && layout.digits.bottom <= layout.timer.bottom, scenario.name + ': timer fits: ' + JSON.stringify(layout));
@@ -87,7 +91,7 @@ const cases = [
           assert.ok(layout.actions.top >= layout.timer.top && layout.actions.bottom <= layout.timer.bottom, scenario.name + ': timer controls stay inside timer');
           assert.ok(layout.width <= scenario.width + 1, scenario.name + ': no horizontal overflow');
           assert.ok(layout.footer.bottom <= Math.max(scenario.height, layout.height) - insets.bottom + 1, scenario.name + ': footer clears home indicator');
-          if (scenario.standalone) assert.equal(layout.scrollY, 0);
+
         };
         await check();
         await page.locator('#menuToggle').click();
@@ -97,31 +101,16 @@ const cases = [
           scenario.name + ': positioned settings menu remains reachable');
         await page.locator('#menuToggle').click();
         if (scenario.standalone) {
-          await page.waitForTimeout(100);
-          await check(); // Closing settings must not move the root document.
-          assert.equal(await page.evaluate(() => history.scrollRestoration), 'manual');
-          await page.evaluate(() => window.scrollTo(0, 100));
-          await check();
           await page.reload({ waitUntil: 'domcontentloaded' });
           await page.waitForFunction(() => document.body.dataset.historySaving === 'false');
-          await check(); // Include same-URL reloads and their previous scroll position.
+          await check();
         }
         for (const eventCode of ['222', '333', '444', '555', '666', '777', '333']) {
           await page.selectOption('#eventSelect', eventCode);
           await page.waitForFunction(() => document.body.dataset.historySaving === 'false');
           await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
           await check();
-          if (scenario.standalone) {
-            const workspace = await page.evaluate(() => {
-              const main = document.querySelector('.app-layout');
-              main.scrollTop = main.scrollHeight;
-              return { scroll: main.scrollTop, max: main.scrollHeight - main.clientHeight };
-            });
-            if (workspace.max > 1) assert.ok(workspace.scroll > 0, 'Long content remains reachable');
-            assert.equal(await page.evaluate(() => scrollY), 0, 'Workspace scroll must not move the document');
-            assert.equal(await page.locator('.topbar').evaluate(el => Math.round(el.getBoundingClientRect().top)), Math.round(insets.top + (scenario.height <= 540 && scenario.width > scenario.height ? 4 : 8)));
-            await page.evaluate(() => document.querySelector('.app-layout').scrollTop = 0);
-          }
+
         }
         assert.deepEqual(errors, [], scenario.name);
         console.log(engine + ': ' + scenario.name + ' passed');
