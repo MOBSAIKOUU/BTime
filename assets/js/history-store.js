@@ -2,6 +2,8 @@
 const DATABASE = 'btime-history';
 const STORES = ['solves', 'averages', 'events'];
 const PAGE_SIZE = 50;
+const AVERAGE_SIZES = [5, 12, 25, 50, 100];
+const RECENT_SOLVE_LIMIT = Math.max(...AVERAGE_SIZES);
 const MAX_SEQUENCE = Number.MAX_SAFE_INTEGER;
 
 function valueOf(solve) {
@@ -13,10 +15,11 @@ export function averageOf(solves, size) {
   const window = solves.slice(-size);
   const ranked = window.map((solve, index) => ({ index, value: valueOf(solve) ?? Infinity }))
     .sort((a, b) => (a.value - b.value) || a.index - b.index);
-  const counted = ranked.slice(1, -1);
+  const trimCount = Math.ceil(size * 0.05);
+  const counted = ranked.slice(trimCount, -trimCount);
   const isDnf = counted.some(solve => !Number.isFinite(solve.value));
   return { value: isDnf ? null : counted.reduce((sum, solve) => sum + solve.value, 0) / counted.length,
-    isDnf, solves: window, excludedIndices: [ranked[0].index, ranked[ranked.length - 1].index] };
+    isDnf, solves: window, excludedIndices: [...ranked.slice(0, trimCount), ...ranked.slice(-trimCount)].map(solve => solve.index) };
 }
 
 function requestResult(request) {
@@ -189,7 +192,7 @@ export async function openHistoryStore() {
         const solves = tx.objectStore('solves');
         const [meta, latestRows, pageRows, bestRows, bestWindows, pageOffset] = await Promise.all([
           requestResult(tx.objectStore('events').get(eventCode)),
-          rows(solves, range(eventCode), 'prev', PAGE_SIZE),
+          rows(solves, range(eventCode), 'prev', RECENT_SOLVE_LIMIT),
           rows(solves, before === null ? range(eventCode) : range(eventCode, 0, before, false, true), 'prev', PAGE_SIZE + 1),
           rows(solves.index('byValue'), valueRange(eventCode), 'next', 1),
           rows(tx.objectStore('averages').index('byValue'), valueRange(eventCode), 'next', 1),
@@ -203,7 +206,7 @@ export async function openHistoryStore() {
           page: pageRows.slice(0, PAGE_SIZE).reverse(), pageOffset, hasOlder: pageRows.length > PAGE_SIZE,
           bestSingle: bestRows[0] || null,
           bestAvg5: bestSolves.length === 5 && bestSolves.every(Boolean) ? averageOf(bestSolves, 5) : null,
-          avg5: averageOf(latest, 5), avg12: averageOf(latest, 12),
+          ...Object.fromEntries(AVERAGE_SIZES.map(size => ['avg' + size, averageOf(latest, size)])),
         };
       });
     },

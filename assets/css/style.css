@@ -1059,8 +1059,8 @@ body[data-palette="chessboard"] .timer-state.holding {
    -------------------------------------------------------------------------- */
 
 .stats-panel {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   align-items: stretch;
   grid-column: 1 / -1;
   gap: 12px;
@@ -1073,6 +1073,7 @@ body[data-palette="chessboard"] .timer-state.holding {
 }
 
 .stat-row {
+  min-width: 0;
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
@@ -1119,7 +1120,9 @@ body[data-palette="chessboard"] .timer-state.holding {
 }
 
 .stat-row strong {
-  font-size: 1.1rem;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: clamp(0.8rem, 1.1vw, 1.1rem);
   font-family: "Inter", sans-serif;
 }
 
@@ -1584,10 +1587,10 @@ scramble-display {
   .solve-actions .result-action { aspect-ratio: auto; min-width: 0; height: 100%; min-height: 0; padding: 0 4px; font-size: 0.68rem; }
   .palette-select, .event-control .event-select { font-size: 16px; }
 
-  .stats-panel { grid-column: auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 5px; }
-  .stat-row { min-width: 0; padding: 5px 3px; gap: 4px; align-items: center; text-align: center; }
-  .stat-row span { font-size: 0.6rem; line-height: 1.25; }
-  .stat-row strong { max-width: 100%; font-size: clamp(0.68rem, 2.5vw, 0.95rem); overflow-wrap: anywhere; }
+  .stats-panel { grid-column: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 5px; }
+  .stat-row { min-width: 0; padding: 2px 3px; gap: 1px; align-items: center; text-align: center; }
+  .stat-row span { font-size: 0.55rem; line-height: 1.25; }
+  .stat-row strong { max-width: 100%; font-size: clamp(0.68rem, 2.5vw, 0.85rem); overflow-wrap: anywhere; }
 
   /* History and drawing share the bottom strip instead of stacking below the timer. */
   .history-panel {
@@ -1634,7 +1637,7 @@ scramble-display {
   .app-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     /* Only the timer takes remaining space; the history row has a viewport-sized cap. */
-    grid-template-rows: auto minmax(150px, 1fr) 58px var(--history-header-height, 44px) clamp(76px, 14dvh, 120px);
+    grid-template-rows: auto minmax(var(--timer-min-height, 150px), 1fr) 84px var(--history-header-height, 44px) clamp(76px, 14dvh, 120px);
     gap: 8px;
   }
   .timer-workspace, .history-panel { display: contents; }
@@ -1643,7 +1646,7 @@ scramble-display {
   .timer-display { font-size: clamp(3.4rem, 15vw, 6rem); }
   .stats-panel {
     grid-column: 1 / -1; grid-row: 3;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     padding: 5px; gap: 3px;
   }
   .stat-row { padding: 2px; gap: 3px; }
@@ -1668,6 +1671,13 @@ scramble-display {
     grid-column: 1; grid-row: 4 / 6; padding: 6px;
     border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
   }
+}
+
+@media (max-width: 360px) and (orientation: portrait) {
+  .app-layout { --timer-min-height: 120px; }
+  .timer-panel { padding-top: 48px; padding-bottom: 4px; }
+  .timer-state { font-size: 0.6rem; margin-bottom: 2px; }
+  .timer-display { font-size: clamp(2.8rem, 14vw, 3.4rem); margin-bottom: 4px; }
 }
 
 @media (max-height: 540px) and (orientation: landscape) {
@@ -1969,6 +1979,45 @@ body[data-palette="milk-stick"] .palette-edition-tag {
   body[data-palette="milk-stick"] .app-layout::before { background: #333da5; border-color: #232c83; }
 }
 
+/* Conan blue: Shin's charcoal/navy palette with blue-gray text and brick-red controls. */
+body[data-palette="conan-blue"] {
+  color-scheme: dark;
+  --bg: #21212f;
+  --bg-2: #21212f;
+  --panel: #242138;
+  --panel-strong: #29263f;
+  --panel-soft: #303044;
+  --border: #455563;
+  --text: #809eab;
+  --muted: #809eab;
+  --accent: #639cb7;
+  --accent-2: #32647c;
+  --warning: #d7b56d;
+  --danger: #e38c8a;
+  --success: #8abdac;
+  --button-color: #943e40;
+  --logo-color: #c27777;
+  --shadow: 0 24px 60px #10101e66;
+}
+
+body[data-palette="conan-blue"] .primary-button,
+body[data-palette="conan-blue"] .secondary-button,
+body[data-palette="conan-blue"] .ghost-button,
+body[data-palette="conan-blue"] .scramble-refresh,
+body[data-palette="conan-blue"] .result-action {
+  background: var(--button-color);
+  border-color: #ad6062;
+  color: #f4e5e5;
+  box-shadow: none;
+}
+
+body[data-palette="conan-blue"] h1 { color: var(--logo-color); }
+body[data-palette="conan-blue"] .palette-edition-tag {
+  background: var(--panel-soft);
+  color: var(--text);
+  text-transform: none;
+}
+
 /* Install controls and a compact update notice, independent of the timer layout. */
 .install-button { margin-top: 10px; }
 .pwa-hint { margin: 8px 0 0; color: var(--muted); font-size: 0.75rem; line-height: 1.45; }
@@ -2049,7 +2098,7 @@ body[data-palette="milk-stick"] .palette-edition-tag {
 @media (max-width: 840px) and (orientation: portrait) {
   .app-layout:has(.history-storage-status:not([hidden])) { --history-header-height: minmax(44px, auto); }
   .app-layout:has(.history-pagination:not([hidden])) {
-    grid-template-rows: auto minmax(150px, 1fr) 58px var(--history-header-height, 44px) clamp(76px, 14dvh, 120px) auto;
+    grid-template-rows: auto minmax(var(--timer-min-height, 150px), 1fr) 84px var(--history-header-height, 44px) clamp(76px, 14dvh, 120px) auto;
   }
   .app-layout:has(.history-pagination:not([hidden]))::before,
   .app-layout:has(.history-pagination:not([hidden])) .scramble-visual-panel { grid-row: 4 / 7; }

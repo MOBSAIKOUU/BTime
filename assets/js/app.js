@@ -1,7 +1,7 @@
 /**
  * @file BTime - Rubik's Cube Speedcubing Timer Application
  * @description Provides offline TNoodle scramble generation, 15s WCA inspection,
- * spacebar/touch timing, manual time entry, Ao5/Ao12 session statistics,
+ * spacebar/touch timing, manual time entry, Ao5 through Ao100 session statistics,
  * solve penalty management (DNF/+2), and multi-event support.
  */
 /* ==========================================================================
@@ -34,10 +34,10 @@ const retryHistoryButton = document.getElementById('retryHistory');
 // Statistics Elements
 const bestTimeEl = document.getElementById('bestTime');
 const bestAvg5El = document.getElementById('bestAvg5');
-const avg5El = document.getElementById('avg5');
-const avg12El = document.getElementById('avg12');
+const AVERAGE_SIZES = [5, 12, 25, 50, 100];
+const averageTimeElements = Object.fromEntries(AVERAGE_SIZES.map(size => [size, document.getElementById('avg' + size)]));
 const meanTimeEl = document.getElementById('meanTime');
-const statisticButtons = Object.fromEntries(['bestSingle', 'bestAvg5', 'avg5', 'avg12']
+const statisticButtons = Object.fromEntries(['bestSingle', 'bestAvg5', ...AVERAGE_SIZES.map(size => 'avg' + size)]
   .map(kind => [kind, document.getElementById('stat-' + kind)]));
 let statisticTargets = {};
 const averageDetails = document.getElementById('averageDetails');
@@ -97,6 +97,7 @@ const SCRAMBLE_PREFETCH_COUNT = 5;
 const REQUIRED_HOLD_MS = 300;
 const MIN_START_PRESS_MS = 100;
 const HISTORY_PAGE_SIZE = 50; // Display limit only; persisted history has no fixed cap.
+const RECENT_SOLVE_LIMIT = Math.max(...AVERAGE_SIZES);
 const MAX_SCRAMBLE_LENGTH = 10000;
 const MAX_STORAGE_LENGTH = 1000000;
 const VALID_RESULTS = new Set(['ok', '+2', 'dnf']);
@@ -134,6 +135,7 @@ const VALID_PALETTES = [
   'christmas',
   'halloween',
   'milk-stick',
+  'conan-blue',
 ];
 
 /* ==========================================================================
@@ -177,7 +179,7 @@ let scrambleRequestEvent = null;
 const scrambleQueues = new Map();
 let scrambleWarmupTimer = null;
 
-// Only the latest page, an optional older page, and indexed aggregate stats stay in memory.
+// Keep only the latest 100 solves for averages, an optional history page, and indexed stats in memory.
 const usesIndexedHistory = typeof indexedDB !== 'undefined';
 let historyStore = null;
 let historySnapshot = null;
@@ -498,7 +500,7 @@ function saveHistory(operation) {
 function appendToVisibleHistory(entry) {
   resetHistoryPage();
   recentSolves.push(entry);
-  if (usesIndexedHistory) recentSolves = recentSolves.slice(-HISTORY_PAGE_SIZE);
+  if (usesIndexedHistory) recentSolves = recentSolves.slice(-RECENT_SOLVE_LIMIT);
   lastSolveId = entry.id;
   lastSolveRecord = entry;
   if (historySnapshot) {
@@ -510,8 +512,9 @@ function appendToVisibleHistory(entry) {
     if (latestAverage.value !== null && !latestAverage.isDnf &&
         (!historySnapshot.bestAvg5 || latestAverage.value < historySnapshot.bestAvg5.value)) historySnapshot.bestAvg5 = latestAverage;
     historySnapshot.latest = recentSolves;
-    historySnapshot.avg5 = latestAverage;
-    historySnapshot.avg12 = getTrimmedAverage(recentSolves, 12);
+    for (const size of AVERAGE_SIZES) {
+      historySnapshot['avg' + size] = size === 5 ? latestAverage : getTrimmedAverage(recentSolves, size);
+    }
     historySnapshot.pageOffset = 0;
     historySnapshot.hasOlder = historySnapshot.count > HISTORY_PAGE_SIZE;
   }
@@ -526,7 +529,7 @@ async function browseHistory(older) {
     return;
   }
   if (!historyStore || pendingHistoryOperations.length) return;
-  const page = historyPageSolves || recentSolves;
+  const page = historyPageSolves || recentSolves.slice(-HISTORY_PAGE_SIZE);
   if (older) {
     if (!historySnapshot?.hasOlder || !page.length) return;
     historyNewerAnchors.push(historyBefore);
@@ -600,13 +603,14 @@ function saveHideTimePreference() {
 
 function applyTheme() {
   document.body.classList.toggle('dark-mode',
-    ['night', 'oilspill', 'sunrise', 'shibuya', 'halloween', 'purple-mango'].includes(colorPalette));
+    ['night', 'oilspill', 'sunrise', 'shibuya', 'halloween', 'purple-mango', 'conan-blue'].includes(colorPalette));
   document.body.dataset.palette = colorPalette;
   if (colorPaletteSelect) colorPaletteSelect.value = colorPalette;
   if (paletteEditionTag) {
     const editionLabels = {
       'purple-mango': "Kyu's Signature",
       'milk-stick': "Trish's Signature",
+      'conan-blue': "Shin's Signature",
     };
     paletteEditionTag.hidden = !editionLabels[colorPalette];
     paletteEditionTag.textContent = editionLabels[colorPalette] || '';
@@ -875,7 +879,7 @@ function getSolveValue(entry) {
 
 /**
  * Use the same window and exclusions for both the capsule and its breakdown.
- * Ties drop exactly two distinct solves: the first fastest and last slowest.
+ * Trim the fastest and slowest 5%, rounding up; ties retain chronological order.
  */
 function getTrimmedAverage(solves, solveCount) {
   if (solves.length < solveCount) {
@@ -885,8 +889,9 @@ function getTrimmedAverage(solves, solveCount) {
   const ranked = windowSolves.map((solve, index) => ({
     index, value: getSolveValue(solve) ?? Infinity,
   })).sort((a, b) => (a.value - b.value) || (a.index - b.index));
-  const excludedIndices = [ranked[0].index, ranked[ranked.length - 1].index];
-  const counted = ranked.slice(1, -1);
+  const trimCount = Math.ceil(solveCount * 0.05);
+  const excludedIndices = [...ranked.slice(0, trimCount), ...ranked.slice(-trimCount)].map(solve => solve.index);
+  const counted = ranked.slice(trimCount, -trimCount);
   const isDnf = counted.some(solve => !Number.isFinite(solve.value));
   return {
     value: isDnf ? null : counted.reduce((sum, solve) => sum + solve.value, 0) / counted.length,
@@ -910,30 +915,28 @@ function syncStatisticButtons() {
 }
 
 function renderStats() {
-  if (!bestTimeEl || !avg5El || !bestAvg5El || !avg12El) return;
+  if (!bestTimeEl || !bestAvg5El) return;
   const validSolves = recentSolves.filter(solve => Number.isFinite(getSolveValue(solve)));
   const bestSingle = historySnapshot ? historySnapshot.bestSingle : validSolves.reduce((best, solve) =>
     !best || getSolveValue(solve) < getSolveValue(best) ? solve : best, null);
   const meanTime = historySnapshot ? (historySnapshot.validCount ? historySnapshot.total / historySnapshot.validCount : null) : validSolves.length
     ? validSolves.reduce((sum, solve) => sum + getSolveValue(solve), 0) / validSolves.length : null;
   const bestAvg5 = historySnapshot ? historySnapshot.bestAvg5 : getBestAverage(recentSolves, 5);
-  const currentAvg5 = historySnapshot ? historySnapshot.avg5 : getTrimmedAverage(recentSolves, 5);
-  const currentAvg12 = historySnapshot ? historySnapshot.avg12 : getTrimmedAverage(recentSolves, 12);
-  statisticTargets = {
-    bestSingle, bestAvg5,
-    avg5: currentAvg5.solves.length ? currentAvg5 : null,
-    avg12: currentAvg12.solves.length ? currentAvg12 : null,
-  };
+  statisticTargets = { bestSingle, bestAvg5 };
+  for (const size of AVERAGE_SIZES) {
+    const kind = 'avg' + size;
+    const average = historySnapshot?.[kind] || getTrimmedAverage(recentSolves, size);
+    statisticTargets[kind] = average.solves.length ? average : null;
+    if (averageTimeElements[size]) averageTimeElements[size].textContent = average.isDnf ? 'DNF' : formatMetric(average.value);
+  }
   bestTimeEl.textContent = formatMetric(bestSingle ? getSolveValue(bestSingle) : null);
   bestAvg5El.textContent = formatMetric(bestAvg5?.value);
-  avg5El.textContent = currentAvg5.isDnf ? 'DNF' : formatMetric(currentAvg5.value);
-  avg12El.textContent = currentAvg12.isDnf ? 'DNF' : formatMetric(currentAvg12.value);
   if (meanTimeEl) meanTimeEl.textContent = formatMetric(meanTime);
   syncStatisticButtons();
 }
 
 function formatAverageBreakdown(kind, average) {
-  const label = kind === 'bestAvg5' ? 'Average of 5' : kind === 'avg12' ? 'Average of 12' : 'Average of 5';
+  const label = 'Average of ' + (kind === 'bestAvg5' ? 5 : kind.slice(3));
   const result = average.isDnf ? 'DNF' : formatMetric(average.value);
   const lines = average.solves.map((solve, index) => {
     const time = formatHistoryValue(solve);
@@ -952,7 +955,7 @@ function showStatisticDetails(kind) {
     return;
   }
   if (!averageDetails || !averageDetailsText) return;
-  const label = kind === 'bestAvg5' ? 'Best Ao5' : kind === 'avg12' ? 'Ao12' : 'Ao5';
+  const label = kind === 'bestAvg5' ? 'Best Ao5' : 'Ao' + kind.slice(3);
   averageDetailsTitle.textContent = label + ' · ' + getEventLabel(currentEvent);
   averageDetailsText.textContent = formatAverageBreakdown(kind, target);
   if (copyAverageStatus) copyAverageStatus.textContent = '';
@@ -983,7 +986,7 @@ function renderHistory() {
 
   const total = historySnapshot ? historySnapshot.count : recentSolves.length;
   const offset = usesIndexedHistory ? historySnapshot?.pageOffset || 0 : historyFallbackOffset;
-  const visible = usesIndexedHistory ? historyPageSolves || recentSolves
+  const visible = usesIndexedHistory ? historyPageSolves || recentSolves.slice(-HISTORY_PAGE_SIZE)
     : recentSolves.slice(Math.max(0, recentSolves.length - offset - HISTORY_PAGE_SIZE), recentSolves.length - offset);
   if (clearHistoryButton) clearHistoryButton.disabled = historyLoading || state === 'solving';
   if (historyPagination) historyPagination.hidden = total <= HISTORY_PAGE_SIZE;
@@ -2080,7 +2083,8 @@ if (confirmClearHistoryButton && clearHistoryDialog) {
     lastSolveRecord = null;
     resetHistoryPage();
     if (historySnapshot) historySnapshot = { count: 0, validCount: 0, total: 0, latest: [],
-      bestSingle: null, bestAvg5: null, avg5: getTrimmedAverage([], 5), avg12: getTrimmedAverage([], 12), hasOlder: false, pageOffset: 0 };
+      bestSingle: null, bestAvg5: null, hasOlder: false, pageOffset: 0,
+      ...Object.fromEntries(AVERAGE_SIZES.map(size => ['avg' + size, getTrimmedAverage([], size)])) };
     resetSession();
     saveHistory({ type: 'clear' });
     renderStats();

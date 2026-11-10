@@ -184,9 +184,9 @@ and home-screen launch still require real devices.
 
 - There is no fixed solve-count cap. Browser quota and available device storage still apply.
 - `assets/js/history-store.js` stores solves individually in the `btime-history` IndexedDB database.
-- Per-event totals and indexes provide Best Single, Best Ao5, current Ao5/Ao12, and Mean without rescanning the archive.
+- Per-event totals and indexes provide Best Single, Best Ao5, current Ao5/Ao12/Ao25/Ao50/Ao100, and Mean without rescanning the archive.
 - Appending a solve updates one rolling Ao5 window. Editing/deleting a solve updates at most five affected windows.
-- Only the newest 50 records, one optional older page, and the current best-result breakdowns remain in UI memory.
+- Only the newest 100 records for current averages, one optional 50-record history page, and the current best-result breakdowns remain in UI memory.
 - Newer/Older buttons use sequence cursors, so older solves stay accessible without building an unbounded DOM.
 - Existing localStorage records migrate once per event in an atomic transaction. The old data remains as a backup; a committed event marker prevents duplicate migration, including after Clear.
 - Failed writes stay queued in the tab and expose a Retry action; history is never silently pruned to recover space.
@@ -194,3 +194,11 @@ and home-screen launch still require real devices.
 - PWA update activation waits until queued history saves finish.
 - Service-worker cache changes do not delete the database. Clearing browser site data does remove saved solves.
 - Optional regression check: `node tests/history-browser.cjs` with the same Playwright environment variables as the other browser checks. It compares indexed statistics to an independent oracle, tests migration, edits/deletes, concurrency, quota-failure retries, and measures the solve UI path against a 20,000-record archive.
+
+## Larger current averages
+
+Ao25, Ao50, and Ao100 use the same interactive breakdown and copy action as Ao5/Ao12.
+Current averages trim 5% at each end, rounded up: two solves for Ao25, three for Ao50,
+and five for Ao100. Current-average reads are bounded to the latest 100 solves, while
+history navigation still displays 50 records per page. No database schema change is
+required. Run `node tests/extended-stats-browser.cjs` for focused browser coverage.

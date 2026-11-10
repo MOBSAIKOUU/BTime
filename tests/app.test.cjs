@@ -751,6 +751,51 @@ test('average copy supports the Clipboard API, fallback, and failure feedback', 
 });
 
 
+for (const size of [25, 50, 100]) {
+  test('Ao' + size + ' uses its latest window, trims 5%, and exports the same breakdown', () => {
+    const app = createApp();
+    seedStats(app, Array.from({length:size-1}, () => 10));
+    assert.equal(app.element('stat-avg' + size).disabled, true);
+    assert.equal(app.element('avg' + size).textContent, '--');
+    seedStats(app, [999, ...Array.from({length:size}, (_,i) => i+1)]);
+    const average = app.run('getTrimmedAverage(recentSolves,' + size + ')');
+    assert.equal(average.value, (size+1)*500);
+    assert.equal(average.solves[0].id, '1', 'older solve excluded from the window');
+    assert.equal(average.excludedIndices.length, Math.ceil(size*0.05)*2);
+    app.element('stat-avg' + size).dispatch('click');
+    const lines = app.element('averageDetailsText').textContent.split('\n');
+    assert.equal(lines.length, size+2);
+    assert.equal(lines[0], 'Average of ' + size + ': ' + app.element('avg' + size).textContent);
+    assert.equal(lines.filter(line => line.startsWith('(')).length, Math.ceil(size*0.05)*2);
+    assert.equal(lines.some(line => line.includes('16:39.00')), false);
+    app.element('averageDetails').close();
+    app.run('beginSolve()');
+    assert.equal(app.element('stat-avg' + size).disabled, true);
+    app.run('resetSession()');
+    app.element('clearHistory').dispatch('click');
+    app.element('confirmClearHistory').dispatch('click');
+    assert.equal(app.element('stat-avg' + size).disabled, true);
+    assert.equal(app.element('avg' + size).textContent, '--');
+  });
+
+  test('Ao' + size + ' handles tied exclusions, +2, and its DNF threshold', () => {
+    const app = createApp();
+    seedStats(app, Array.from({length:size}, () => 10));
+    const trim = Math.ceil(size*0.05);
+    const original = app.run('getTrimmedAverage(recentSolves,' + size + ')');
+    assert.equal(new Set(original.excludedIndices).size, trim*2);
+    assert.deepEqual(Array.from(original.excludedIndices), [...Array.from({length:trim},(_,i)=>i), ...Array.from({length:trim},(_,i)=>size-trim+i)]);
+    app.run('recentSolves[0].result="+2";renderStats()');
+    assert.equal(app.run('getTrimmedAverage(recentSolves,' + size + ').value'), 10000, '+2 is ranked before exclusions');
+    for (let i=0;i<trim;i++) app.run('recentSolves[' + (size-1-i) + '].result="dnf"');
+    app.run('renderStats()');
+    assert.equal(app.run('getTrimmedAverage(recentSolves,' + size + ').isDnf'), false);
+    app.run('recentSolves[' + (size-1-trim) + '].result="dnf";renderStats()');
+    assert.equal(app.element('avg' + size).textContent, 'DNF');
+    assert.equal(app.element('stat-avg' + size).disabled, false);
+  });
+}
+
 test('unchanged history refreshes preserve record buttons during asynchronous saves', () => {
   const app = createApp();
   app.run('recordSolve(12000)');

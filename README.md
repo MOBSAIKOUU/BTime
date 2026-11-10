@@ -20,7 +20,7 @@ App (PWA).
 - Manual time entry, including compact digits, decimal seconds, and minute notation.
 - Offline TNoodle scrambles for 11 puzzle events, with visual scramble drawings.
 - Separate solve histories for each event, with saved scrambles and solve details.
-- Best Single, Best Ao5, current Ao5, current Ao12, and Mean statistics.
+- Best Single, Best Ao5, current Ao5/Ao12/Ao25/Ao50/Ao100, and Mean statistics.
 - Copyable scramble and average breakdowns, plus +2, DNF, revert, and delete actions.
 - Persistent browser storage and history pages of 50 solves, with no fixed solve-count cap.
 - Customizable color palettes, including Fern and Milk Stick signature themes.
@@ -108,16 +108,21 @@ uses `minutes:seconds`, with optional decimal seconds.
 | Best Ao5 | Best trimmed average across a consecutive five-solve window |
 | Ao5 | Trimmed average of the latest five solves |
 | Ao12 | Trimmed average of the latest twelve solves |
+| Ao25 | Trimmed average of the latest 25 solves |
+| Ao50 | Trimmed average of the latest 50 solves |
+| Ao100 | Trimmed average of the latest 100 solves |
 | Mean | Arithmetic mean of all non-DNF results for the selected event |
 
-Ao5 and Ao12 discard exactly one fastest and one slowest solve from their window,
-then average the remaining results. +2 penalties are included. A single DNF can be
-discarded as the worst result; two or more DNFs make that average DNF. Metrics show
+Averages discard the fastest and slowest 5% of their window, rounding up at each
+end, then average the remaining results. Ao5/Ao12 discard one result from each end;
+Ao25 discards two, Ao50 three, and Ao100 five. +2 penalties are included before
+ranking. DNFs can be discarded among the worst results; any DNF remaining in the
+counted results makes the average DNF. Metrics show
 `--` when there are not enough results.
 
-Click **Best Single** to open that solve's details. Click **Best Ao5**, **Ao5**, or
-**Ao12** to open a copyable breakdown of its times and scrambles. Parentheses mark
-the two excluded results, and the copy button copies the complete breakdown.
+Click **Best Single** to open that solve's details. Click **Best Ao5** or any current
+average capsule to open a copyable breakdown of its times and scrambles. Parentheses mark
+the excluded results, and the copy button copies the complete breakdown.
 
 ## History and saved data
 
@@ -128,7 +133,8 @@ format migrate automatically, separately for each event.
 There is no fixed number of saved solves. Browser storage quota and device space
 are the practical limits. The interface displays 50 records per page, with
 **Newer** and **Older** navigation below the list. Indexed statistics and bounded
-rendering keep the full archive out of the visible list.
+rendering keep the full archive out of the visible list. Only the latest 100 solves
+are loaded for current averages, alongside the selected history page.
 
 History belongs to the current browser profile and site origin; automatic
 cross-device synchronization is not implemented. Clearing browser site data also
@@ -146,6 +152,7 @@ The signature palettes are:
 
 - **Fern** - Kyu's Signature, with charcoal and muted violet colors.
 - **Milk Stick** - Trish's Signature, with royal blue, a navy timer, and cream panels.
+- **Conan blue (New!)** - Shin's Signature, with charcoal/navy panels, blue-gray text, and brick-red buttons.
 
 Palette selections are remembered between visits.
 
@@ -226,6 +233,7 @@ Optional browser checks:
 | `node tests/browser-pwa.cjs` | Chromium offline use, drawings, installation checks, and updates |
 | `node tests/webkit-mobile.cjs` | WebKit touch controls, dialogs, and mobile layout |
 | `node tests/stats-browser.cjs` | Interactive statistics and copyable breakdowns |
+| `node tests/extended-stats-browser.cjs` | Ao25/Ao50/Ao100 windows, copy, edits, and responsive layout |
 | `node tests/tnoodle-browser.cjs` | Fresh offline generation for all supported events |
 | `node tests/history-browser.cjs` | History migration, edits, persistence, and large-archive performance |
 

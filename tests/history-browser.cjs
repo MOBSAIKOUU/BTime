@@ -51,7 +51,8 @@ const rangeLabel = (count, offset = 0) => (count - offset - 49) + String.fromCha
       const value = solve => solve.result === 'dnf' ? Infinity : solve.baseTimeMs + (solve.result === '+2' ? 2000 : 0);
       function average(list, size) {
         if (list.length < size) return { value: null, isDnf: false };
-        const times = list.slice(-size).map(value).sort((a, b) => a - b).slice(1, -1);
+        const trim = Math.ceil(size * 0.05);
+        const times = list.slice(-size).map(value).sort((a, b) => a - b).slice(trim, -trim);
         return times.some(time => !Number.isFinite(time)) ? { value: null, isDnf: true }
           : { value: times.reduce((sum, time) => sum + time, 0) / times.length, isDnf: false };
       }
@@ -60,13 +61,13 @@ const rangeLabel = (count, offset = 0) => (count - offset - 49) + String.fromCha
       async function verify() {
         const snapshot = await store.snapshot('clock');
         check(snapshot.count === entries.length, 'Count mismatch');
-        check(JSON.stringify(snapshot.latest.map(solve => solve.id)) === JSON.stringify(entries.slice(-50).map(solve => solve.id)), 'Latest page mismatch');
+        check(JSON.stringify(snapshot.latest.map(solve => solve.id)) === JSON.stringify(entries.slice(-100).map(solve => solve.id)), 'Latest page mismatch');
         const valid = entries.filter(solve => Number.isFinite(value(solve)));
         check(snapshot.validCount === valid.length, 'Valid count mismatch');
         check(snapshot.total === valid.reduce((sum, solve) => sum + value(solve), 0), 'Mean total mismatch');
         const bestSingle = valid.reduce((best, solve) => !best || value(solve) < value(best) ? solve : best, null);
         check(snapshot.bestSingle?.id === bestSingle?.id, 'Best single mismatch');
-        for (const size of [5, 12]) {
+        for (const size of [5, 12, 25, 50, 100]) {
           const expected = average(entries, size);
           const actual = snapshot['avg' + size];
           check(actual.isDnf === expected.isDnf && (actual.value === expected.value || Math.abs(actual.value - expected.value) < 1e-7), 'Current Ao' + size + ' mismatch');
@@ -135,7 +136,7 @@ const rangeLabel = (count, offset = 0) => (count - offset - 49) + String.fromCha
       await store.migrate('333', solves);
       console.log('[history-test] archive import committed');
       const populated = await store.snapshot('333');
-      check(populated.count === archiveCount && populated.latest.length === 50, 'Large archive was truncated or fully loaded');
+      check(populated.count === archiveCount && populated.latest.length === Math.min(100, archiveCount), 'Large archive was truncated or fully loaded');
       check(populated.bestSingle.id === 'archive-0' && populated.bestAvg5.solves[0].id === 'archive-0', 'Old best results were lost');
       store.close();
       return { checks, archiveCount: populated.count, seedMs: Math.round(performance.now() - started) };
@@ -157,7 +158,7 @@ const rangeLabel = (count, offset = 0) => (count - offset - 49) + String.fromCha
         const panel = document.getElementById('historyPagination').getBoundingClientRect();
         const history = document.getElementById('solveList').getBoundingClientRect();
         return { width: innerWidth, pageWidth: document.documentElement.scrollWidth,
-          overlap: panel.bottom > history.top + 1, rows: document.querySelectorAll('.solve-record-button').length };
+          overlap: panel.top < history.bottom - 1, rows: document.querySelectorAll('.solve-record-button').length };
       });
       assert.ok(layout.pageWidth <= layout.width, JSON.stringify(layout));
       assert.equal(layout.overlap, false, JSON.stringify(layout));
