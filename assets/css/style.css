@@ -472,9 +472,9 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Let the body paint the entire canvas, including iOS safe areas. */
+/* Match the outer canvas and iOS safe areas to the selected palette. */
 html {
-  background: transparent;
+  background: var(--page-background, #f3f4f6);
 }
 
 body {
@@ -1708,11 +1708,21 @@ html.ios-standalone body {
   min-height: 0;
   overflow: hidden;
 }
+html.ios-standalone body { position: relative; }
 html.ios-standalone .page-shell {
-  height: 100vh;
-  height: 100dvh;
+  position: absolute;
+  inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  width: auto;
+  height: auto;
   min-height: 0;
+  padding: clamp(14px, 2.2vw, 36px);
   overflow: hidden;
+}
+@media (max-width: 840px), (max-height: 540px) and (orientation: landscape) {
+  html.ios-standalone .page-shell { padding: 8px; }
+}
+@media (max-height: 540px) and (orientation: landscape) {
+  html.ios-standalone .page-shell { padding-top: 4px; padding-bottom: 4px; }
 }
 html.ios-standalone .topbar { flex-shrink: 0; }
 html.ios-standalone .timer-workspace {

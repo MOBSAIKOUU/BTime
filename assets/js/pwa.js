@@ -11,6 +11,17 @@ let reloading = false;
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// Match the browser/status-bar canvas to the selected palette.
+function syncChromeColor() {
+  const background = getComputedStyle(document.body).getPropertyValue('--bg').trim();
+  document.documentElement.style.setProperty('--page-background', background);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background);
+}
+new MutationObserver(syncChromeColor).observe(document.body, {
+  attributes: true, attributeFilter: ['data-palette'],
+});
+syncChromeColor();
+
 // Keep installed iOS launches from restoring a document scroll offset above the header.
 if (isIOS && standalone()) {
   document.documentElement.classList.add('ios-standalone');

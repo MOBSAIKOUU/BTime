@@ -52,7 +52,7 @@ const cases = [
             const box = document.querySelector(selector).getBoundingClientRect();
             return { top: box.top, bottom: box.bottom, left: box.left, right: box.right };
           };
-          return { header: rect('.topbar'), menuButton: rect('#menuToggle'), logo: rect('.brand-mark'),
+          return { shell: rect('.page-shell'), header: rect('.topbar'), menuButton: rect('#menuToggle'), logo: rect('.brand-mark'),
             timer: rect('#timerPanel'), digits: rect('#timerDisplay'), footer: rect('.page-footer'),
             padding: parseFloat(getComputedStyle(document.querySelector('.page-shell')).paddingTop),
             headerPosition: getComputedStyle(document.querySelector('.topbar')).position,
@@ -62,11 +62,15 @@ const cases = [
           const layout = await measure();
           const gap = scenario.height <= 540 && scenario.width > scenario.height ? 4
             : scenario.width <= 840 ? 8 : Math.max(14, Math.min(36, scenario.width * 0.022));
-          assert.ok(Math.abs(layout.padding - (insets.top + gap)) < 0.1, scenario.name + ': inset plus normal spacing');
-          assert.ok(Math.abs(layout.header.top - layout.padding) < 1, scenario.name + ': header follows shell padding once: ' + JSON.stringify(layout));
+          assert.ok(Math.abs(layout.padding - (scenario.standalone ? gap : insets.top + gap)) < 0.1, scenario.name + ': inset plus normal spacing');
+          assert.ok(Math.abs(layout.header.top - (insets.top + gap)) < 1, scenario.name + ': header follows shell padding once: ' + JSON.stringify(layout));
           for (const box of [layout.header, layout.menuButton, layout.logo]) {
             assert.ok(box.top >= insets.top && box.left >= insets.left && box.right <= scenario.width - insets.right,
               scenario.name + ': header content stays in safe area');
+          }
+          if (scenario.standalone) {
+            assert.ok(Math.abs(layout.shell.top - insets.top) < 1, 'Container starts at the safe-area edge');
+            assert.ok(Math.abs(layout.shell.bottom - (scenario.height - insets.bottom)) < 1, 'Container ends at the safe-area edge');
           }
           assert.notEqual(layout.headerPosition, 'fixed'); assert.notEqual(layout.headerPosition, 'absolute');
           assert.ok(layout.digits.top >= layout.timer.top && layout.digits.bottom <= layout.timer.bottom, scenario.name + ': timer fits');
