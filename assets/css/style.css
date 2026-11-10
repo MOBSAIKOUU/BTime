@@ -1696,8 +1696,13 @@ scramble-display {
   .scramble-visual-panel { grid-column: 1; grid-row: 3; border-left: 0; border-top: 1px solid var(--border); padding: 5px 0 0; }
 }
 
-/* Give the iOS PWA an opaque canvas beneath palette background images.
-   Keep the existing page flow; no separate scrolling workspace. */
+/* Use stable vh for installed iOS cold launches, with an opaque canvas under
+   palette images. Keep the existing page flow and browser-tab dvh sizing. */
+html.ios-standalone,
+html.ios-standalone body {
+  min-height: 100vh;
+}
+html.ios-standalone .page-shell { min-height: 100vh; }
 html.ios-standalone body {
   background-color: var(--bg);
   transition: color 0.2s ease;

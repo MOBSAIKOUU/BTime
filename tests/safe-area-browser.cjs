@@ -14,6 +14,7 @@ const cases = [
   { name: 'Desktop', width: 1280, height: 800, desktop: true },
   { name: 'Short desktop', width: 1024, height: 600, desktop: true },
   { name: 'Narrow standalone', width: 320, height: 568, top: 20, standalone: true },
+  { name: 'Standalone cold start with dvh 62px short', width: 393, height: 852, bottom: 34, dynamicHeight: 790, standalone: true },
   { name: 'Standalone native status-bar viewport', width: 393, height: 790, standalone: true },
   { name: 'Standalone without notch', width: 375, height: 667, top: 20, standalone: true },
   { name: 'Standalone notch', width: 390, height: 844, top: 47, bottom: 34, standalone: true },
@@ -36,7 +37,7 @@ const cases = [
         // Zero-inset cases use native env() evaluation to cover ordinary browsers.
         if (Object.values(insets).some(Boolean)) {
           await context.route('**/assets/css/style.css', route => route.fulfill({ contentType: 'text/css',
-            body: css.replace(/env\(safe-area-inset-(top|bottom|left|right)(?:,\s*0px)?\)/g, (_, side) => insets[side] + 'px') }));
+            body: css.replace(/env\(safe-area-inset-(top|bottom|left|right)(?:,\s*0px)?\)/g, (_, side) => insets[side] + 'px').replace(/\b100dvh\b/g, value => scenario.dynamicHeight ? scenario.dynamicHeight + 'px' : value) }));
         }
         await context.route('https://fonts.googleapis.com/**', route => route.fulfill({ contentType: 'text/css', body: '' }));
         await context.addInitScript(standalone => {
@@ -63,6 +64,9 @@ const cases = [
             textHeight: document.querySelector('#scrambleText').clientHeight, textScrollHeight: document.querySelector('#scrambleText').scrollHeight,
             padding: parseFloat(getComputedStyle(document.querySelector('.page-shell')).paddingTop),
             headerPosition: getComputedStyle(document.querySelector('.topbar')).position,
+            rootMinimum: parseFloat(getComputedStyle(document.documentElement).minHeight),
+            bodyMinimum: parseFloat(getComputedStyle(document.body).minHeight),
+            shellMinimum: parseFloat(getComputedStyle(document.querySelector('.page-shell')).minHeight),
             bodyColor: getComputedStyle(document.body).backgroundColor, canvasColor: getComputedStyle(document.documentElement).backgroundColor,
             workspaceOverflow: getComputedStyle(document.querySelector('.app-layout')).overflowY,
             width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight, scrollY };
@@ -78,6 +82,9 @@ const cases = [
               scenario.name + ': header content stays in safe area');
           }
           if (scenario.standalone) {
+            for (const minimum of [layout.rootMinimum, layout.bodyMinimum, layout.shellMinimum]) {
+              assert.equal(minimum, scenario.height, 'Installed PWA fills stable viewport even if dvh initializes short');
+            }
             assert.notEqual(layout.bodyColor, 'rgba(0, 0, 0, 0)', 'Installed PWA canvas must be opaque');
             assert.equal(layout.bodyColor, layout.canvasColor, 'Body and outer canvas match');
             assert.notEqual(layout.workspaceOverflow, 'auto', 'No added workspace scrollbar');
