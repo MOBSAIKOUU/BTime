@@ -12,6 +12,7 @@ const cases = [
   { name: 'Safari portrait', width: 390, height: 664 },
   { name: 'Android portrait', width: 412, height: 915 },
   { name: 'Desktop', width: 1280, height: 800, desktop: true },
+  { name: 'Standalone native status-bar viewport', width: 393, height: 790, standalone: true },
   { name: 'Standalone without notch', width: 375, height: 667, top: 20, standalone: true },
   { name: 'Standalone notch', width: 390, height: 844, top: 47, bottom: 34, standalone: true },
   { name: 'Standalone Dynamic Island', width: 393, height: 852, top: 59, bottom: 34, standalone: true },
@@ -39,6 +40,8 @@ const cases = [
         await context.addInitScript(standalone => {
           Object.defineProperty(navigator, 'standalone', { configurable: true, value: standalone });
           localStorage.setItem('bcube-timer-scramble-333', "R U F2 L2 D B2 R2 U' F2");
+          localStorage.setItem('bcube-timer-scramble-222', "R U F2 R' U2 F R2 U' F2");
+          localStorage.setItem('bcube-timer-scramble-777', Array.from({ length: 100 }, (_, i) => ['Lw2', 'B2', 'U', '3Uw', "Rw'", '3Dw2'][i % 6]).join(' '));
         }, !!scenario.standalone);
         const page = await context.newPage();
         const errors = []; page.on('pageerror', error => errors.push(error.message));
@@ -78,11 +81,30 @@ const cases = [
         assert.ok(menu.y >= menuButton.bottom && menu.y + menu.height <= scenario.height - insets.bottom + 1,
           scenario.name + ': positioned settings menu remains reachable');
         await page.locator('#menuToggle').click();
-        // A fresh launch must retain spacing without inheriting browser reload scroll restoration.
         if (scenario.standalone) {
-          await page.goto(origin + '/?safe-area-relaunch', { waitUntil: 'domcontentloaded' });
-          await page.waitForFunction(() => document.body.dataset.historySaving === 'false');
+          await page.waitForTimeout(100);
+          await check(); // Closing settings must not move the root document.
+          assert.equal(await page.evaluate(() => history.scrollRestoration), 'manual');
+          await page.evaluate(() => window.scrollTo(0, 100));
           await check();
+          await page.reload({ waitUntil: 'domcontentloaded' });
+          await page.waitForFunction(() => document.body.dataset.historySaving === 'false');
+          await check(); // Include same-URL reloads and their previous scroll position.
+          for (const eventCode of ['777', '222', '333']) {
+            await page.selectOption('#eventSelect', eventCode);
+            await page.waitForFunction(() => document.body.dataset.historySaving === 'false');
+            await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+            await check();
+            const workspace = await page.evaluate(() => {
+              const main = document.querySelector('.app-layout');
+              main.scrollTop = main.scrollHeight;
+              return { scroll: main.scrollTop, max: main.scrollHeight - main.clientHeight };
+            });
+            if (workspace.max > 1) assert.ok(workspace.scroll > 0, 'Long content remains reachable');
+            assert.equal(await page.evaluate(() => scrollY), 0, 'Workspace scroll must not move the document');
+            assert.equal(await page.locator('.topbar').evaluate(el => Math.round(el.getBoundingClientRect().top)), Math.round(insets.top + (scenario.height <= 540 && scenario.width > scenario.height ? 4 : 8)));
+            await page.evaluate(() => document.querySelector('.app-layout').scrollTop = 0);
+          }
         }
         assert.deepEqual(errors, [], scenario.name);
         console.log(engine + ': ' + scenario.name + ' passed');

@@ -1700,6 +1700,33 @@ scramble-display {
   .scramble-visual-panel { grid-column: 1; grid-row: 3; border-left: 0; border-top: 1px solid var(--border); padding: 5px 0 0; }
 }
 
+/* Installed iOS apps keep the document at the viewport origin. Only the main
+   workspace scrolls when a long scramble or a small viewport needs more room. */
+html.ios-standalone,
+html.ios-standalone body {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+html.ios-standalone .page-shell {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+html.ios-standalone .topbar { flex-shrink: 0; }
+html.ios-standalone .timer-workspace {
+  min-height: min-content;
+  grid-template-rows: auto minmax(min-content, 1fr) auto;
+}
+html.ios-standalone .app-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 /* Subtle glass on the drawing itself; retain the existing panel dimensions. */
 body[data-palette="liquid-glass"] {
   --panel: rgba(255, 255, 255, 0.42);
