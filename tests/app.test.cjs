@@ -405,6 +405,46 @@ test('accidental touch selections clear without interfering with editable target
   assert.equal(app.run('selectionClears'), 1);
 });
 
+for (const holdEnabled of [false, true]) {
+  test('timer touch gesture blocks the iOS loupe without double starts; hold=' + holdEnabled, () => {
+    const app = createApp();
+    app.run('inspectionEnabled=false;holdToStartEnabled=' + holdEnabled);
+    const panel = app.element('timerPanel');
+    let prevented = 0;
+    const nativeTouch = () => panel.dispatch('touchstart', { touches: [{}], preventDefault() { prevented++; } });
+    panel.dispatch('pointerdown', { pointerType: 'touch' });
+    nativeTouch();
+    assert.equal(prevented, 1);
+    assert.equal(app.run('state'), 'holding');
+    app.holdReady(holdEnabled ? 300 : 100);
+    panel.dispatch('pointerup', { pointerType: 'touch' });
+    assert.equal(app.run('state'), 'solving');
+    app.advance(12340);
+    panel.dispatch('pointerdown', { pointerType: 'touch' });
+    nativeTouch();
+    assert.equal(prevented, 2);
+    assert.equal(app.run('state'), 'ready');
+    assert.equal(app.run('recentSolves.length'), 1);
+    assert.equal(app.run('recentSolves[0].baseTimeMs'), 12340);
+  });
+}
+
+test('loupe prevention leaves controls, manual input and multi-touch alone', () => {
+  const app = createApp();
+  const panel = app.element('timerPanel');
+  let prevented = 0;
+  const dispatch = options => panel.dispatch('touchstart', { touches: [{}], preventDefault() { prevented++; }, ...options });
+  const button = { closest: selector => selector === 'button, select, label, a, [role="button"]' ? button : null };
+  const input = { closest: selector => selector.startsWith('input:not([readonly])') ? input : null };
+  dispatch({ target: button });
+  dispatch({ target: input });
+  dispatch({ touches: [{}, {}] });
+  app.run('manualTimeEntryEnabled=true;syncManualTimeEntry()');
+  dispatch({});
+  assert.equal(prevented, 0);
+  assert.equal(app.element('timerDisplay').readOnly, false);
+});
+
 test('penalties, revert, and trimmed averages retain their behavior', () => {
   const app = createApp();
   app.run('recordSolve(10000); applySolveAction(String(lastSolveId), "plus2")');

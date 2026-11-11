@@ -2341,6 +2341,17 @@ if (menuToggle && settingsMenu) {
 
 // Touch / Mouse Pointer Interaction on Timer Panel
 if (timerPanel) {
+  // iOS can show its tap-and-hold loupe despite user-select:none. Cancel the
+  // native touch gesture here; pointer events still own timer holds/releases.
+  timerPanel.addEventListener('touchstart', (event) => {
+    if (event.touches.length !== 1 ||
+        (manualTimeEntryEnabled && state !== 'solving') ||
+        isEditableTouchTarget(event.target) ||
+        event.target.closest('button, select, label, a, [role="button"]')) return;
+    event.preventDefault();
+    clearAccidentalTouchSelection(event);
+  }, { passive: false });
+
   // Prevent context menu (magnifier/copy callout) on long press
   timerPanel.addEventListener('contextmenu', (event) => {
     if (event.target !== timerDisplay || timerDisplay.readOnly) {
