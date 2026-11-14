@@ -123,6 +123,7 @@ const VALID_MOVE_REGEX = /^(?:[URFDLB]w?|[2-6][URFDLB]w?|[urfdlb])(?:2|')?$/;
 const VALID_PALETTES = [
   'light',
   'night',
+  'spidey',
   'liquid-glass',
   'cartoon',
   'shell-pink',
@@ -610,7 +611,7 @@ function saveHideTimePreference() {
 
 function applyTheme() {
   document.body.classList.toggle('dark-mode',
-    ['night', 'oilspill', 'sunrise', 'shibuya', 'halloween', 'purple-mango', 'conan-blue'].includes(colorPalette));
+    ['night', 'spidey', 'oilspill', 'sunrise', 'shibuya', 'halloween', 'purple-mango', 'conan-blue'].includes(colorPalette));
   document.body.dataset.palette = colorPalette;
   if (colorPaletteSelect) colorPaletteSelect.value = colorPalette;
   if (paletteEditionTag) {
