@@ -42,43 +42,46 @@ body.dark-mode {
   --shadow: 0 24px 60px rgba(2, 6, 23, 0.52);
 }
 
-/* Spidey: suit-red controls, midnight-blue panels, and a quiet web texture. */
+/* Spidey: a suit-red timing surface framed by midnight blue and ink black. */
 body[data-palette="spidey"] {
   color-scheme: dark;
-  --bg: #080e1d;
-  --bg-2: #101d3a;
-  --panel: #101f3b;
-  --panel-strong: #0c172b;
-  --panel-soft: #172e52;
-  --border: #36547a;
-  --text: #f4f7ff;
-  --muted: #afc2df;
-  --accent: #ff6575;
-  --accent-2: #60a5fa;
-  --warning: #facc15;
-  --danger: #ff7b89;
-  --success: #6ee7b7;
-  --shadow: 0 24px 60px #02061180;
-  background:
-    repeating-radial-gradient(ellipse at 100% 0%, transparent 0 70px, #90b4ed0d 71px 72px, transparent 73px 140px),
-    repeating-conic-gradient(from 180deg at 100% 0%, transparent 0deg 14.7deg, #90b4ed0d 14.8deg 15deg, transparent 15.1deg 30deg),
-    linear-gradient(135deg, var(--bg), var(--bg-2));
+  --bg: #111318;
+  --bg-2: #111318;
+  --panel: #19283e;
+  --panel-strong: #1d293b;
+  --panel-soft: #101923;
+  --border: #3b4e68;
+  --text: #fff7f5;
+  --muted: #c1cbd7;
+  --accent: #efadb5;
+  --accent-2: #b8cce5;
+  --warning: #f0ce89;
+  --danger: #ffb9c0;
+  --success: #b0e5c2;
+  --shadow: 0 24px 60px #00000066;
+  background: var(--bg);
+}
+
+body[data-palette="spidey"] .timer-panel {
+  --muted: #f1d7dc;
+  background: #80303b;
+  border-color: #af5b67;
+  box-shadow: inset 0 1px 0 #ffffff0d, 0 12px 32px #00000026;
 }
 
 body[data-palette="spidey"] .primary-button {
-  background: linear-gradient(135deg, #c51e36, #a9132c);
-  border-color: #ff6575;
-  color: #ffffff;
-  box-shadow: 0 8px 24px #c51e362e;
+  background: #923b48;
+  border-color: #b56b76;
+  color: #fff7f5;
+  box-shadow: none;
 }
 
-body[data-palette="spidey"] .timer-panel { border-color: #bc334a; }
-body[data-palette="spidey"] .scramble-panel,
-body[data-palette="spidey"] .history-panel { border-color: #3973bc; }
-body[data-palette="spidey"] h1,
-body[data-palette="spidey"] .panel-label { color: #ff6575; }
-body[data-palette="spidey"] .stat-row strong { color: #8bbdff; }
-body[data-palette="spidey"] select option { background: #101f3b; color: #f4f7ff; }
+body[data-palette="spidey"] .stats-panel { background: #203650; border-color: #486383; }
+body[data-palette="spidey"] .timer-panel .result-action { border-color: #68414e; }
+body[data-palette="spidey"] h1 { color: #df7785; }
+body[data-palette="spidey"] .panel-label { color: var(--text); }
+body[data-palette="spidey"] .stat-row strong { color: var(--text); }
+body[data-palette="spidey"] select option { background: var(--panel-soft); color: var(--text); }
 
 /* Liquid Glass */
 body[data-palette="liquid-glass"] {
