@@ -83,24 +83,42 @@ body[data-palette="spidey"] .panel-label { color: var(--text); }
 body[data-palette="spidey"] .stat-row strong { color: var(--text); }
 body[data-palette="spidey"] select option { background: var(--panel-soft); color: var(--text); }
 
-/* Liquid Glass */
-body[data-palette="liquid-glass"] {
-  --bg: #dce9f5;
-  --bg-2: #eae4f5;
-  --panel: rgba(255, 255, 255, 0.42);
-  --panel-strong: rgba(255, 255, 255, 0.64);
-  --panel-soft: rgba(255, 255, 255, 0.36);
-  --border: rgba(255, 255, 255, 0.72);
-  --text: #172b43;
-  --muted: #405873;
-  --accent: #145bc0;
-  --accent-2: #3477df;
-  --warning: #985000;
-  --danger: #b42342;
-  --success: #157347;
-  --shadow: 0 20px 60px rgba(61, 88, 139, 0.16);
+/* Tuxedo: ink-black surfaces, warm copper trim, and bronze typography. */
+body[data-palette="tuxedo"] {
+  color-scheme: dark;
+  --bg: #0d0c0b;
+  --bg-2: #0d0c0b;
+  --panel: #1b1816;
+  --panel-strong: #151311;
+  --panel-soft: #26211c;
+  --border: #6f513b;
+  --text: #f2e8dc;
+  --muted: #c4ad97;
+  --accent: #daa77b;
+  --accent-2: #c99163;
+  --warning: #e3bf7e;
+  --danger: #e9a3a0;
+  --success: #adc5a0;
+  --shadow: 0 24px 60px #00000066;
+  background: var(--bg);
 }
 
+body[data-palette="tuxedo"] .timer-panel {
+  --text: #e2b58e;
+  border-color: #8b6547;
+  box-shadow: inset 0 1px 0 #c9986733;
+}
+
+body[data-palette="tuxedo"] .primary-button {
+  background: #ba8254;
+  border-color: #dba87e;
+  color: #17110c;
+  box-shadow: none;
+}
+
+body[data-palette="tuxedo"] h1,
+body[data-palette="tuxedo"] .stat-row strong { color: var(--accent); }
+body[data-palette="tuxedo"] select option { background: var(--panel-soft); color: var(--text); }
 
 /* Bella Pink */
 body[data-palette="shell-pink"] {
@@ -1747,89 +1765,6 @@ html.ios-standalone .page-shell { min-height: 100vh; }
 html.ios-standalone body {
   background-color: var(--bg);
   transition: color 0.2s ease;
-}
-
-/* Subtle glass on the drawing itself; retain the existing panel dimensions. */
-body[data-palette="liquid-glass"] {
-  --panel: rgba(255, 255, 255, 0.42);
-  --panel-strong: rgba(255, 255, 255, 0.64);
-  --panel-soft: rgba(255, 255, 255, 0.36);
-  --border: rgba(255, 255, 255, 0.72);
-  background:
-    radial-gradient(ellipse at 8% 12%, rgba(123, 191, 247, 0.68), transparent 52%),
-    radial-gradient(ellipse at 95% 42%, rgba(197, 164, 244, 0.6), transparent 48%),
-    radial-gradient(ellipse at 30% 100%, rgba(151, 223, 210, 0.62), transparent 55%),
-    linear-gradient(145deg, #e7f0fa, #eae5f4);
-}
-
-body[data-palette="liquid-glass"] .page-shell { background: transparent; }
-
-body[data-palette="liquid-glass"] .panel,
-body[data-palette="liquid-glass"] .settings-menu,
-body[data-palette="liquid-glass"] .solve-dialog {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.22));
-  border-color: var(--border);
-  border-radius: 18px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.24), 0 8px 28px rgba(56, 82, 131, 0.12);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
-  backdrop-filter: blur(18px) saturate(145%);
-}
-
-body[data-palette="liquid-glass"] .settings-menu,
-body[data-palette="liquid-glass"] .solve-dialog {
-  background-color: rgba(240, 246, 255, 0.76);
-}
-
-body[data-palette="liquid-glass"] .stat-row,
-body[data-palette="liquid-glass"] .solve-record-button,
-body[data-palette="liquid-glass"] .saved-scramble-panel,
-body[data-palette="liquid-glass"] .secondary-button,
-body[data-palette="liquid-glass"] .ghost-button,
-body[data-palette="liquid-glass"] .scramble-refresh {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.25));
-  border-color: var(--border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 3px 10px rgba(61, 88, 139, 0.06);
-}
-
-body[data-palette="liquid-glass"] .event-select,
-body[data-palette="liquid-glass"] .palette-select {
-  background-color: rgba(255, 255, 255, 0.65);
-  color: var(--text);
-}
-
-body[data-palette="liquid-glass"] select option { background: #edf3fb; color: #172b43; }
-body[data-palette="liquid-glass"] .solve-dialog::backdrop { background: rgba(38, 58, 95, 0.22); }
-
-body[data-palette="liquid-glass"] .scramble-visual-panel {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-}
-
-body[data-palette="liquid-glass"] .scramble-visual-panel scramble-display {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: transparent;
-  box-shadow: none;
-  -webkit-backdrop-filter: blur(12px) saturate(120%);
-  backdrop-filter: blur(12px) saturate(120%);
-}
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  body[data-palette="liquid-glass"] .panel,
-  body[data-palette="liquid-glass"] .settings-menu,
-  body[data-palette="liquid-glass"] .solve-dialog { background: rgba(242, 247, 255, 0.94); }
-  body[data-palette="liquid-glass"] .scramble-visual-panel scramble-display { background: #edf3fb; }
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  body[data-palette="liquid-glass"] .panel,
-  body[data-palette="liquid-glass"] .settings-menu,
-  body[data-palette="liquid-glass"] .solve-dialog,
-  body[data-palette="liquid-glass"] .scramble-visual-panel scramble-display {
-    background: #edf3fb;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
 
 /* Cartoon: full-viewport paper, ink outlines, and compact offset shadows. */

@@ -124,7 +124,7 @@ const VALID_PALETTES = [
   'light',
   'night',
   'spidey',
-  'liquid-glass',
+  'tuxedo',
   'cartoon',
   'shell-pink',
   'dessert',
@@ -575,6 +575,10 @@ function loadThemePreference() {
     }
 
     const normalized = typeof parsed === 'string' ? parsed.toLowerCase() : parsed;
+    if (normalized === 'liquid-glass') {
+      writeStoredValue(THEME_STORAGE_KEY, JSON.stringify('tuxedo'));
+      return 'tuxedo';
+    }
     return VALID_PALETTES.includes(normalized) ? normalized : 'light';
   } catch (error) {
     return 'light';
@@ -611,7 +615,7 @@ function saveHideTimePreference() {
 
 function applyTheme() {
   document.body.classList.toggle('dark-mode',
-    ['night', 'spidey', 'oilspill', 'sunrise', 'shibuya', 'halloween', 'purple-mango', 'conan-blue'].includes(colorPalette));
+    ['night', 'spidey', 'tuxedo', 'oilspill', 'sunrise', 'shibuya', 'halloween', 'purple-mango', 'conan-blue'].includes(colorPalette));
   document.body.dataset.palette = colorPalette;
   if (colorPaletteSelect) colorPaletteSelect.value = colorPalette;
   if (paletteEditionTag) {
