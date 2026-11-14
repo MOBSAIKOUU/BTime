@@ -1,6 +1,6 @@
 /* Bump this version whenever HTML, CSS, JavaScript, or vendor assets change. */
 const CACHE_PREFIX = 'btime-';
-const CACHE_VERSION = 'v54';
+const CACHE_VERSION = 'v55';
 const SHELL_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-shell`;
 const STATIC_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-static`;
 const FONT_CACHE = `${CACHE_PREFIX}fonts-v1`;

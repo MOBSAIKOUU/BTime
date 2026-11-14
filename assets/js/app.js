@@ -105,6 +105,7 @@ const VALID_RESULTS = new Set(['ok', '+2', 'dnf']);
 // WCA Supported Events
 const EVENTS = [
   { code: '333', label: '3x3' },
+  { code: '333oh', label: '3x3 OH', scrambleCode: '333' },
   { code: '222', label: '2x2' },
   { code: '444', label: '4x4' },
   { code: '555', label: '5x5' },
@@ -246,10 +247,11 @@ function updateScrambleVisualization(eventCode, scrambleValue) {
   }
 
   const startedAt = performance.now();
-  if (scrambleVisualization.getAttribute('event') !== eventCode) {
+  const drawingEventCode = getScrambleEventCode(eventCode);
+  if (scrambleVisualization.getAttribute('event') !== drawingEventCode) {
     const nextVisualization = document.createElement('scramble-display');
     nextVisualization.id = 'scrambleVisualization';
-    nextVisualization.setAttribute('event', eventCode);
+    nextVisualization.setAttribute('event', drawingEventCode);
     nextVisualization.setAttribute('visualization', '2D');
     nextVisualization.setAttribute('aria-label', 'Current scramble drawing');
     scrambleVisualization.replaceWith(nextVisualization);
@@ -271,6 +273,11 @@ function eventStorageKey(eventCode) {
 
 function scrambleStorageKey(eventCode) {
   return `bcube-timer-scramble-${eventCode}`;
+}
+
+// Sessions may share a puzzle generator while keeping independent history/queues.
+function getScrambleEventCode(eventCode) {
+  return EVENTS.find((event) => event.code === eventCode)?.scrambleCode || eventCode;
 }
 
 function getEventLabel(eventCode) {
@@ -629,8 +636,8 @@ async function loadScrambler() {
   if (!tnoodleScramblerPromise) {
     tnoodleScramblerPromise = import('/assets/js/tnoodle-client.mjs')
       .then(({ randomScrambleForEvent, setActiveEvent }) => (eventCode, options) => {
-        setActiveEvent(currentEvent);
-        return randomScrambleForEvent(eventCode, options);
+        setActiveEvent(getScrambleEventCode(currentEvent));
+        return randomScrambleForEvent(getScrambleEventCode(eventCode), options);
       })
       .catch((error) => { tnoodleScramblerPromise = null; throw error; });
   }
@@ -645,7 +652,7 @@ async function loadScrambler() {
 async function getNewScramble(eventCode, background = false) {
   const startedAt = performance.now();
   const randomScrambleForEvent = await loadScrambler();
-  const isCube = CUBE_EVENTS.has(eventCode);
+  const isCube = CUBE_EVENTS.has(getScrambleEventCode(eventCode));
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const generatedScramble = await randomScrambleForEvent(eventCode, { background });
@@ -1074,7 +1081,7 @@ function showSolveDetails(solveId) {
     solveDetailDrawing.hidden = !entry.scramble;
     if (entry.scramble) {
       const drawing = document.createElement('scramble-display');
-      drawing.setAttribute('event', currentEvent);
+      drawing.setAttribute('event', getScrambleEventCode(currentEvent));
       drawing.setAttribute('visualization', '2D');
       drawing.setAttribute('scramble', entry.scramble);
       drawing.setAttribute('role', 'img');

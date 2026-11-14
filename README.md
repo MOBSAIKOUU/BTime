@@ -28,7 +28,10 @@ App (PWA).
 
 ### Supported puzzles
 
-2x2, 3x3, 4x4, 5x5, 6x6, 7x7, Clock, Megaminx, Pyraminx, Skewb, and Square-1.
+2x2, 3x3, 3x3 OH (one-handed), 4x4, 5x5, 6x6, 7x7, Clock, Megaminx, Pyraminx, Skewb, and Square-1.
+
+3x3 OH uses the normal 3x3 scramble generator and drawing, with its own solve
+history, averages, and saved scramble.
 
 ## Run locally
 

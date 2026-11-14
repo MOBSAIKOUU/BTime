@@ -843,3 +843,46 @@ test('unchanged history refreshes preserve record buttons during asynchronous sa
   app.run('renderHistory(); renderStats(); renderHistory()');
   assert.equal(app.element('solveList').children[0], item);
 });
+
+test('3x3 OH has independent saved history, statistics and selection', () => {
+  const regular = Array.from({ length: 5 }, (_, i) => ({ id: 'regular-' + i, baseTimeMs: 10000 + i * 1000, result: 'ok', scramble: 'R U2 F2' }));
+  const oh = Array.from({ length: 5 }, (_, i) => ({ id: 'oh-' + i, baseTimeMs: 20000 + i * 1000, result: 'ok', scramble: "F R U2 R'" }));
+  const app = createApp({ 'bcube-timer-event': '333oh', 'bcube-timer-history': JSON.stringify(regular),
+    'bcube-timer-history-333oh': JSON.stringify(oh) });
+  assert.equal(app.run('currentEvent'), '333oh');
+  assert.equal(app.element('eventSelect').value, '333oh');
+  assert.equal(app.element('avg5').textContent, '22.00');
+  assert.equal(app.run('recentSolves[0].tag'), '3x3 OH');
+  assert.notEqual(app.run("eventStorageKey('333oh')"), app.run("eventStorageKey('333')"));
+  app.run('recordSolve(15000)');
+  assert.equal(JSON.parse(app.storage.get('bcube-timer-history')).length, 5);
+  assert.equal(JSON.parse(app.storage.get('bcube-timer-history-333oh')).length, 6);
+  app.run("updateScrambleVisualization('333oh', 'R U2 F2');openSolveDetails(String(lastSolveId))");
+  assert.equal(app.run("scrambleVisualization.getAttribute('event')"), '333');
+  assert.equal(app.element('solveDetailDrawing').children[0].getAttribute('event'), '333');
+  app.element('solveDetails').close();
+  const restored = createApp(Object.fromEntries(app.storage));
+  assert.equal(restored.run('currentEvent'), '333oh');
+  assert.equal(restored.run('recentSolves.length'), 6);
+  app.element('eventSelect').value = '333'; app.element('eventSelect').dispatch('change');
+  assert.equal(app.run('recentSolves.length'), 5);
+  assert.equal(app.element('avg5').textContent, '12.00');
+  app.element('eventSelect').value = '333oh'; app.element('eventSelect').dispatch('change');
+  app.element('clearHistory').dispatch('click'); app.element('confirmClearHistory').dispatch('click');
+  assert.equal(app.run('recentSolves.length'), 0);
+  assert.equal(JSON.parse(app.storage.get('bcube-timer-history')).length, 5);
+});
+
+test('3x3 OH uses and validates the ordinary 3x3 engine without sending a new worker code', async () => {
+  const app = createApp();
+  app.run(`currentEvent='333oh';tnoodleScramblerPromise=null;
+    window.engineCalls=[];window.activeCodes=[];window.samples=['INVALID', "R U2 F2"];
+    loadExternalModule=async()=>({
+      setActiveEvent:code=>window.activeCodes.push(code),
+      randomScrambleForEvent:async(code,options)=>{window.engineCalls.push({code,background:options.background});return window.samples.shift();}
+    });`);
+  assert.equal(await app.run("getNewScramble('333oh')"), 'R U2 F2');
+  assert.deepEqual(JSON.parse(app.run('JSON.stringify(window.engineCalls)')), [{ code: '333', background: false }, { code: '333', background: false }]);
+  assert.equal(app.run('window.activeCodes.every(code=>code==="333")'), true);
+  assert.notEqual(app.run("getScrambleQueue('333oh')"), app.run("getScrambleQueue('333')"));
+});
