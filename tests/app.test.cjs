@@ -854,10 +854,10 @@ test('3x3 OH has independent saved history, statistics and selection', () => {
   assert.equal(app.element('avg5').textContent, '22.00');
   assert.equal(app.run('recentSolves[0].tag'), '3x3 OH');
   assert.notEqual(app.run("eventStorageKey('333oh')"), app.run("eventStorageKey('333')"));
-  app.run('recordSolve(15000)');
+  app.run("scramble = ['R', 'U2', 'F2']; recordSolve(15000)");
   assert.equal(JSON.parse(app.storage.get('bcube-timer-history')).length, 5);
   assert.equal(JSON.parse(app.storage.get('bcube-timer-history-333oh')).length, 6);
-  app.run("updateScrambleVisualization('333oh', 'R U2 F2');openSolveDetails(String(lastSolveId))");
+  app.run("updateScrambleVisualization('333oh', 'R U2 F2');showSolveDetails(String(lastSolveId))");
   assert.equal(app.run("scrambleVisualization.getAttribute('event')"), '333');
   assert.equal(app.element('solveDetailDrawing').children[0].getAttribute('event'), '333');
   app.element('solveDetails').close();

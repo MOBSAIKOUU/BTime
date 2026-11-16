@@ -620,6 +620,7 @@ function applyTheme() {
   if (colorPaletteSelect) colorPaletteSelect.value = colorPalette;
   if (paletteEditionTag) {
     const editionLabels = {
+      'spidey': "L4E's Signature",
       'purple-mango': "Kyu's Signature",
       'milk-stick': "Trish's Signature",
       'conan-blue': "Shin's Signature",

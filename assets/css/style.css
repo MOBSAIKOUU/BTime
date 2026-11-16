@@ -1868,6 +1868,7 @@ body[data-palette="cartoon"] .solve-dialog::backdrop { background: rgba(41, 36, 
   text-transform: uppercase;
 }
 .palette-edition-tag[hidden] { display: none; }
+body[data-palette="spidey"] .palette-edition-tag { text-transform: none; }
 
 /* Milk Stick: Trish's royal-blue, navy, and creamy-yellow signature palette. */
 body[data-palette="milk-stick"] {
