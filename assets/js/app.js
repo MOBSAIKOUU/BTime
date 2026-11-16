@@ -1,6 +1,6 @@
 /**
  * @file BTime - Rubik's Cube Speedcubing Timer Application
- * @description Provides offline TNoodle scramble generation, 15s WCA inspection,
+ * @description Provides offline TNoodle scramble generation, 15s inspection,
  * spacebar/touch timing, manual time entry, Ao5 through Ao100 session statistics,
  * solve penalty management (DNF/+2), and multi-event support.
  */
@@ -448,6 +448,19 @@ async function initializeHistory() {
   return historyInitialization;
 }
 
+async function persistHistoryOperation(operation) {
+  const { eventCode } = operation;
+  await migrateHistoryEvent(eventCode);
+  if (operation.type === 'append') {
+    await historyStore.append(eventCode, operation.entry);
+  } else if (operation.type === 'change') {
+    await historyStore.change(eventCode, operation.id, operation.action);
+  } else if (operation.type === 'clear') {
+    await historyStore.clear(eventCode);
+    writeStoredValue(eventStorageKey(eventCode), '[]');
+  }
+}
+
 function flushHistoryOperations() {
   if (historyFlushPromise) return historyFlushPromise;
   historyFlushPromise = (async () => {
@@ -457,13 +470,7 @@ function flushHistoryOperations() {
         while (pendingHistoryOperations.length) {
           const operation = pendingHistoryOperations[0];
           try {
-            await migrateHistoryEvent(operation.eventCode);
-            if (operation.type === 'append') await historyStore.append(operation.eventCode, operation.entry);
-            else if (operation.type === 'change') await historyStore.change(operation.eventCode, operation.id, operation.action);
-            else if (operation.type === 'clear') {
-              await historyStore.clear(operation.eventCode);
-              writeStoredValue(eventStorageKey(operation.eventCode), '[]');
-            }
+            await persistHistoryOperation(operation);
           } catch (error) {
             // An explicit Clear supersedes unsaved changes for this event, even if
             // the in-flight write fails because storage is full.
@@ -481,7 +488,10 @@ function flushHistoryOperations() {
     } catch (error) {
       historyMessage('Could not save history. Keep this tab open and Retry after freeing browser storage.', true);
       console.error('Unable to save solve history.', error);
-    } finally { historyFlushPromise = null; syncHistorySaveState(); }
+    } finally {
+      historyFlushPromise = null;
+      syncHistorySaveState();
+    }
   })();
   return historyFlushPromise;
 }
@@ -927,20 +937,34 @@ function syncStatisticButtons() {
   }
 }
 
+function getSessionStatistics() {
+  if (historySnapshot) {
+    const { bestSingle, bestAvg5, total, validCount } = historySnapshot;
+    return { bestSingle, bestAvg5, meanTime: validCount ? total / validCount : null };
+  }
+
+  const validSolves = recentSolves.filter(solve => Number.isFinite(getSolveValue(solve)));
+  const bestSingle = validSolves.reduce((best, solve) =>
+    !best || getSolveValue(solve) < getSolveValue(best) ? solve : best, null);
+  const totalTime = validSolves.reduce((sum, solve) => sum + getSolveValue(solve), 0);
+  return {
+    bestSingle,
+    bestAvg5: getBestAverage(recentSolves, 5),
+    meanTime: validSolves.length ? totalTime / validSolves.length : null,
+  };
+}
+
 function renderStats() {
   if (!bestTimeEl || !bestAvg5El) return;
-  const validSolves = recentSolves.filter(solve => Number.isFinite(getSolveValue(solve)));
-  const bestSingle = historySnapshot ? historySnapshot.bestSingle : validSolves.reduce((best, solve) =>
-    !best || getSolveValue(solve) < getSolveValue(best) ? solve : best, null);
-  const meanTime = historySnapshot ? (historySnapshot.validCount ? historySnapshot.total / historySnapshot.validCount : null) : validSolves.length
-    ? validSolves.reduce((sum, solve) => sum + getSolveValue(solve), 0) / validSolves.length : null;
-  const bestAvg5 = historySnapshot ? historySnapshot.bestAvg5 : getBestAverage(recentSolves, 5);
+  const { bestSingle, bestAvg5, meanTime } = getSessionStatistics();
   statisticTargets = { bestSingle, bestAvg5 };
   for (const size of AVERAGE_SIZES) {
     const kind = 'avg' + size;
     const average = historySnapshot?.[kind] || getTrimmedAverage(recentSolves, size);
     statisticTargets[kind] = average.solves.length ? average : null;
-    if (averageTimeElements[size]) averageTimeElements[size].textContent = average.isDnf ? 'DNF' : formatMetric(average.value);
+    if (averageTimeElements[size]) {
+      averageTimeElements[size].textContent = average.isDnf ? 'DNF' : formatMetric(average.value);
+    }
   }
   bestTimeEl.textContent = formatMetric(bestSingle ? getSolveValue(bestSingle) : null);
   bestAvg5El.textContent = formatMetric(bestAvg5?.value);
@@ -989,33 +1013,70 @@ function formatHistoryValue(entry) {
   return entry.result === '+2' ? `${formatTime(value)} +2` : formatTime(value);
 }
 
-/**
- * Renders the session solves list.
- */
-function renderHistory() {
-  if (!solveList) {
-    return;
+function syncHistoryPagination(total, offset, visibleCount) {
+  if (clearHistoryButton) clearHistoryButton.disabled = historyLoading || state === 'solving';
+  if (historyPagination) historyPagination.hidden = total <= HISTORY_PAGE_SIZE;
+  if (historyRange) {
+    const firstSolveNumber = total - offset - visibleCount + 1;
+    const lastSolveNumber = total - offset;
+    historyRange.textContent = total ? firstSolveNumber + '–' + lastSolveNumber + ' of ' + total : '';
   }
+
+  const busy = historyLoading || historyPageLoading || state !== 'ready' || pendingHistoryOperations.length > 0;
+  const hasOlder = usesIndexedHistory ? Boolean(historySnapshot?.hasOlder) : offset + HISTORY_PAGE_SIZE < total;
+  const hasNewer = usesIndexedHistory ? historyNewerAnchors.length > 0 : offset !== 0;
+  if (olderHistoryButton) olderHistoryButton.disabled = busy || !hasOlder;
+  if (newerHistoryButton) newerHistoryButton.disabled = busy || !hasNewer;
+}
+
+function createHistoryItem(entry, solveNumber) {
+  const item = document.createElement('li');
+  item.className = 'solve-item';
+
+  const recordButton = document.createElement('button');
+  recordButton.className = 'solve-record-button';
+  recordButton.type = 'button';
+  recordButton.dataset.solveId = String(entry.id);
+
+  const indexLabel = document.createElement('span');
+  indexLabel.className = 'index';
+  indexLabel.textContent = String(solveNumber);
+
+  const timeLabel = document.createElement('span');
+  timeLabel.className = 'time';
+  timeLabel.textContent = formatHistoryValue(entry);
+
+  const tagLabel = document.createElement('span');
+  tagLabel.className = 'tag';
+  tagLabel.textContent = entry.result === 'dnf' ? 'DNF' : entry.tag;
+
+  recordButton.append(indexLabel, timeLabel, tagLabel);
+  item.appendChild(recordButton);
+  return item;
+}
+
+function renderHistory() {
+  if (!solveList) return;
 
   const total = historySnapshot ? historySnapshot.count : recentSolves.length;
   const offset = usesIndexedHistory ? historySnapshot?.pageOffset || 0 : historyFallbackOffset;
-  const visible = usesIndexedHistory ? historyPageSolves || recentSolves.slice(-HISTORY_PAGE_SIZE)
-    : recentSolves.slice(Math.max(0, recentSolves.length - offset - HISTORY_PAGE_SIZE), recentSolves.length - offset);
-  if (clearHistoryButton) clearHistoryButton.disabled = historyLoading || state === 'solving';
-  if (historyPagination) historyPagination.hidden = total <= HISTORY_PAGE_SIZE;
-  if (historyRange) historyRange.textContent = total ? (total - offset - visible.length + 1) + '–' + (total - offset) + ' of ' + total : '';
-  const busy = historyLoading || historyPageLoading || state !== 'ready' || pendingHistoryOperations.length > 0;
-  if (olderHistoryButton) olderHistoryButton.disabled = busy || (usesIndexedHistory ? !historySnapshot?.hasOlder : offset + HISTORY_PAGE_SIZE >= total);
-  if (newerHistoryButton) newerHistoryButton.disabled = busy || (usesIndexedHistory ? !historyNewerAnchors.length : offset === 0);
+  let visibleSolves;
+  if (usesIndexedHistory) {
+    visibleSolves = historyPageSolves || recentSolves.slice(-HISTORY_PAGE_SIZE);
+  } else {
+    const end = recentSolves.length - offset;
+    visibleSolves = recentSolves.slice(Math.max(0, end - HISTORY_PAGE_SIZE), end);
+  }
+  syncHistoryPagination(total, offset, visibleSolves.length);
 
-  // A committed snapshot usually matches the optimistic rows. Preserve their DOM
-  // nodes so an asynchronous save cannot detach a button under a tapping finger.
-  const signature = JSON.stringify([total, offset, historyLoading, visible.map(solve => [solve.id, solve.baseTimeMs, solve.result, solve.tag])]);
+  // Preserve matching rows so an asynchronous save cannot detach a tapped button.
+  const signature = JSON.stringify([total, offset, historyLoading,
+    visibleSolves.map(solve => [solve.id, solve.baseTimeMs, solve.result, solve.tag])]);
   if (signature === historyRenderedSignature) return;
   historyRenderedSignature = signature;
   solveList.replaceChildren();
 
-  if (!visible.length) {
+  if (!visibleSolves.length) {
     const emptyItem = document.createElement('li');
     emptyItem.className = 'solve-empty';
     emptyItem.textContent = historyLoading ? 'Loading saved solves...' : 'No solves yet in this session.';
@@ -1023,30 +1084,8 @@ function renderHistory() {
     return;
   }
 
-  [...visible].reverse().forEach((entry, index) => {
-    const item = document.createElement('li');
-    item.className = 'solve-item';
-
-    const recordButton = document.createElement('button');
-    recordButton.className = 'solve-record-button';
-    recordButton.type = 'button';
-    recordButton.dataset.solveId = String(entry.id);
-
-    const indexLabel = document.createElement('span');
-    indexLabel.className = 'index';
-    indexLabel.textContent = String(total - offset - index);
-
-    const timeLabel = document.createElement('span');
-    timeLabel.className = 'time';
-    timeLabel.textContent = formatHistoryValue(entry);
-
-    const tagLabel = document.createElement('span');
-    tagLabel.className = 'tag';
-    tagLabel.textContent = entry.result === 'dnf' ? 'DNF' : entry.tag;
-
-    recordButton.append(indexLabel, timeLabel, tagLabel);
-    item.appendChild(recordButton);
-    solveList.appendChild(item);
+  [...visibleSolves].reverse().forEach((entry, index) => {
+    solveList.appendChild(createHistoryItem(entry, total - offset - index));
   });
 }
 
@@ -1542,10 +1581,7 @@ function clearManualTimeDraft() {
 function resetSession() {
   cancelInspectionGracePeriod();
   cancelAnimation();
-  if (holdTimeoutId !== null) {
-    clearTimeout(holdTimeoutId);
-    holdTimeoutId = null;
-  }
+  clearHoldTimeout();
   isHoldReady = false;
   isSpaceDown = false;
   justStopped = false;
@@ -1653,6 +1689,53 @@ function prepareDelayedStart(vibrate = false, delayMs = REQUIRED_HOLD_MS) {
 // Even with hold delay off, ignore accidental presses shorter than 100 ms.
 function prepareQuickStart() {
   prepareDelayedStart(false, MIN_START_PRESS_MS);
+}
+
+function clearHoldTimeout() {
+  if (holdTimeoutId !== null) {
+    clearTimeout(holdTimeoutId);
+    holdTimeoutId = null;
+  }
+}
+
+function prepareStartPress(vibrate = false) {
+  if (holdToStartEnabled) {
+    prepareDelayedStart(vibrate);
+  } else {
+    prepareQuickStart();
+  }
+}
+
+function restoreLastSolveDisplay() {
+  const lastSolve = findSolve(lastSolveId);
+  const value = lastSolve && Number.isFinite(lastSolve.baseTimeMs) ? formatTime(lastSolve.baseTimeMs) : '0.00';
+  updateDisplay(value);
+}
+
+// Return whether the release starts a solve or cancels a pending start.
+function releasePreparedStart() {
+  const wasHoldReady = isHoldReady;
+  isHoldReady = false;
+  timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
+
+  if (wasHoldReady) {
+    if (state === 'holding' || state === 'inspecting' || state === 'readyToSolve') {
+      beginSolve();
+      return true;
+    }
+    return false;
+  }
+
+  if (state === 'holding') {
+    setTimerState('ready');
+    restoreLastSolveDisplay();
+    return true;
+  }
+  if (state === 'inspecting') {
+    timerState.textContent = 'Inspecting';
+    timerState.className = 'timer-state inspecting';
+  }
+  return false;
 }
 
 function requestDeleteSolve(entry) {
@@ -1803,35 +1886,14 @@ window.addEventListener('keydown', (event) => {
 
   isSpaceDown = true;
 
-  // During inspection: arm on press and start on release, with an optional hold delay.
-  if (state === 'inspecting' || state === 'readyToSolve') {
-    if (holdToStartEnabled) {
-      prepareDelayedStart(false);
-
-      return;
-    } else {
-      prepareQuickStart();
-      return;
-    }
+  if (state === 'ready' && inspectionEnabled) {
+    spaceStartedInspection = true;
+    beginInspection();
+    return;
   }
 
-  // When ready: if inspection is enabled, start inspection immediately on tap (no hold delay)
-  if (state === 'ready') {
-    if (inspectionEnabled) {
-      spaceStartedInspection = true;
-      beginInspection();
-      return;
-    }
-
-    // If inspection is disabled: check holdToStart setting
-    if (holdToStartEnabled) {
-      prepareDelayedStart(false);
-
-      return;
-    } else {
-      prepareQuickStart();
-      return;
-    }
+  if (state === 'ready' || state === 'inspecting' || state === 'readyToSolve') {
+    prepareStartPress();
   }
 });
 window.addEventListener('keyup', (event) => {
@@ -1843,12 +1905,9 @@ window.addEventListener('keyup', (event) => {
   spaceStartedInspection = false;
   isSpaceDown = false;
 
-  if (holdTimeoutId !== null) {
-    clearTimeout(holdTimeoutId);
-    holdTimeoutId = null;
-  }
+  clearHoldTimeout();
 
-    // Ignore keyup from the stopping tap
+  // Ignore keyup from the stopping tap
   if (justStopped) {
     justStopped = false;
     return;
@@ -1866,48 +1925,11 @@ window.addEventListener('keyup', (event) => {
     }
     return;
   }
-  // Releasing after full hold: start solve!
-  if (isHoldReady) {
-    isHoldReady = false;
-    timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
-
-    if (state === 'holding') {
-      beginSolve();
-      return;
-    }
-
-    if (state === 'inspecting' || state === 'readyToSolve') {
-      beginSolve();
-      return;
-    }
-  } else {
-    // Released too early -> Cancel and do not start!
-    isHoldReady = false;
-    timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
-
-    if (state === 'holding') {
-      setTimerState('ready');
-      const lastSolve = findSolve(lastSolveId);
-      if (lastSolve && Number.isFinite(lastSolve.baseTimeMs)) {
-        updateDisplay(formatTime(lastSolve.baseTimeMs));
-      } else {
-        updateDisplay('0.00');
-      }
-      return;
-    }
-
-    if (state === 'inspecting') {
-      timerState.textContent = 'Inspecting';
-      timerState.className = 'timer-state inspecting';
-    }
-  }
+  releasePreparedStart();
 });
 
 window.addEventListener('blur', () => {
-  if (holdTimeoutId !== null) {
-    clearTimeout(holdTimeoutId);
-    holdTimeoutId = null;
-  }
+  clearHoldTimeout();
   isHoldReady = false;
   timerDisplay?.classList.remove('holding-wait', 'holding-ready', 'space-held');
   if (state === 'holding') {
@@ -2416,39 +2438,16 @@ if (timerPanel) {
     if (event.pointerId !== undefined) timerPanel.setPointerCapture?.(event.pointerId);
     justStoppedPointer = false;
 
-        // When ready: if inspection is enabled, start inspection immediately on tap (no hold delay)
-    if (state === 'ready') {
-      if (inspectionEnabled) {
-        pointerStartedInspection = true;
-        beginInspection();
-        event.preventDefault();
-        return;
-      }
-      // If inspection is disabled: check holdToStart setting
-      if (holdToStartEnabled) {
-        prepareDelayedStart(true);
-
-        event.preventDefault();
-        return;
-      } else {
-        prepareQuickStart();
-        event.preventDefault();
-        return;
-      }
+    if (state === 'ready' && inspectionEnabled) {
+      pointerStartedInspection = true;
+      beginInspection();
+      event.preventDefault();
+      return;
     }
 
-    // During inspection: arm on press and start on release, with an optional hold delay.
-    if (state === 'inspecting' || state === 'readyToSolve') {
-      if (holdToStartEnabled) {
-        prepareDelayedStart(true);
-
-        event.preventDefault();
-        return;
-      } else {
-        prepareQuickStart();
-        event.preventDefault();
-        return;
-      }
+    if (state === 'ready' || state === 'inspecting' || state === 'readyToSolve') {
+      prepareStartPress(true);
+      event.preventDefault();
     }
   };
   timerPanel.addEventListener('pointerdown', handlePointerPress);
@@ -2468,13 +2467,10 @@ if (timerPanel) {
       return;
     }
 
-    if (holdTimeoutId !== null) {
-      clearTimeout(holdTimeoutId);
-      holdTimeoutId = null;
-    }
+    clearHoldTimeout();
 
     activeTouchId = null;
-        if (justStoppedPointer || performance.now() - lastSolveStoppedAt < 600) {
+    if (justStoppedPointer || performance.now() - lastSolveStoppedAt < 600) {
       justStoppedPointer = false;
       return;
     }
@@ -2484,45 +2480,9 @@ if (timerPanel) {
       pointerStartedInspection = false;
       return;
     }
-    // If held for full hold duration: start solve!
-    if (isHoldReady) {
-      isHoldReady = false;
-      timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
-
-      if (state === 'holding') {
-        beginSolve();
-        pointerStartedInspection = false;
-        event.preventDefault();
-        return;
-      }
-
-      if (state === 'inspecting' || state === 'readyToSolve') {
-        beginSolve();
-        pointerStartedInspection = false;
-        event.preventDefault();
-        return;
-      }
-    } else {
-      // Released too early -> Cancel and do not start!
-      isHoldReady = false;
-      timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
-
-      if (state === 'holding') {
-        setTimerState('ready');
-        const lastSolve = findSolve(lastSolveId);
-        if (lastSolve && Number.isFinite(lastSolve.baseTimeMs)) {
-          updateDisplay(formatTime(lastSolve.baseTimeMs));
-        } else {
-          updateDisplay('0.00');
-        }
-        event.preventDefault();
-        return;
-      }
-
-      if (state === 'inspecting') {
-        timerState.textContent = 'Inspecting';
-        timerState.className = 'timer-state inspecting';
-      }
+    if (releasePreparedStart()) {
+      pointerStartedInspection = false;
+      event.preventDefault();
     }
   };
 
@@ -2534,21 +2494,13 @@ if (timerPanel) {
   const cancelPointerHold = (event) => {
     if (activeTouchId !== null && event.pointerId !== undefined && activeTouchId !== event.pointerId) return;
     activeTouchId = null;
-    if (holdTimeoutId !== null) {
-      clearTimeout(holdTimeoutId);
-      holdTimeoutId = null;
-    }
+    clearHoldTimeout();
     isHoldReady = false;
     timerDisplay.classList.remove('holding-wait', 'holding-ready', 'space-held');
 
     if (state === 'holding') {
       setTimerState('ready');
-      const lastSolve = findSolve(lastSolveId);
-      if (lastSolve && Number.isFinite(lastSolve.baseTimeMs)) {
-        updateDisplay(formatTime(lastSolve.baseTimeMs));
-      } else {
-        updateDisplay('0.00');
-      }
+      restoreLastSolveDisplay();
     }
     pointerStartedInspection = false;
     justStoppedPointer = false;
