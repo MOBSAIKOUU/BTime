@@ -6,22 +6,52 @@
    1. Theme Palettes & CSS Variables
    -------------------------------------------------------------------------- */
 
-/* Default Light Theme */
+/* Default: warm paper, graphite typography, and a restrained petrol accent. */
 :root {
- --bg: #f3f4f6;
---bg-2: #f3f4f6;
---panel: #ffffffeb;          
---panel-strong: #fffffffa;  
---panel-soft: #f8fafc;
---border: #0f172a14;         
---text: #0f172a;
---muted: #475569;
---accent: #1d4ed8;
---accent-2: #2563eb;
---warning: #d97706;
---danger: #dc2626;
---success: #16a34a;
---shadow: 0 24px 60px #0f172a1f; 
+  --bg: #eeede8;
+  --bg-2: #eeede8;
+  --panel: #f8f7f3;
+  --panel-strong: #fdfcf9;
+  --panel-soft: #f0efea;
+  --border: #d6d6ce;
+  --text: #252c2c;
+  --muted: #626a67;
+  --accent: #28635e;
+  --accent-2: #204f4b;
+  --warning: #95601d;
+  --danger: #b13e37;
+  --success: #2e704a;
+  --shadow: 0 8px 28px #252c2c12, 0 1px 3px #252c2c08;
+}
+
+/* Default-only refinements keep the timing surface quiet and the controls crisp. */
+body:is([data-palette="light"], :not([data-palette])):not(.dark-mode) .primary-button {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 1px 2px #252c2c12;
+}
+
+body:is([data-palette="light"], :not([data-palette])):not(.dark-mode) .primary-button:hover {
+  background: var(--accent-2);
+}
+
+body:is([data-palette="light"], :not([data-palette])):not(.dark-mode) .stat-row {
+  background: transparent;
+  border-color: transparent;
+}
+
+body:is([data-palette="light"], :not([data-palette])):not(.dark-mode) .stat-button:enabled:hover {
+  background: var(--panel-soft);
+  border-color: var(--border);
+}
+
+body:is([data-palette="light"], :not([data-palette])):not(.dark-mode) .timer-display {
+  text-shadow: none !important;
+}
+
+body:is([data-palette="light"], :not([data-palette])):not(.dark-mode) h1 {
+  font-weight: 600;
+  letter-spacing: -0.045em;
 }
 
 /* Night or Dark */
@@ -533,7 +563,7 @@ body {
 
 /* Match the outer canvas and iOS safe areas to the selected palette. */
 html {
-  background: var(--page-background, #f3f4f6);
+  background: var(--page-background, #eeede8);
 }
 
 body {
