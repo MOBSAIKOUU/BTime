@@ -188,7 +188,7 @@ component. Runtime engine and drawing dependencies are bundled locally.
 | `index.html` | Timer interface, settings, statistics, and dialogs |
 | `guide.html` | Static guide to controls, puzzles, averages, saved data, and offline use |
 | `assets/css/style.css` | Responsive layout and color palettes |
-| `assets/css/content.css` | Homepage introduction and static guide styles |
+| `assets/css/content.css` | Static guide styles |
 | `assets/js/app.js` | Timing, manual entry, statistics, and interface behavior |
 | `assets/js/history-store.js` | IndexedDB history, paging, and indexed statistics |
 | `assets/js/tnoodle-client.mjs` | Scramble worker management and requests |
@@ -269,10 +269,11 @@ releases that change dependency hashes.
 
 ### Search indexing
 
-The homepage includes a visible introduction, search and sharing metadata, and
-`WebSite` structured data for the BTime site name. `/guide.html` is a linked,
-JavaScript-free usage guide. Both pages are listed in `sitemap.xml` and are
-included in the offline app cache.
+The homepage keeps the original timer interface and includes search and sharing
+metadata and `WebSite` structured data for the BTime site name. `/guide.html` is
+a separate JavaScript-free usage guide. Both pages are listed in `sitemap.xml`
+and are included in the offline app cache. The guide's styles are loaded only
+on the guide page.
 
 After deploying content changes, submit `https://www.btime.site/sitemap.xml` in
 Google Search Console, inspect `https://www.btime.site/` and

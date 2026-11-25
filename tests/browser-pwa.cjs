@@ -217,29 +217,16 @@ const timeout = (promise, milliseconds = 20000) => {
   const layouts = [];
   for (const [width, height] of [[1920,1080],[390,844],[320,568],[844,390]]) {
     await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 900 }, sessionId);
-    await evaluate('window.scrollTo(0,0)');
     await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
-    const layout = await evaluate(`(()=>({viewport:[innerWidth,innerHeight],page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],shellBottom:document.querySelector('.page-shell').getBoundingClientRect().bottom,clipped:['.topbar','.scramble-panel','.timer-panel','.stats-panel','.history-header','.solve-list','.scramble-visual-panel'].filter(selector=>{const r=document.querySelector(selector).getBoundingClientRect();return r.top<0||r.left<0||r.bottom>innerHeight+1||r.right>innerWidth+1})}))()`);
-    if (layout.shellBottom > height + 1) {
-      console.log('Overflow dimensions:', await evaluate(`['.page-shell','.topbar','.app-layout','.page-footer'].map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect(),c=getComputedStyle(e);return {selector:s,top:r.top,height:r.height,bottom:r.bottom,flex:c.flex,padding:c.padding,minHeight:c.minHeight}})`));
-      const screenshot = await send('Page.captureScreenshot', { format: 'png' }, sessionId);
-      fs.writeFileSync(path.join(root, 'artifacts', 'layout-overflow.png'), Buffer.from(screenshot.data, 'base64'));
-    }
+    const layout = await evaluate(`(()=>({viewport:[innerWidth,innerHeight],page:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],clipped:['.topbar','.scramble-panel','.timer-panel','.stats-panel','.history-header','.solve-list','.scramble-visual-panel'].filter(selector=>{const r=document.querySelector(selector).getBoundingClientRect();return r.top<0||r.left<0||r.bottom>innerHeight+1||r.right>innerWidth+1})}))()`);
     assert.deepEqual(layout.clipped, [], `Clipped controls at ${width}x${height}`);
-    // Help content intentionally follows the viewport-sized timer workspace.
-    assert.ok(layout.page[0] <= width + 1 && layout.shellBottom <= height + 1, `Timer overflow: ${JSON.stringify(layout)}`);
+    assert.ok(layout.page[0] <= width + 1 && layout.page[1] <= height + 1, `Page overflow at ${width}x${height}`);
     const touchArea = await evaluate(`(()=>{const display=document.getElementById('timerDisplay').getBoundingClientRect(),actions=document.getElementById('solveActions').getBoundingClientRect();return {scrollY,overlap:display.left<actions.right&&display.right>actions.left&&display.top<actions.bottom&&display.bottom>actions.top}})()`);
     assert.equal(touchArea.scrollY, 0, `Document shifted at ${width}x${height}`);
     assert.equal(touchArea.overlap, false, `Timer text overlaps actions at ${width}x${height}`);
     layouts.push(layout);
     const screenshot = await send('Page.captureScreenshot', { format: 'png' }, sessionId);
     fs.writeFileSync(path.join(root, 'artifacts', `pwa-${width}x${height}.png`), Buffer.from(screenshot.data, 'base64'));
-    await evaluate(`document.getElementById('about-btime').scrollIntoView();document.getElementById('about-btime').focus();`);
-    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 }, sessionId);
-    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 }, sessionId);
-    assert.equal(await evaluate('document.getElementById("timerState").textContent'), 'Ready');
-    assert.ok(await evaluate('document.getElementById("aboutBTimeTitle").getBoundingClientRect().top < innerHeight'));
-    await evaluate(`document.activeElement.blur();window.scrollTo(0,0);`);
   }
   console.log('Viewport checks passed:', JSON.stringify(layouts));
   await send('Emulation.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1', platform: 'iPhone' }, sessionId);
@@ -272,12 +259,12 @@ const timeout = (promise, milliseconds = 20000) => {
     if (await evaluate('location.pathname === "/" && document.readyState === "complete"')) break;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  assert.ok(await evaluate('document.getElementById("about-btime").textContent.includes("speedcubing timer")'));
-  assert.ok(await evaluate('document.querySelector("noscript").textContent.includes("JavaScript")'));
-  const siteName = await evaluate('JSON.parse(document.querySelector(\'script[type="application/ld+json"]\').textContent)');
+  assert.equal(await evaluate('document.getElementById("about-btime")'), null);
+  assert.equal(await evaluate('document.querySelectorAll(".page-footer a").length'), 0);
+  const siteName = await evaluate("JSON.parse(Array.from(document.scripts).find(s=>s.type==='application/ld+json').textContent)");
   assert.equal(siteName.name, 'BTime');
   assert.equal(siteName.url, 'https://www.btime.site/');
-  console.log('Homepage introduction, no-JavaScript message, and site-name structured data passed');
+  console.log('Original homepage content and site-name structured data passed');
 })().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => {
   socket?.close(); browser?.kill(); server?.closeAllConnections(); server?.close();
   console.log('Temporary browser profile:', profile);
