@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#eeede8" />
+    <title>How to Use BTime | Cube Timer Controls, Averages &amp; Offline Use</title>
+    <meta name="description" content="Learn how to use BTime: time cube solves, choose puzzles, review Ao5 and Ao12 averages, apply penalties, and install the timer for offline practice." />
+    <link rel="canonical" href="https://www.btime.site/guide.html" />
+    <link rel="icon" href="/assets/Images/Logo/Favicon%20Assets/favicon.ico" sizes="32x32" />
+    <link rel="stylesheet" href="/assets/css/content.css" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BTime" />
+    <meta property="og:title" content="How to Use BTime | Cube Timer Guide" />
+    <meta property="og:description" content="Controls, puzzle scrambles, solve history, averages, and offline practice with BTime." />
+    <meta property="og:url" content="https://www.btime.site/guide.html" />
+    <meta property="og:image" content="https://www.btime.site/assets/icons/icon-512.png" />
+    <meta property="og:image:alt" content="BTime logo" />
+    <meta name="twitter:card" content="summary" />
+  </head>
+  <body class="guide-page">
+    <header class="guide-header">
+      <a class="guide-brand" href="/">
+        <img src="/assets/Images/Logo/BtimeLogo-clean.png" alt="" width="801" height="955" />
+        BTime
+      </a>
+      <a href="/">Open cube timer</a>
+    </header>
+    <main class="site-info">
+      <h1>How to use the BTime cube timer</h1>
+      <p>BTime is a free online speedcubing timer for desktop and mobile practice.
+        It combines puzzle scrambles and drawings with solve history, inspection,
+        and averages. You can start practicing without creating an account.</p>
+      <nav class="guide-nav" aria-label="In this guide">
+        <strong>In this guide</strong>
+        <ul>
+          <li><a href="#controls">Time a solve</a></li>
+          <li><a href="#puzzles">Choose a puzzle and scramble</a></li>
+          <li><a href="#averages">Understand your averages</a></li>
+          <li><a href="#history">Review solves and penalties</a></li>
+          <li><a href="#offline">Install BTime and practice offline</a></li>
+          <li><a href="#saved-data">Where your history is saved</a></li>
+        </ul>
+      </nav>
+      <section id="controls">
+        <h2>Time a solve on desktop or phone</h2>
+        <ol>
+          <li>Open the <a href="/">BTime timer</a>, select your puzzle, and scramble it using the displayed moves.</li>
+          <li>On desktop, hold <kbd>Space</kbd> until the timer is ready, then release to start. Press a key to stop and save your solve.</li>
+          <li>On a phone, hold and release the timer surface to start. Tap again to stop.</li>
+        </ol>
+        <p>In settings, enable <strong>15s inspection</strong> if you want an inspection countdown
+          before your solve. With inspection enabled, your first Space press or tap starts
+          inspection; the next hold and release starts the timer.</p>
+        <p><strong>Hold delay</strong> requires a 300 ms hold before starting. With it off,
+          BTime still requires a short 100 ms press to help prevent accidental starts.
+          <strong>Hide time while solving</strong> keeps your running time out of view until you finish.</p>
+        <h3>Enter a time manually</h3>
+        <p>Enable <strong>Manual time entry</strong>, type your result in the timer, and press
+          <kbd>Enter</kbd>. Both <code>12.34</code> and <code>1234</code> record 12.34 seconds.
+          Use <code>1:20.00</code> for one minute and twenty seconds, or <code>12.34+2</code>
+          to record 12.34 seconds with a two-second penalty.</p>
+      </section>
+      <section id="puzzles">
+        <h2>Puzzle scrambles and drawings</h2>
+        <p>Choose 2x2, 3x3, 3x3 one-handed, 4x4, 5x5, 6x6, 7x7, Clock, Megaminx,
+          Pyraminx, Skewb, or Square-1 from the puzzle selector. Use the refresh button
+          for a new scramble. The drawing shows the scrambled puzzle so you can check your moves.</p>
+        <p>BTime keeps each event's history and averages separate. The 3x3 one-handed event
+          uses 3x3 scrambles with its own history. Scrambles are generated locally using
+          TNoodle; some events take longer to initialize on their first use.</p>
+      </section>
+      <section id="averages">
+        <h2>Ao5, Ao12, and longer averages</h2>
+        <p>Ao5 is the average of your latest five solves after removing the fastest and
+          slowest result. Ao12 uses your latest twelve solves and also removes one result
+          at each end. Averages appear once you have enough solves for the selected event.</p>
+        <p>For longer sessions, BTime also shows Ao25, Ao50, and Ao100. These remove the
+          fastest and slowest 5% of results, rounded up at each end. That means two results
+          at each end for Ao25, three for Ao50, and five for Ao100.</p>
+        <p>A +2 penalty counts toward the result before averaging. A DNF can be removed
+          among the worst results, but any DNF left in the counted results makes the
+          average DNF. <strong>Mean</strong> includes all non-DNF solves for the current event.</p>
+        <p>Select an average to see and copy its breakdown. Parentheses mark excluded
+          results. <strong>Best single</strong> opens your fastest solve;
+          <strong>Best Ao5</strong> opens your best five-solve average.</p>
+      </section>
+      <section id="history">
+        <h2>Review solve history and apply penalties</h2>
+        <p>Select a saved solve to inspect its time, scramble, and drawing. Use
+          <strong>+2</strong> to add a two-second penalty, <strong>DNF</strong> for a solve
+          you did not finish, or <strong>Revert</strong> to remove a penalty.
+          You can also copy the scramble or delete the solve.</p>
+        <p>On desktop, <kbd>Ctrl+1</kbd> reverts a penalty, <kbd>Ctrl+2</kbd> applies +2,
+          and <kbd>Ctrl+3</kbd> marks a DNF. These act on the selected solve while its
+          details are open, or the most recent solve otherwise. <kbd>Alt+Z</kbd> asks to
+          delete that solve; <kbd>Alt+D</kbd> asks to clear the current event's history.</p>
+        <p>The history list shows 50 records per page. Use <strong>Newer</strong> and
+          <strong>Older</strong> to browse longer sessions.</p>
+      </section>
+      <section id="offline">
+        <h2>Install BTime and use it offline</h2>
+        <p>Visit BTime while connected and wait for <strong>Settings &gt; BTime app &gt;
+          Offline ready</strong>. Once setup finishes, the timer and scramble generators
+          work without an internet connection.</p>
+        <p>Choose <strong>Install BTime</strong> when your browser offers it. On iPhone or
+          iPad, use <strong>Share &gt; Add to Home Screen</strong>. Installation availability
+          depends on your browser; you can also use BTime in a regular tab.</p>
+        <p>When an update is ready, BTime displays <strong>Update available, tap to refresh</strong>.
+          Accept it between solves. App updates preserve your saved history and preferences.</p>
+      </section>
+      <section id="saved-data">
+        <h2>Where are my times saved?</h2>
+        <p>Your history stays in your current browser profile on this device. BTime uses
+          IndexedDB for solve history and localStorage for preferences, with a basic
+          history fallback when IndexedDB is unavailable. There is no fixed solve-count
+          limit; available browser storage is the practical limit.</p>
+        <p>History does not automatically sync between devices or browsers. Clearing site
+          data removes saved times and settings. Private browsing may remove them when
+          the private session closes.</p>
+      </section>
+      <section aria-labelledby="about-title">
+        <h2 id="about-title">About BTime</h2>
+        <p>Created by Jherzy Jhay C. Dela Cruz (Jaaayy). You can read the source and
+          report issues in the <a href="https://github.com/MOBSAIKOUU/BTime">BTime GitHub repository</a>.</p>
+        <p><a href="/">Start a practice session with BTime</a>.</p>
+      </section>
+    </main>
+    <footer class="guide-footer">
+      <span>&copy; 2026 Jaaayy.</span>
+      <a href="/">Back to timer</a>
+    </footer>
+  </body>
+</html>

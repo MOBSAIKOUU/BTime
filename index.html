@@ -15,11 +15,30 @@
     <meta name="robots" content="index, follow">
 
     
-    <title>BTime – Free Online Rubik's Cube &amp; Speedcubing Timer</title>
+    <title>BTime | Free Online Cube Timer &amp; Speedcubing Practice</title>
     <meta
       name="description"
-      content="BTime is a speedcubing timer with multi-event scrambles, scramble drawings, optional 15-second inspection, solve history, Ao5 and Ao12 statistics, and customizable themes."
+      content="Practice with BTime, a free online cube timer with puzzle scrambles, solve history, Ao5 and Ao12 averages, inspection, and offline support. No account needed."
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BTime" />
+    <meta property="og:title" content="BTime | Free Online Cube Timer &amp; Speedcubing Practice" />
+    <meta property="og:description" content="Time your solves, generate puzzle scrambles, and track your averages. Free speedcubing practice on desktop and mobile, with offline support." />
+    <meta property="og:url" content="https://www.btime.site/" />
+    <meta property="og:image" content="https://www.btime.site/assets/icons/icon-512.png" />
+    <meta property="og:image:alt" content="BTime logo" />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://www.btime.site/#website",
+        "name": "BTime",
+        "url": "https://www.btime.site/",
+        "description": "A free online cube timer for speedcubing practice, with puzzle scrambles, solve history, averages, and offline support.",
+        "inLanguage": "en"
+      }
+    </script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,6 +52,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="canonical" href="https://www.btime.site/" />
     <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="/assets/css/content.css" />
     
 
   </head>
@@ -42,7 +62,7 @@
       <!-- Top Bar: Brand Logo & Settings Menu -->
       <header class="topbar">
         <div class="brand-block">
-          <img class="brand-mark" src="assets/Images/Logo/BtimeLogo-clean.png" alt="BTime logo" />
+          <img class="brand-mark" src="assets/Images/Logo/BtimeLogo-clean.png" alt="BTime logo" width="801" height="955" />
           <div>
             <p class="eyebrow">YOUR CUBE BUDDY</p>
             <h1>BTime</h1>
@@ -262,8 +282,35 @@
           </section>
         </aside>
       </main>
-      <footer class="page-footer">&copy; 2026 Jaaayy.</footer>
+      <footer class="page-footer">
+        <span>&copy; 2026 Jaaayy.</span>
+        <a href="#about-btime">About BTime</a>
+        <a href="/guide.html">How to use</a>
+      </footer>
     </div>
+
+    <section id="about-btime" class="site-info" aria-labelledby="aboutBTimeTitle" tabindex="-1">
+      <h2 id="aboutBTimeTitle">A free online cube timer for everyday practice</h2>
+      <p>BTime is a speedcubing timer for timing Rubik's Cube solves on your computer or phone.
+        Generate a scramble, follow its drawing, and record your time. Your solve history and
+        averages stay in this browser, with no account required.</p>
+      <div class="info-grid">
+        <div>
+          <h3>Start your next solve</h3>
+          <p>Choose a puzzle, then hold and release <kbd>Space</kbd> to start. Press a key to stop.
+            On a phone, hold and release the timer surface, then tap to stop.
+            Enable inspection or manual time entry in settings.</p>
+        </div>
+        <div>
+          <h3>Practice and track progress</h3>
+          <p>Practice 2x2 through 7x7, 3x3 one-handed, Clock, Megaminx, Pyraminx, Skewb, and Square-1.
+            Review individual solves and averages from Ao5 to Ao100. After offline setup finishes,
+            you can time solves and generate scrambles without a connection.</p>
+        </div>
+      </div>
+      <p><a href="/guide.html">Read the BTime guide</a> for controls, averages, installation, and saved-data details.</p>
+      <noscript><p>The interactive timer needs JavaScript. You can still <a href="/guide.html">read the guide</a> with JavaScript disabled.</p></noscript>
+    </section>
 
     <!-- Modal: Individual Solve Details & Modifier Actions -->
     <dialog id="solveDetails" class="solve-dialog" aria-labelledby="solveDetailsTitle">

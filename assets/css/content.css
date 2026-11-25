@@ -1,0 +1,79 @@
+/* Static help content shares the timer's active palette. */
+.site-info {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 36px clamp(16px, 4vw, 48px);
+  border-top: 1px solid var(--border, #d6d6ce);
+  color: var(--text, #252c2c);
+  font: 400 1rem/1.7 "Inter", system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.site-info h1,
+.site-info h2,
+.site-info h3 {
+  color: var(--text, #252c2c);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  text-transform: none;
+}
+
+.site-info h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0 0 20px; }
+.site-info h2 { font-size: 1.5rem; margin: 0 0 16px; }
+.site-info h3 { font-size: 1.125rem; margin: 0 0 8px; }
+.site-info p { margin: 0 0 16px; }
+.site-info li { margin-bottom: 8px; }
+.site-info :last-child { margin-bottom: 0; }
+.site-info section { margin-top: 36px; scroll-margin-top: 24px; }
+.site-info a,
+.page-footer a { color: var(--accent, #28635e); text-underline-offset: 3px; }
+.site-info a:hover,
+.page-footer a:hover { text-decoration-thickness: 2px; }
+.site-info a:focus-visible,
+.page-footer a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+.site-info kbd { font: inherit; font-weight: 600; }
+.info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; margin: 24px 0; }
+.page-footer { flex-wrap: wrap; gap: 4px 14px; }
+.page-footer a { font-size: 0.75rem; line-height: 1.5; }
+
+/* The guide does not load timer code, workers, or remote fonts. */
+.guide-page {
+  margin: 0;
+  background: #eeede8;
+  color: #252c2c;
+  font-family: system-ui, sans-serif;
+}
+
+.guide-page .site-info { max-width: 850px; border-top: 0; }
+.guide-header,
+.guide-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 754px;
+  padding: 24px clamp(16px, 4vw, 48px);
+}
+
+.guide-header { border-bottom: 1px solid #d6d6ce; }
+.guide-header a,
+.guide-footer a { color: #28635e; text-underline-offset: 3px; }
+.guide-brand { display: inline-flex; align-items: center; gap: 12px; font-size: 1.3rem; font-weight: 700; text-decoration: none; }
+.guide-brand img { width: 34px; height: 42px; object-fit: contain; }
+.guide-nav { padding: 20px; background: #f8f7f3; border: 1px solid #d6d6ce; border-radius: 10px; }
+.guide-nav ul { margin-bottom: 0; padding-left: 20px; }
+.guide-footer { border-top: 1px solid #d6d6ce; line-height: 1.5; }
+
+@media (max-width: 600px) {
+  .info-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}
+
+@media (max-height: 540px) and (orientation: landscape) {
+  .page-shell { height: 100dvh; }
+  .app-layout { flex: 1 1 0; }
+  .page-footer { padding-top: 0; }
+}

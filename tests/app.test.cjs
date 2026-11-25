@@ -600,6 +600,26 @@ test('delete shortcut ignores editing, confirmation dialogs, repeats and extra m
   }
 });
 
+test('reading homepage help leaves Space scrolling and history shortcuts to the browser', () => {
+  for (const scenario of ['focused-help', 'scrolled-below-timer', 'focused-link']) {
+    const app = createApp();
+    app.run('recordSolve(12000)');
+    const target = app.element('help');
+    if (scenario === 'focused-help') target.closest = (selector) => selector === '.site-info' ? target : null;
+    if (scenario === 'scrolled-below-timer') app.element('timerPanel').getBoundingClientRect = () => ({ bottom: -1 });
+    if (scenario === 'focused-link') target.closest = (selector) => selector.split(', ').includes('a') ? target : null;
+    let prevented = false;
+    app.window.dispatch('keydown', { key: ' ', code: 'Space', target, preventDefault() { prevented = true; } });
+    app.window.dispatch('keyup', { key: ' ', code: 'Space', target });
+    assert.equal(prevented, false, scenario);
+    assert.equal(app.run('state'), 'ready', scenario);
+    if (scenario !== 'focused-link') {
+      app.window.dispatch('keydown', { key: '2', ctrlKey: true, target });
+      assert.equal(app.run('recentSolves[0].result'), 'ok', scenario);
+    }
+  }
+});
+
 test('Ctrl+1/2/3 penalty shortcuts retain their behavior alongside Alt+Z', () => {
   const app = createApp();
   app.run('recordSolve(12000)');

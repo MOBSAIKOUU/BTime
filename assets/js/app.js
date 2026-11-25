@@ -1812,6 +1812,10 @@ window.addEventListener('keydown', (event) => {
   // Let the modal own Enter, Space and Escape while confirmation is open.
   if (deleteSolveDialog?.open || averageDetails?.open) return;
 
+  // Reading the static guide below the timer must not start a solve or edit history.
+  if (state === 'ready' && (event.target?.closest?.('.site-info') ||
+      (timerPanel?.getBoundingClientRect?.()?.bottom ?? Infinity) <= 0)) return;
+
   const penaltyActions = { '1': 'reset', '2': 'plus2', '3': 'dnf' };
   const deleteShortcut = event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey &&
     (event.code === 'KeyZ' || event.key?.toLowerCase() === 'z');
@@ -1867,7 +1871,7 @@ window.addEventListener('keydown', (event) => {
   const isReadOnlyTimerDisplay = event.target === timerDisplay && timerDisplay.readOnly;
   if (
     !isReadOnlyTimerDisplay &&
-    event.target?.closest?.('input, button, select, textarea, [contenteditable="true"]')
+    event.target?.closest?.('input, button, select, textarea, a, [contenteditable="true"]')
   ) {
     return;
   }

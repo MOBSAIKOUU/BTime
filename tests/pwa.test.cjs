@@ -108,7 +108,11 @@ test('HTML falls back offline and static libraries are served without network re
   await worker.lifecycle('install');
   worker.setOffline();
   const html = await worker.request('/', 'navigate');
-  assert.match(await html.text(), /<title>BTime – Free Online Rubik's Cube &amp; Speedcubing Timer<\/title>/);
+  assert.equal(await html.text(), fs.readFileSync(path.join(root, 'index.html'), 'utf8'));
+  const guide = await worker.request('/guide.html', 'navigate');
+  assert.equal(await guide.text(), fs.readFileSync(path.join(root, 'guide.html'), 'utf8'));
+  const contentStyle = await worker.request('/assets/css/content.css');
+  assert.equal(await contentStyle.text(), fs.readFileSync(path.join(root, 'assets/css/content.css'), 'utf8'));
   const count = worker.count();
   const { scramble } = JSON.parse(fs.readFileSync(path.join(root, 'assets/vendor/entries.json')));
   const library = await worker.request(scramble);

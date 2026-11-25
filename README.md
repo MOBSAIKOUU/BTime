@@ -186,7 +186,9 @@ component. Runtime engine and drawing dependencies are bundled locally.
 | Path | Purpose |
 | --- | --- |
 | `index.html` | Timer interface, settings, statistics, and dialogs |
+| `guide.html` | Static guide to controls, puzzles, averages, saved data, and offline use |
 | `assets/css/style.css` | Responsive layout and color palettes |
+| `assets/css/content.css` | Homepage introduction and static guide styles |
 | `assets/js/app.js` | Timing, manual entry, statistics, and interface behavior |
 | `assets/js/history-store.js` | IndexedDB history, paging, and indexed statistics |
 | `assets/js/tnoodle-client.mjs` | Scramble worker management and requests |
@@ -264,6 +266,21 @@ When releasing changes to HTML, CSS, JavaScript, the manifest, or cached assets:
 Documentation-only changes do not require an app-cache version bump. Existing
 clients may still request older vendor filenames, so retain those assets during
 releases that change dependency hashes.
+
+### Search indexing
+
+The homepage includes a visible introduction, search and sharing metadata, and
+`WebSite` structured data for the BTime site name. `/guide.html` is a linked,
+JavaScript-free usage guide. Both pages are listed in `sitemap.xml` and are
+included in the offline app cache.
+
+After deploying content changes, submit `https://www.btime.site/sitemap.xml` in
+Google Search Console, inspect `https://www.btime.site/` and
+`https://www.btime.site/guide.html`, test their live URLs, and request indexing.
+Use the clean URLs without tracking parameters. Keep each sitemap `lastmod`
+accurate to the page's last significant content update; do not advance it for
+unchanged pages. Indexing and rankings are decided by Google, and are not
+guaranteed by a successful live test or an indexing request.
 
 ## Author and licenses
 

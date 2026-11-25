@@ -1,11 +1,11 @@
 /* Bump this version whenever HTML, CSS, JavaScript, or vendor assets change. */
 const CACHE_PREFIX = 'btime-';
-const CACHE_VERSION = 'v63';
+const CACHE_VERSION = 'v64';
 const SHELL_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-shell`;
 const STATIC_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-static`;
 const FONT_CACHE = `${CACHE_PREFIX}fonts-v1`;
 const APP_SHELL = [
-  '/', '/index.html', '/manifest.webmanifest', '/assets/css/style.css',
+  '/', '/index.html', '/guide.html', '/manifest.webmanifest', '/assets/css/style.css', '/assets/css/content.css',
   '/assets/js/app.js', '/assets/js/pwa.js', '/assets/js/history-store.js',
   '/assets/js/tnoodle-client.mjs', '/assets/js/tnoodle-worker.mjs',
   '/assets/Images/Logo/BtimeLogo-clean.png',
